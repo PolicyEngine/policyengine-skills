@@ -1,0 +1,23 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+      - name: Set up Python
+        run: uv python install
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Smoke build Claude wrapper
+        run: python3 scripts/build_claude_wrapper.py --source-root . --output-root build/policyengine-claude

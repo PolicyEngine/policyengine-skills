@@ -1,0 +1,48 @@
+name: Sync Claude Wrapper
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  sync-claude:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+      - name: Set up Python
+        run: uv python install
+
+      - name: Build generated wrapper
+        run: python3 scripts/build_claude_wrapper.py --source-root . --output-root build/policyengine-claude
+
+      - name: Checkout wrapper repo
+        uses: actions/checkout@v4
+        with:
+          repository: PolicyEngine/policyengine-claude
+          path: wrapper
+          token: ${{ secrets.POLICYENGINE_SYNC_TOKEN }}
+
+      - name: Sync files
+        run: rsync -a --delete build/policyengine-claude/ wrapper/
+
+      - name: Commit and push
+        run: |
+          cd wrapper
+          git config user.name "policyengine-sync[bot]"
+          git config user.email "opensource+bot@policyengine.org"
+          git add -A
+          git diff --cached --quiet || git commit -m "Sync from policyengine-skills@${GITHUB_SHA}"
+          git push
+
+      - name: Push matching tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd wrapper
+          git tag "${GITHUB_REF_NAME}" || true
+          git push origin "${GITHUB_REF_NAME}" || true

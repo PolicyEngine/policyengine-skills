@@ -1,0 +1,40 @@
+{
+  "name": "analysis-tools",
+  "description": "Policy analysis and research - impact studies, dashboards, notebooks, and visualizations",
+  "category": "analysis",
+  "version": "3.22.3",
+  "keywords": [
+    "analysis",
+    "research",
+    "policy",
+    "impact",
+    "streamlit",
+    "plotly",
+    "notebooks"
+  ],
+  "author": {
+    "name": "PolicyEngine",
+    "url": "https://github.com/PolicyEngine"
+  },
+  "license": "MIT",
+  "hooks": null,
+  "skills": [
+    "./skills/documentation/policyengine-user-guide-skill",
+    "./skills/tools-and-apis/policyengine-python-client-skill",
+    "./skills/tools-and-apis/policyengine-simulation-mechanics-skill",
+    "./skills/tools-and-apis/policyengine-microsimulation-skill",
+    "./skills/domain-knowledge/policyengine-us-skill",
+    "./skills/domain-knowledge/policyengine-uk-skill",
+    "./skills/domain-knowledge/policyengine-canada-skill",
+    "./skills/domain-knowledge/policyengine-healthcare-skill",
+    "./skills/analysis/policyengine-analysis-skill",
+    "./skills/technical-patterns/python-skill",
+    "./skills/analysis/policyengine-district-analysis-skill",
+    "./skills/data-science/microdf-skill",
+    "./skills/documentation/policyengine-design-skill",
+    "./skills/documentation/policyengine-writing-skill",
+    "./skills/documentation/policyengine-research-lookup-skill"
+  ],
+  "commands": [],
+  "agents": []
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://claude.ai/schemas/plugin-marketplace.json",
+  "name": "policyengine-claude",
+  "version": "3.22.3",
+  "description": "Complete PolicyEngine knowledge base - for users, analysts, and contributors across the entire PolicyEngine ecosystem",
+  "owner": {
+    "name": "PolicyEngine",
+    "email": "hello@policyengine.org"
+  }
+}

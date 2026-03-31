@@ -1,0 +1,28 @@
+{
+  "name": "content",
+  "description": "Content generation - social images and posts from blog articles",
+  "category": "marketing",
+  "version": "3.22.3",
+  "keywords": [
+    "content",
+    "social",
+    "marketing",
+    "images"
+  ],
+  "author": {
+    "name": "PolicyEngine",
+    "url": "https://github.com/PolicyEngine"
+  },
+  "license": "MIT",
+  "hooks": null,
+  "skills": [
+    "./skills/content/content-generation-skill"
+  ],
+  "commands": [
+    "./commands/generate-content.md"
+  ],
+  "agents": [
+    "./agents/content/content-orchestrator.md",
+    "./agents/shared/neutrality-reviewer.md"
+  ]
+}

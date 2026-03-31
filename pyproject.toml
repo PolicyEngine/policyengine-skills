@@ -1,0 +1,15 @@
+[project]
+name = "policyengine-skills"
+version = "3.22.3"
+description = "Portable PolicyEngine skills and Claude wrapper source"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

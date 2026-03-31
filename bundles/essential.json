@@ -1,0 +1,27 @@
+{
+  "name": "essential",
+  "description": "Essential PolicyEngine knowledge for all users - understanding the platform, using the web app, and basic concepts",
+  "category": "getting-started",
+  "version": "3.22.3",
+  "keywords": [
+    "beginner",
+    "users",
+    "guide",
+    "basics"
+  ],
+  "author": {
+    "name": "PolicyEngine",
+    "url": "https://github.com/PolicyEngine"
+  },
+  "license": "MIT",
+  "hooks": "./hooks/hooks.json",
+  "skills": [
+    "./skills/documentation/policyengine-user-guide-skill",
+    "./skills/domain-knowledge/policyengine-us-skill",
+    "./skills/domain-knowledge/policyengine-uk-skill",
+    "./skills/domain-knowledge/policyengine-canada-skill",
+    "./skills/documentation/policyengine-writing-skill"
+  ],
+  "commands": [],
+  "agents": []
+}

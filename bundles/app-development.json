@@ -1,0 +1,54 @@
+{
+  "name": "app-development",
+  "description": "React app development - app-v2, standalone tools, Vercel deployment, and PolicyEngine-specific patterns",
+  "category": "development",
+  "version": "3.22.3",
+  "keywords": [
+    "react",
+    "frontend",
+    "app",
+    "ui",
+    "components",
+    "vercel",
+    "interactive-tools"
+  ],
+  "author": {
+    "name": "PolicyEngine",
+    "url": "https://github.com/PolicyEngine"
+  },
+  "license": "MIT",
+  "hooks": null,
+  "skills": [
+    "./skills/tools-and-apis/policyengine-app-skill",
+    "./skills/tools-and-apis/policyengine-interactive-tools-skill",
+    "./skills/tools-and-apis/policyengine-vercel-deployment-skill",
+    "./skills/tools-and-apis/policyengine-api-skill",
+    "./skills/domain-knowledge/policyengine-us-skill",
+    "./skills/domain-knowledge/policyengine-uk-skill",
+    "./skills/documentation/policyengine-design-skill",
+    "./skills/documentation/policyengine-standards-skill",
+    "./skills/documentation/policyengine-writing-skill",
+    "./skills/technical-patterns/seo-checklist-skill",
+    "./skills/technical-patterns/policyengine-test-writing-skill",
+    "./skills/technical-patterns/policyengine-recharts-skill",
+    "./skills/frontend/policyengine-tailwind-shadcn-skill",
+    "./skills/frontend/policyengine-ui-kit-consumer-skill"
+  ],
+  "commands": [
+    "./commands/create-new-component.md",
+    "./commands/create-pr.md",
+    "./commands/fix-pr.md",
+    "./commands/new-tool.md",
+    "./commands/audit-seo.md",
+    "./commands/write-tests.md"
+  ],
+  "agents": [
+    "./agents/app/app-reviewer.md",
+    "./agents/app/component-test-writer.md",
+    "./agents/app/design-token-validator.md",
+    "./agents/app/seo-meta-checker.md",
+    "./agents/app/seo-crawlability-checker.md",
+    "./agents/app/seo-performance-checker.md",
+    "./agents/app/seo-content-checker.md"
+  ]
+}

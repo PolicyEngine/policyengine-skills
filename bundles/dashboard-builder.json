@@ -1,0 +1,55 @@
+{
+  "name": "dashboard-builder",
+  "description": "Orchestrated AI workflow for creating PolicyEngine dashboards from natural-language descriptions",
+  "category": "development",
+  "version": "3.22.3",
+  "keywords": [
+    "dashboard",
+    "calculator",
+    "interactive",
+    "workflow",
+    "orchestration",
+    "react",
+    "vercel"
+  ],
+  "author": {
+    "name": "PolicyEngine",
+    "url": "https://github.com/PolicyEngine"
+  },
+  "license": "MIT",
+  "hooks": null,
+  "skills": [
+    "./skills/tools-and-apis/policyengine-frontend-builder-spec-skill",
+    "./skills/tools-and-apis/policyengine-dashboard-workflow-skill",
+    "./skills/tools-and-apis/policyengine-interactive-tools-skill",
+    "./skills/tools-and-apis/policyengine-vercel-deployment-skill",
+    "./skills/tools-and-apis/policyengine-modal-deployment-skill",
+    "./skills/tools-and-apis/policyengine-api-v2-skill",
+    "./skills/tools-and-apis/policyengine-app-skill",
+    "./skills/domain-knowledge/policyengine-us-skill",
+    "./skills/domain-knowledge/policyengine-uk-skill",
+    "./skills/documentation/policyengine-design-skill",
+    "./skills/documentation/policyengine-standards-skill",
+    "./skills/documentation/policyengine-writing-skill",
+    "./skills/technical-patterns/policyengine-recharts-skill",
+    "./skills/frontend/policyengine-tailwind-shadcn-skill",
+    "./skills/frontend/policyengine-ui-kit-consumer-skill"
+  ],
+  "commands": [
+    "./commands/create-dashboard.md",
+    "./commands/deploy-dashboard.md",
+    "./commands/dashboard-overview.md"
+  ],
+  "agents": [
+    "./agents/dashboard/dashboard-planner.md",
+    "./agents/dashboard/dashboard-scaffold.md",
+    "./agents/dashboard/backend-builder.md",
+    "./agents/dashboard/frontend-builder.md",
+    "./agents/dashboard/dashboard-integrator.md",
+    "./agents/dashboard/dashboard-build-validator.md",
+    "./agents/dashboard/dashboard-design-validator.md",
+    "./agents/dashboard/dashboard-architecture-validator.md",
+    "./agents/dashboard/dashboard-plan-validator.md",
+    "./agents/dashboard/dashboard-overview-updater.md"
+  ]
+}

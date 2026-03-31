@@ -1,0 +1,69 @@
+{
+  "name": "country-models",
+  "description": "Complete multi-agent workflow for implementing government benefit programs in PolicyEngine country packages",
+  "category": "development",
+  "version": "3.22.3",
+  "keywords": [
+    "tax",
+    "benefits",
+    "microsimulation",
+    "country-models",
+    "rules",
+    "testing"
+  ],
+  "author": {
+    "name": "PolicyEngine",
+    "url": "https://github.com/PolicyEngine"
+  },
+  "license": "MIT",
+  "hooks": "./hooks/hooks.json",
+  "skills": [
+    "./skills/documentation/policyengine-user-guide-skill",
+    "./skills/domain-knowledge/policyengine-us-skill",
+    "./skills/domain-knowledge/policyengine-uk-skill",
+    "./skills/domain-knowledge/policyengine-healthcare-skill",
+    "./skills/tools-and-apis/policyengine-core-skill",
+    "./skills/data-science/policyengine-us-data-skill",
+    "./skills/technical-patterns/policyengine-aggregation-skill",
+    "./skills/technical-patterns/policyengine-period-patterns-skill",
+    "./skills/technical-patterns/policyengine-testing-patterns-skill",
+    "./skills/technical-patterns/policyengine-variable-patterns-skill",
+    "./skills/technical-patterns/policyengine-parameter-patterns-skill",
+    "./skills/technical-patterns/policyengine-vectorization-skill",
+    "./skills/technical-patterns/policyengine-review-patterns-skill",
+    "./skills/technical-patterns/policyengine-code-style-skill",
+    "./skills/technical-patterns/policyengine-code-organization-skill",
+    "./skills/technical-patterns/policyengine-reform-patterns-skill",
+    "./skills/technical-patterns/python-skill",
+    "./skills/documentation/policyengine-standards-skill",
+    "./skills/documentation/policyengine-writing-skill",
+    "./skills/technical-patterns/policyengine-test-writing-skill"
+  ],
+  "commands": [
+    "./commands/backdate-program.md",
+    "./commands/encode-policy-v2.md",
+    "./commands/encode-reform.md",
+    "./commands/review-program.md",
+    "./commands/fix-pr.md",
+    "./commands/create-pr.md",
+    "./commands/write-tests.md"
+  ],
+  "agents": [
+    "./agents/country-models/ci-fixer.md",
+    "./agents/country-models/cross-program-validator.md",
+    "./agents/country-models/document-collector.md",
+    "./agents/country-models/documentation-enricher.md",
+    "./agents/country-models/edge-case-generator.md",
+    "./agents/country-models/implementation-validator.md",
+    "./agents/country-models/integration-agent.md",
+    "./agents/country-models/isolation-enforcement.md",
+    "./agents/country-models/isolation-setup.md",
+    "./agents/country-models/issue-manager.md",
+    "./agents/country-models/performance-optimizer.md",
+    "./agents/country-models/pr-pusher.md",
+    "./agents/country-models/program-reviewer.md",
+    "./agents/country-models/rules-engineer.md",
+    "./agents/country-models/test-creator.md",
+    "./agents/country-models/workflow.md"
+  ]
+}
