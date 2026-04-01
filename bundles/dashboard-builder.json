@@ -1,5 +1,6 @@
 {
   "name": "dashboard-builder",
+  "source": "./",
   "description": "Orchestrated AI workflow for creating PolicyEngine dashboards from natural-language descriptions",
   "category": "development",
   "version": "3.22.3",
@@ -17,7 +18,6 @@
     "url": "https://github.com/PolicyEngine"
   },
   "license": "MIT",
-  "hooks": null,
   "skills": [
     "./skills/tools-and-apis/policyengine-frontend-builder-spec-skill",
     "./skills/tools-and-apis/policyengine-dashboard-workflow-skill",

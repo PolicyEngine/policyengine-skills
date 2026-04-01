@@ -1,5 +1,6 @@
 {
   "name": "complete",
+  "source": "./",
   "description": "Complete PolicyEngine knowledge base - all agents, commands, and skills for users, analysts, and contributors",
   "category": "complete",
   "version": "3.22.3",

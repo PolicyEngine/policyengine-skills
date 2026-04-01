@@ -1,5 +1,6 @@
 {
   "name": "app-development",
+  "source": "./",
   "description": "React app development - app-v2, standalone tools, Vercel deployment, and PolicyEngine-specific patterns",
   "category": "development",
   "version": "3.22.3",
@@ -17,7 +18,6 @@
     "url": "https://github.com/PolicyEngine"
   },
   "license": "MIT",
-  "hooks": null,
   "skills": [
     "./skills/tools-and-apis/policyengine-app-skill",
     "./skills/tools-and-apis/policyengine-interactive-tools-skill",

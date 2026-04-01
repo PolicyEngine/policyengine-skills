@@ -1,5 +1,6 @@
 {
   "name": "essential",
+  "source": "./",
   "description": "Essential PolicyEngine knowledge for all users - understanding the platform, using the web app, and basic concepts",
   "category": "getting-started",
   "version": "3.22.3",

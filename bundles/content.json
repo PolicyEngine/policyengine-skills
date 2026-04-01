@@ -1,5 +1,6 @@
 {
   "name": "content",
+  "source": "./",
   "description": "Content generation - social images and posts from blog articles",
   "category": "marketing",
   "version": "3.22.3",
@@ -14,7 +15,6 @@
     "url": "https://github.com/PolicyEngine"
   },
   "license": "MIT",
-  "hooks": null,
   "skills": [
     "./skills/content/content-generation-skill"
   ],
