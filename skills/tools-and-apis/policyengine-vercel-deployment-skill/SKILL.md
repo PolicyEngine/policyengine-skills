@@ -90,3 +90,23 @@ Must be at repo root. For Next.js static exports, configure rewrites as needed:
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
 ```
+
+## Multi-zone deployments
+
+PolicyEngine tools deploy as **Next.js multi-zones** mounted behind `policyengine.org`. The host (`policyengine-app-v2/website/`) proxies specific paths to each zone's Vercel deployment via `rewrites` in `beforeFiles`.
+
+Before deploying a new tool, make sure you've read `policyengine-interactive-tools-skill` → "Multi-zone integration (preferred)". The Vercel-facing implications:
+
+- **Project naming is mandatory**: `policyengine--<repo-name>`. The host rewrite destination is built from this.
+- **Static-export zones need a `vercel.json` self-rewrite** so the zone's own preview can serve prefixed assets:
+  ```json
+  {
+    "framework": "nextjs",
+    "rewrites": [
+      { "source": "/_zones/<repo-name>/_next/:path*", "destination": "/_next/:path*" }
+    ]
+  }
+  ```
+- **Host rewrites must land before deploy** — add to `policyengine-app-v2/website/next.config.ts` in `rewrites().beforeFiles`. `/deploy-dashboard` has a pre-flight check for this; `new-tool` prompts for it in the host-wiring step.
+- **Env vars for rewrite destinations** — the host reads each zone's URL from `process.env.<NAME>_URL` (plain server-side env var, NOT `NEXT_PUBLIC_*`). Set these in the `policyengine-website` Vercel project.
+- **Run `/multizone-validator` before announcing a zone as live** — validates `basePath`, phase-gated `assetPrefix`, `vercel.json` self-rewrite, host rewrites, and project naming in one pass.

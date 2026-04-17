@@ -2,7 +2,7 @@
   "name": "complete",
   "description": "Complete PolicyEngine knowledge base - all agents, commands, and skills for users, analysts, and contributors",
   "category": "complete",
-  "version": "3.22.3",
+  "version": "3.23.0",
   "keywords": [
     "complete",
     "all",
@@ -85,6 +85,7 @@
     "./agents/app/app-reviewer.md",
     "./agents/app/component-test-writer.md",
     "./agents/app/design-token-validator.md",
+    "./agents/app/multizone-validator.md",
     "./agents/app/seo-meta-checker.md",
     "./agents/app/seo-crawlability-checker.md",
     "./agents/app/seo-performance-checker.md",

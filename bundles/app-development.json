@@ -2,7 +2,7 @@
   "name": "app-development",
   "description": "React app development - app-v2, standalone tools, Vercel deployment, and PolicyEngine-specific patterns",
   "category": "development",
-  "version": "3.22.3",
+  "version": "3.23.0",
   "keywords": [
     "react",
     "frontend",
@@ -46,6 +46,7 @@
     "./agents/app/app-reviewer.md",
     "./agents/app/component-test-writer.md",
     "./agents/app/design-token-validator.md",
+    "./agents/app/multizone-validator.md",
     "./agents/app/seo-meta-checker.md",
     "./agents/app/seo-crawlability-checker.md",
     "./agents/app/seo-performance-checker.md",

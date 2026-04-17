@@ -59,6 +59,7 @@ cat plan.yaml
 Extract key values:
 - `dashboard.name` - repo name and directory name
 - `dashboard.country` - determines which PE packages to use
+- `dashboard.zone_path` - REQUIRED. Drives `basePath` in `next.config.ts` and host rewrites. If missing, STOP and ask the user — don't guess
 - `data_pattern` - determines backend structure
 - `tech_stack` - confirms fixed stack choices
 - `components` - informs which dependencies to install
@@ -191,17 +192,54 @@ Generate from the fixed tech stack, including:
 - `axios`
 - Dev: `vitest`, `@vitejs/plugin-react`, `@testing-library/react`, `@testing-library/jest-dom`, `typescript`, `@types/react`, `@types/react-dom`, `@types/node`, `jsdom`
 
-#### next.config.ts
+#### next.config.mjs (static export with multi-zone)
 
-```typescript
-import type { NextConfig } from 'next'
+Dashboards use `output: 'export'` AND mount as multi-zones behind policyengine.org. This requires the three-piece Option C pattern — see `policyengine-interactive-tools-skill` → "Multi-zone integration (preferred)" for full rationale.
 
-const nextConfig: NextConfig = {
-  output: 'export',  // Static export for Vercel
+The scaffolded `next.config.mjs` MUST:
+1. Export a **function** that takes `phase` (so we can detect `next dev`)
+2. Set `basePath` to `dashboard.zone_path` from the plan
+3. Set `assetPrefix` conditionally: `undefined` in dev, `/_zones/<dashboard.name>` in builds
+
+Replace `DASHBOARD_NAME` with `dashboard.name` and `ZONE_PATH` with `dashboard.zone_path`:
+
+```js
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants.js';
+
+/** @type {import('next').NextConfig} */
+export default function nextConfig(phase) {
+  const isDev = phase === PHASE_DEVELOPMENT_SERVER;
+
+  return {
+    output: 'export',
+    basePath: 'ZONE_PATH',
+    // Phase-gated: undefined in `next dev` (local paths work),
+    // /_zones/DASHBOARD_NAME in builds (assets don't collide with host).
+    assetPrefix: isDev ? undefined : '/_zones/DASHBOARD_NAME',
+    trailingSlash: true,
+    images: { unoptimized: true },
+  };
 }
-
-export default nextConfig
 ```
+
+Do NOT scaffold a plain object-form `next.config.ts` — the phase gate requires the function form.
+
+#### vercel.json (multi-zone self-rewrite)
+
+Static-export dashboards need a self-rewrite in `vercel.json` so the zone's own Vercel preview can serve its built, prefixed assets. Without this, hitting `policyengine--DASHBOARD_NAME.vercel.app/ZONE_PATH` directly will 404 on all JS/CSS.
+
+Replace `DASHBOARD_NAME` with `dashboard.name`:
+
+```json
+{
+  "framework": "nextjs",
+  "rewrites": [
+    { "source": "/_zones/DASHBOARD_NAME/_next/:path*", "destination": "/_next/:path*" }
+  ]
+}
+```
+
+The host-side asset rewrite (`policyengine-app-v2/website/next.config.ts`) is added separately during deploy — see `/deploy-dashboard`.
 
 #### postcss.config.mjs
 
@@ -615,6 +653,10 @@ If either fails, fix before proceeding.
 ## Quality Checklist
 
 - [ ] `plan.yaml` is included in the repo
+- [ ] `dashboard.zone_path` from plan is written as `basePath` in `next.config.mjs`
+- [ ] `next.config.mjs` exports a FUNCTION taking `phase` (not a plain object)
+- [ ] `assetPrefix` is phase-gated: `undefined` in dev, `/_zones/<dashboard.name>` in builds
+- [ ] `vercel.json` contains the self-rewrite: `/_zones/<dashboard.name>/_next/:path*` → `/_next/:path*`
 - [ ] `CLAUDE.md` follows existing applet patterns
 - [ ] `package.json` has all required dependencies (Next.js, Tailwind v4, ui-kit)
 - [ ] `globals.css` has `@import "tailwindcss"` + `@import "@policyengine/ui-kit/theme.css"`

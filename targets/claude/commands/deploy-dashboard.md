@@ -45,10 +45,51 @@ cat plan.yaml
 
 Extract:
 - `dashboard.name` — for Vercel project and Modal app names
+- `dashboard.zone_path` — for multi-zone host rewrite verification
 - `data_pattern` — determines if Modal deploy is needed (`custom-backend` vs `api-v2-alpha`)
 - `tech_stack.framework` — should be `react-nextjs` (env var prefix: `NEXT_PUBLIC_*`)
 - `embedding.register_in_apps_json` — determines if apps.json update is needed
 - `embedding.slug` — the URL slug for policyengine.org
+
+### 2a. Pre-flight: host rewrite check
+
+Before deploying, verify the host (`policyengine-app-v2/website/next.config.ts`) has rewrites pointing at this dashboard. Without them, the deployed dashboard won't be reachable at `policyengine.org/<zone_path>`.
+
+```bash
+# Clone or pull the host repo
+if [ ! -d /tmp/policyengine-app-v2 ]; then
+  gh repo clone PolicyEngine/policyengine-app-v2 /tmp/policyengine-app-v2
+fi
+(cd /tmp/policyengine-app-v2 && git checkout main && git pull)
+
+# Grep for the zone path in the host config
+grep -nE "source:\s*['\"]<ZONE_PATH>" /tmp/policyengine-app-v2/website/next.config.ts
+```
+
+**Required in the host config's `rewrites().beforeFiles`:**
+- Two route rewrites: `<zone_path>` and `<zone_path>/:path*`
+- One asset rewrite (static-export zones): `/_zones/<dashboard.name>/:path*`
+- Destinations use `process.env.<NAME>_URL` with a production fallback
+
+**If host rewrites are missing:** STOP and tell the user:
+
+> **Host rewrites missing.** This dashboard's zone path (`<zone_path>`) is not yet registered in `policyengine-app-v2/website/next.config.ts`.
+>
+> Before deploying, open a PR to policyengine-app-v2 adding these entries to `rewrites().beforeFiles`:
+>
+> ```ts
+> const <NAME>_URL = process.env.<NAME>_URL || '<vercel-fallback-url>';
+> { source: '<zone_path>',        destination: `${<NAME>_URL}<zone_path>` },
+> { source: '<zone_path>/:path*', destination: `${<NAME>_URL}<zone_path>/:path*` },
+> // static-export only:
+> { source: '/_zones/<dashboard.name>/:path*', destination: `${<NAME>_URL}/_zones/<dashboard.name>/:path*` },
+> ```
+>
+> Also set `<NAME>_URL` in the `policyengine-website` Vercel project env vars.
+>
+> Once the host PR merges, re-run `/deploy-dashboard`.
+
+Proceed only if rewrites are present.
 
 ## Step 3: Deploy Backend (if custom-backend)
 
