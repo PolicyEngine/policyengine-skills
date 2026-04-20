@@ -40,6 +40,7 @@
     "./commands/fix-pr.md",
     "./commands/new-tool.md",
     "./commands/audit-seo.md",
+    "./commands/audit-multizone.md",
     "./commands/write-tests.md"
   ],
   "agents": [
