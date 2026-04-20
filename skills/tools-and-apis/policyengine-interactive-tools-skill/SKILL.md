@@ -155,7 +155,6 @@ The zone path must match the repo name's kebab-case form unless there's a strong
 - [ ] If `output: 'export'`: phase-gated `assetPrefix: '/_zones/<repo-name>'` + `vercel.json` self-rewrite
 - [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` (two for server-rendered, three for static export), hardcoded to the zone's production Vercel URL
 - [ ] Cross-zone links use `<a>`, not `<Link>`
-- [ ] Vercel project named `policyengine--<repo-name>`
 
 ### Retrofitting existing tools
 

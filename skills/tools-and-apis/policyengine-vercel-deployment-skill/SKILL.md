@@ -97,7 +97,7 @@ PolicyEngine tools deploy as **Next.js multi-zones** mounted behind `policyengin
 
 Before deploying a new tool, make sure you've read `policyengine-interactive-tools-skill` → "Multi-zone integration (preferred)". The Vercel-facing implications:
 
-- **Project naming is mandatory**: `policyengine--<repo-name>`. The host rewrite destination is built from this.
+- **Vercel project URLs are not deterministic.** Vercel auto-assigns the production domain on first deploy (often appending suffixes like `-one`, `-phi`, or `-policy-engine` when the base name is taken). Capture whatever Vercel assigns and hardcode that exact URL in the host rewrite destination. Do not assume a naming convention.
 - **Static-export zones need a `vercel.json` self-rewrite** so the zone's own preview can serve prefixed assets:
   ```json
   {
