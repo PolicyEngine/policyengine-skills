@@ -107,6 +107,5 @@ Before deploying a new tool, make sure you've read `policyengine-interactive-too
     ]
   }
   ```
-- **Host rewrites must land before deploy** — add to `policyengine-app-v2/website/next.config.ts` in `rewrites().beforeFiles`. `/deploy-dashboard` has a pre-flight check for this; `new-tool` prompts for it in the host-wiring step.
-- **Env vars for rewrite destinations** — the host reads each zone's URL from `process.env.<NAME>_URL` (plain server-side env var, NOT `NEXT_PUBLIC_*`). Set these in the `policyengine-website` Vercel project.
-- **Run `/multizone-validator` before announcing a zone as live** — validates `basePath`, phase-gated `assetPrefix`, `vercel.json` self-rewrite, host rewrites, and project naming in one pass.
+- **Host rewrites must land before deploy** — add to `policyengine-app-v2/website/next.config.ts` in `rewrites().beforeFiles`, hardcoded to the zone's production Vercel URL. `/deploy-dashboard` has a pre-flight check for this; `new-tool` prompts for it in the host-wiring step.
+- **Run `/multizone-validator` before announcing a zone as live** — validates `basePath`, phase-gated `assetPrefix`, `vercel.json` self-rewrite, and host rewrites in one pass.

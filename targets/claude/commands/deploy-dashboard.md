@@ -69,25 +69,22 @@ grep -nE "source:\s*['\"]<ZONE_PATH>" /tmp/policyengine-app-v2/website/next.conf
 **Required in the host config's `rewrites().beforeFiles`:**
 - Two route rewrites: `<zone_path>` and `<zone_path>/:path*`
 - One asset rewrite (static-export zones): `/_zones/<dashboard.name>/:path*`
-- Destinations use `process.env.<NAME>_URL` with a production fallback
+- Destinations are hardcoded to the zone's production Vercel URL (whatever Vercel auto-assigned — do not invent a naming scheme)
 
-**If host rewrites are missing:** STOP and tell the user:
+**If host rewrites are missing:** STOP and tell the user. The zone needs to exist on Vercel first so we know the production URL to hardcode.
 
 > **Host rewrites missing.** This dashboard's zone path (`<zone_path>`) is not yet registered in `policyengine-app-v2/website/next.config.ts`.
 >
-> Before deploying, open a PR to policyengine-app-v2 adding these entries to `rewrites().beforeFiles`:
+> First deploy the zone to Vercel (Step 4 below) to obtain its production URL, then open a PR to policyengine-app-v2 adding these entries to `rewrites().beforeFiles`:
 >
 > ```ts
-> const <NAME>_URL = process.env.<NAME>_URL || '<vercel-fallback-url>';
-> { source: '<zone_path>',        destination: `${<NAME>_URL}<zone_path>` },
-> { source: '<zone_path>/:path*', destination: `${<NAME>_URL}<zone_path>/:path*` },
+> { source: '<zone_path>',        destination: 'https://<VERCEL_PRODUCTION_URL><zone_path>' },
+> { source: '<zone_path>/:path*', destination: 'https://<VERCEL_PRODUCTION_URL><zone_path>/:path*' },
 > // static-export only:
-> { source: '/_zones/<dashboard.name>/:path*', destination: `${<NAME>_URL}/_zones/<dashboard.name>/:path*` },
+> { source: '/_zones/<dashboard.name>/:path*', destination: 'https://<VERCEL_PRODUCTION_URL>/_zones/<dashboard.name>/:path*' },
 > ```
 >
-> Also set `<NAME>_URL` in the `policyengine-website` Vercel project env vars.
->
-> Once the host PR merges, re-run `/deploy-dashboard`.
+> Once the host PR merges, re-run `/deploy-dashboard` to verify the end-to-end path.
 
 Proceed only if rewrites are present.
 

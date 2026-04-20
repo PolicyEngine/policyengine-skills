@@ -71,10 +71,9 @@ export default nextConfig;
 
 ```ts
 // host: policyengine-app-v2/website/next.config.ts — in beforeFiles
-const MY_TOOL_URL = process.env.MY_TOOL_URL || 'https://my-tool.vercel.app';
-
-{ source: '/us/my-tool',        destination: `${MY_TOOL_URL}/us/my-tool` },
-{ source: '/us/my-tool/:path*', destination: `${MY_TOOL_URL}/us/my-tool/:path*` },
+// Hardcode the zone's production Vercel URL (whatever Vercel auto-assigned on first deploy).
+{ source: '/us/my-tool',        destination: 'https://my-tool.vercel.app/us/my-tool' },
+{ source: '/us/my-tool/:path*', destination: 'https://my-tool.vercel.app/us/my-tool/:path*' },
 ```
 
 ### Canonical zone config — static export
@@ -118,7 +117,7 @@ Lets the zone's **own** Vercel deployment serve its built, prefixed assets when 
 
 ```ts
 // in beforeFiles, alongside the route rewrites
-{ source: '/_zones/my-tool/:path*', destination: `${MY_TOOL_URL}/_zones/my-tool/:path*` },
+{ source: '/_zones/my-tool/:path*', destination: 'https://my-tool.vercel.app/_zones/my-tool/:path*' },
 ```
 
 Plus the two route rewrites (same as server-rendered). Total: **three rewrites** for static-export zones, two for server-rendered.
@@ -138,9 +137,8 @@ Drop any one and the corresponding environment 404s its JS/CSS.
 1. **Use `beforeFiles` in the host.** Zone rewrites must take priority over the website's dynamic `[slug]` routes.
 2. **Cross-zone navigation uses `<a>`, not `<Link>`.** `next/link` does client-side routing and breaks across zones.
 3. **No absolute-URL `assetPrefix`.** Always use `/_zones/<repo-name>` so the zone isn't hardcoded to a specific Vercel domain.
-4. **Rewrite destinations are env-var-driven.** The host reads each zone's URL from `process.env.<NAME>_URL` with a production fallback, so `.env.local` can point at `http://localhost:3001` for local integration testing. **Do not** use `NEXT_PUBLIC_` — these are server-side only.
-5. **Static-export zones gate `assetPrefix` on `PHASE_DEVELOPMENT_SERVER`.** See template above. Unconditional `assetPrefix` breaks `next dev`.
-6. **Shared chrome via `@policyengine/ui-kit`** (Header, Footer) so zones look native to the host.
+4. **Static-export zones gate `assetPrefix` on `PHASE_DEVELOPMENT_SERVER`.** See template above. Unconditional `assetPrefix` breaks `next dev`.
+5. **Shared chrome via `@policyengine/ui-kit`** (Header, Footer) so zones look native to the host.
 
 ### Zone path naming
 
@@ -155,8 +153,7 @@ The zone path must match the repo name's kebab-case form unless there's a strong
 - [ ] Zone path decided and agreed with the team before scaffold
 - [ ] `basePath` set in `next.config` matching the zone path
 - [ ] If `output: 'export'`: phase-gated `assetPrefix: '/_zones/<repo-name>'` + `vercel.json` self-rewrite
-- [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` (two for server-rendered, three for static export)
-- [ ] Host reads destination from `process.env.<NAME>_URL` with a fallback
+- [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` (two for server-rendered, three for static export), hardcoded to the zone's production Vercel URL
 - [ ] Cross-zone links use `<a>`, not `<Link>`
 - [ ] Vercel project named `policyengine--<repo-name>`
 

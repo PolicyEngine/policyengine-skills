@@ -92,12 +92,10 @@ Read `policyengine-app-v2/website/next.config.ts`. Look for entries in `rewrites
   - `/<basePath>/:path*` → `<zone-url>/<basePath>/:path*`
 - Three rewrites for static-export zones: above two PLUS
   - `/_zones/<repo-name>/:path*` → `<zone-url>/_zones/<repo-name>/:path*`
-- Destination uses `process.env.<NAME>_URL` with a fallback, not a hardcoded URL
 - Rewrites are in `beforeFiles`, not `afterFiles` (host has dynamic `[slug]` routes that would intercept otherwise)
 
 **Fail conditions:**
 - Host rewrites missing → zone is not reachable through policyengine.org
-- Destination hardcoded → breaks local integration testing
 - Static-export zone missing the asset rewrite → assets 404 in production
 - Rewrites in `afterFiles` → dynamic slug route intercepts before the zone
 
@@ -112,17 +110,7 @@ Search the zone's source tree for `<Link` from `next/link` pointing at paths out
 
 **Pass:** all `<Link>` hrefs stay within the zone's own routes.
 
-### 6. Check Vercel project naming (best-effort)
-
-Look for `.vercel/project.json`. If present:
-
-**Pass:** `projectName` matches `policyengine--<repo-name>`.
-
-**Fail:** generic names like `app`, `site`, or the repo name without the `policyengine--` prefix.
-
-If `.vercel/` is not present locally, skip and note "Vercel project name check skipped — not linked locally."
-
-### 7. Check shared chrome usage (advisory)
+### 6. Check shared chrome usage (advisory)
 
 Grep for imports of `@policyengine/ui-kit`. Zones should use the shared `Header`/`Footer` so they look native when viewed behind the host.
 
@@ -132,7 +120,7 @@ This is advisory, not blocking — some internal tools legitimately use custom c
 
 1. Read `next.config.{ts,mjs,js}` at `TARGET_PATH`
 2. Determine zone type (server-rendered vs static export)
-3. Run checks 1–7 in order
+3. Run checks 1–6 in order
 4. For each check, record: `PASS`, `FAIL`, `WARN`, or `SKIP` with a one-line reason and a `file:line` citation
 5. Produce the structured report below — do not edit any files
 
@@ -167,22 +155,18 @@ This is advisory, not blocking — some internal tools legitimately use custom c
 - Route rewrites: [count — expected 2]
 - Asset rewrite (static exports): [present / missing / N/A]
 - In beforeFiles: [yes / no]
-- Destination env-var-driven: [yes / no]
 - Location: [host file:line]
 
 ### 5. Cross-zone navigation: [PASS / FAIL]
 - `<Link>` to other zones: [count — expected 0]
 - [File:line citations for any violations]
 
-### 6. Vercel project name: [PASS / FAIL / SKIP]
-- Name: [value or "not linked"]
-
-### 7. Shared chrome: [PASS / WARN]
+### 6. Shared chrome: [PASS / WARN]
 - `@policyengine/ui-kit` imported: [yes / no]
 
 ## Summary
 
-- **Score:** X/7 checks passed
+- **Score:** X/6 checks passed
 - **Critical failures:** [list of FAIL items that break production]
 - **Warnings:** [list of WARN items]
 
