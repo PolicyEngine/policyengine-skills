@@ -89,7 +89,8 @@ DASHBOARD_NAME/
 │   ├── layout.tsx                  # Root layout — Inter font + globals.css
 │   ├── page.tsx                    # Main dashboard page
 │   ├── globals.css                 # @import "tailwindcss" + @import ui-kit theme
-│   └── providers.tsx               # React Query provider (client component)
+│   ├── providers.tsx               # React Query provider (client component)
+│   └── icon.svg                    # PE logo favicon (basePath-safe via App Router)
 ├── components/
 │   └── (from plan.yaml components — only custom ones not in ui-kit)
 ├── lib/
@@ -100,8 +101,6 @@ DASHBOARD_NAME/
 │   ├── embedding.ts
 │   └── hooks/
 │       └── useCalculation.ts
-├── public/
-│   └── favicon.svg                 # PE logo favicon (from ui-kit)
 ├── __tests__/
 │   └── page.test.tsx
 ├── next.config.ts
@@ -120,7 +119,7 @@ DASHBOARD_NAME/
 
 ```
 DASHBOARD_NAME/
-├── ... (same structure as above, including Makefile and public/favicon.svg)
+├── ... (same structure as above, including Makefile and app/icon.svg)
 ├── backend/
 │   ├── _image_setup.py         # Standalone snapshot function (no package imports)
 │   ├── app.py                  # Modal worker app + function decorators (only `modal` at module level)
@@ -286,7 +285,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'TITLE - PolicyEngine',
   description: 'DESCRIPTION from plan',
-  icons: { icon: '/favicon.svg' },
+  // Favicon is picked up automatically from app/icon.svg (basePath-safe).
+  // Do NOT set icons: { icon: '/favicon.svg' } — that path is not basePath-prefixed
+  // and resolves to the host's favicon when the zone is served behind policyengine.org.
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -572,14 +573,13 @@ clean:
 
 #### Favicon
 
-Copy the PolicyEngine logo favicon from ui-kit into `public/`:
+Copy the PolicyEngine logo into `app/icon.svg` — the App Router convention. Next.js emits it at `<basePath>/icon.svg`, so it resolves correctly whether the zone is hit directly or served behind the host.
 
 ```bash
-mkdir -p public
-cp node_modules/@policyengine/ui-kit/src/assets/logos/policyengine/teal-square.svg public/favicon.svg
+cp node_modules/@policyengine/ui-kit/src/assets/logos/policyengine/teal-square.svg app/icon.svg
 ```
 
-The `layout.tsx` metadata already includes `icons: { icon: '/favicon.svg' }` (see template above).
+Do NOT use `public/favicon.svg` + `icons: { icon: '/favicon.svg' }` in metadata — that path is written verbatim into the HTML and is not basePath-prefixed. Behind the host, the browser will request it from `policyengine.org/favicon.svg` and get the host's favicon instead of the zone's.
 
 #### Embedding Boilerplate
 
@@ -670,8 +670,8 @@ If either fails, fix before proceeding.
 - [ ] `.claude/settings.json` auto-installs the dashboard-builder plugin
 - [ ] `vercel.json` is configured for frontend deployment
 - [ ] Feature branch is created and pushed
-- [ ] `public/favicon.svg` exists (PE logo)
-- [ ] `layout.tsx` metadata includes `icons: { icon: '/favicon.svg' }`
+- [ ] `app/icon.svg` exists (PE logo, basePath-safe via App Router)
+- [ ] `layout.tsx` metadata does NOT set `icons: { icon: '/favicon.svg' }` (that path isn't basePath-prefixed and would collide with the host behind policyengine.org)
 - [ ] Header uses `logos.whiteWordmark` or `logos.tealWordmark` (not text-only)
 - [ ] `Makefile` has correct targets for the data pattern
 - [ ] `make dev` uses port range 4000-4100 (not random, not hardcoded 3000)

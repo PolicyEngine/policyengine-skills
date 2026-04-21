@@ -25,28 +25,39 @@ The invoking command must pass:
 
 ## Instructions
 
-### 0. Detect zone type
+### 0. Detect zone type and basePath pattern
 
 Read the zone's `next.config.{ts,mjs,js}` at `TARGET_PATH`. Determine:
 
 - **Build type:** `output: 'export'` present → static export. Absent → server-rendered (default).
 - **Config form:** object export → unconditional config. Function export (`export default function nextConfig(phase)`) → phase-aware config.
+- **basePath pattern** (one of three valid production patterns):
+  - **P1 — Literal basePath:** `basePath: '/us/my-tool'`. Hardcoded string. (Used by watca, wptra.)
+  - **P2 — Env-driven basePath with literal production fallback:** A JS variable that resolves to a literal string at build time, e.g.
+    ```js
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH !== undefined
+      ? process.env.NEXT_PUBLIC_BASE_PATH
+      : "/us/my-tool";
+    ```
+    Production builds use the fallback literal; preview/dev can override via env. (Used by keep-your-pay-act, oregon-kicker-refund.)
+  - **P3 — No basePath:** Zone serves at root. Host rewrites map the public path (`/us/my-tool/:path*`) directly to the zone's root (`/:path*`). Typically paired with `assetPrefix: '/_zones/<repo-name>'` on static exports. (Used by household-api-docs.)
 
 This choice gates which rules apply. Static exports need more coordination than server-rendered zones.
 
 ### 1. Check `basePath`
 
-`basePath` must be set and must match the zone's URL path on policyengine.org.
+The zone must use one of the three valid production patterns above. Host rewrites must align with whichever pattern is chosen.
 
-**Pass criteria:**
-- `basePath` is a string literal starting with `/`
-- Matches the naming convention: `/us/<kebab-name>`, `/uk/<kebab-name>`, or `/<kebab-name>` for cross-country tools
-- Kebab-case portion matches the repo name (unless a documented exception)
+**Pass criteria (any of):**
+- **P1:** `basePath` is a string literal starting with `/`, matching `/us/<kebab-name>`, `/uk/<kebab-name>`, or `/<kebab-name>`. Kebab portion matches the repo name unless documented.
+- **P2:** `basePath` is assigned from a variable whose resolution path includes a literal fallback matching the same naming convention. The fallback is what production actually uses — verify it matches the repo name.
+- **P3:** `basePath` is absent or `undefined`. Zone must serve at root, AND host rewrites must map `/us/<kebab-name>/:path*` → `<zone-url>/:path*` (not `<zone-url>/us/<kebab-name>/:path*`). Usually requires static export with `assetPrefix: '/_zones/<repo-name>'` to avoid asset conflicts with the host.
 
 **Fail conditions:**
-- `basePath` missing entirely → the app will collide with the host's own routes
-- `basePath` uses template literals or variables — makes static analysis and rewrite matching fragile
-- `basePath` doesn't match the repo name without explanation
+- None of P1/P2/P3 match → the app will collide with the host's routes or serve broken assets
+- P2 fallback doesn't match the repo name without explanation
+- P3 without a corresponding `assetPrefix` on a static-export zone → assets will 404 behind the host
+- `basePath` uses template literals or concatenation with runtime-only values (not resolvable at build time) — makes rewrite matching fragile
 
 ### 2. Check `assetPrefix` (static exports only)
 
@@ -84,18 +95,27 @@ Read `vercel.json` at the repo root.
 
 ### 4. Check host rewrites (if `HOST_CONFIG_PATH` available)
 
-Read `policyengine-app-v2/website/next.config.ts`. Look for entries in `rewrites().beforeFiles` matching the zone's `basePath`.
+Read `policyengine-app-v2/website/next.config.ts`. Look for entries in `rewrites().beforeFiles` matching the zone's public path. The expected shape depends on the basePath pattern detected in section 0.
 
-**Pass criteria:**
-- Two rewrites present for server-rendered zones:
+**Pass criteria for P1/P2 (zone has basePath matching its public path):**
+- Two route rewrites present:
   - `/<basePath>` → `<zone-url>/<basePath>`
   - `/<basePath>/:path*` → `<zone-url>/<basePath>/:path*`
-- Three rewrites for static-export zones: above two PLUS
+- Static-export zones additionally need:
   - `/_zones/<repo-name>/:path*` → `<zone-url>/_zones/<repo-name>/:path*`
-- Rewrites are in `beforeFiles`, not `afterFiles` (host has dynamic `[slug]` routes that would intercept otherwise)
+
+**Pass criteria for P3 (zone serves at root):**
+- Route rewrites map the public path to the zone's root:
+  - `/<public-path>` → `<zone-url>`
+  - `/<public-path>/:path*` → `<zone-url>/:path*`
+- Static-export zones also need the `/_zones/<repo-name>/:path*` asset rewrite
+
+**General:**
+- Rewrites must be in `beforeFiles`, not `afterFiles` (host has dynamic `[slug]` routes that would intercept otherwise)
 
 **Fail conditions:**
 - Host rewrites missing → zone is not reachable through policyengine.org
+- Rewrite destination shape doesn't match the zone's basePath pattern (e.g. P3 zone with rewrites that include the public path in the destination, or P1/P2 zone with rewrites that strip the basePath)
 - Static-export zone missing the asset rewrite → assets 404 in production
 - Rewrites in `afterFiles` → dynamic slug route intercepts before the zone
 
@@ -130,13 +150,15 @@ This is advisory, not blocking — some internal tools legitimately use custom c
 # Multi-zone Validation Report: <repo-name>
 
 **Zone type:** [server-rendered / static-export / non-zone — skipped]
-**Zone path:** [basePath value or "missing"]
+**basePath pattern:** [P1 literal / P2 env-driven with fallback / P3 no-basePath]
+**Zone path:** [resolved public path, e.g. `/us/my-tool`]
 **Host check:** [performed / skipped — reason]
 
 ## Findings
 
 ### 1. basePath: [PASS / FAIL]
-- Value: [basePath string or "missing"]
+- Pattern: [P1 / P2 / P3]
+- Value: [literal, or fallback expression, or "absent (P3)"]
 - Location: [file:line]
 - [Details if FAIL]
 

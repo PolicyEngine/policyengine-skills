@@ -18,17 +18,19 @@ vercel link --scope policy-engine
 vercel --prod --yes --scope policy-engine
 ```
 
-### Naming convention
+### Production URLs
 
-Projects use the pattern `policyengine--{repo-name}`:
+Vercel auto-assigns the production URL on first deploy — the exact domain depends on team/name availability (suffixes like `-one`, `-phi`, or `-policy-engine` are common when the base name is taken). Examples of live PolicyEngine zones:
 
 ```
-policyengine--marriage.vercel.app
-policyengine--aca-calc.vercel.app
-policyengine--state-legislative-tracker.vercel.app
+working-americans-tax-cut-act-one.vercel.app
+keep-your-pay-act.vercel.app
+oregon-kicker-refund.vercel.app
+household-api-docs-policy-engine.vercel.app
+policyengine-model-phi.vercel.app
 ```
 
-Vercel auto-assigns a random production URL (e.g., `marriage-zeta-beryl.vercel.app`). Use that in apps.json as the source URL since custom aliases may have deployment protection issues.
+Capture whatever Vercel assigns on the first deploy and hardcode that exact URL anywhere it's needed (host rewrites, apps.json source). Do not assume a deterministic naming scheme, and do not use custom aliases — they may have deployment protection issues.
 
 ### First deploy
 
@@ -107,5 +109,5 @@ Before deploying a new tool, make sure you've read `policyengine-interactive-too
     ]
   }
   ```
-- **Host rewrites must land before deploy** — add to `policyengine-app-v2/website/next.config.ts` in `rewrites().beforeFiles`, hardcoded to the zone's production Vercel URL. `/deploy-dashboard` has a pre-flight check for this; `new-tool` prompts for it in the host-wiring step.
+- **Host rewrites must land before the zone is reachable at `policyengine.org`** — add to `policyengine-app-v2/website/next.config.ts` in `rewrites().beforeFiles`, hardcoded to the zone's production Vercel URL. `/deploy-dashboard` handles this after the first deploy captures the production URL.
 - **Run `/audit-multizone` before announcing a zone as live** — validates `basePath`, phase-gated `assetPrefix`, `vercel.json` self-rewrite, and host rewrites in one pass.

@@ -48,13 +48,23 @@ PolicyEngine tools integrate with policyengine.org as **Next.js multi-zones**. T
 
 | Zone build type | Required config |
 |---|---|
-| Server-rendered (default Next.js SSR/ISR) | **`basePath` only** |
-| Static export (`output: 'export'`) | **`basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite** |
+| Server-rendered (default Next.js SSR/ISR) | **`basePath` only** (P1 or P2) |
+| Static export (`output: 'export'`) | **Either: `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P1/P2), OR: no `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P3)** |
+
+### Three valid `basePath` patterns
+
+All three are used in production. Pick one per zone:
+
+- **P1 — Literal:** `basePath: '/us/my-tool'`. Simplest; hardcoded string.
+- **P2 — Env-driven with literal production fallback:** A variable that resolves to a literal at build time, e.g. `process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`. Production builds use the fallback; preview/dev can override via env. Refs: `keep-your-pay-act`, `oregon-kicker-refund`.
+- **P3 — No basePath (zone serves at root):** Zone has no `basePath`; host rewrites map the public path directly to the zone's root. Requires `assetPrefix: '/_zones/<repo-name>'` on static exports to avoid asset collisions. Ref: `household-api-docs`.
+
+Host rewrite shape depends on the chosen pattern — see "Canonical host rewrites" below.
 
 ### What each config controls
 
 - `basePath`: **route URLs** — page paths, `next/link` hrefs, API route paths. Auto-scopes `_next/static/` assets for server-rendered builds.
-- `assetPrefix`: **static asset URLs** only — `_next/static/*`, `next/image`, `next/script`. Needed only when `basePath` can't scope assets automatically (i.e. static exports).
+- `assetPrefix`: **static asset URLs** only — `_next/static/*`, `next/image`, `next/script`. Needed when `basePath` can't scope assets automatically (static exports) or when the zone has no `basePath` (P3).
 
 Both may coexist — they govern different URL types and never conflict.
 
@@ -151,9 +161,9 @@ The zone path must match the repo name's kebab-case form unless there's a strong
 ### New-zone checklist
 
 - [ ] Zone path decided and agreed with the team before scaffold
-- [ ] `basePath` set in `next.config` matching the zone path
+- [ ] `basePath` pattern chosen (P1 literal, P2 env-driven with fallback, or P3 no-basePath) and matches the zone path
 - [ ] If `output: 'export'`: phase-gated `assetPrefix: '/_zones/<repo-name>'` + `vercel.json` self-rewrite
-- [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` (two for server-rendered, three for static export), hardcoded to the zone's production Vercel URL
+- [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` — shape matches the chosen pattern (preserve basePath in destination for P1/P2; map to zone root for P3), hardcoded to the zone's production Vercel URL
 - [ ] Cross-zone links use `<a>`, not `<Link>`
 
 ### Retrofitting existing tools
