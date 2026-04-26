@@ -12,7 +12,7 @@ jobs:
   sync-claude:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: astral-sh/setup-uv@v6
       - name: Set up Python
@@ -22,7 +22,7 @@ jobs:
         run: python3 scripts/build_claude_wrapper.py --source-root . --output-root build/policyengine-claude
 
       - name: Checkout wrapper repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: PolicyEngine/policyengine-claude
           path: wrapper
