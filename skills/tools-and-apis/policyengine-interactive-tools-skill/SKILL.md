@@ -5,7 +5,7 @@ description: Building standalone interactive calculators and dashboards that emb
 
 # PolicyEngine interactive tools
 
-How to build standalone React apps (calculators, dashboards, visualizations) that embed in policyengine.org via iframe.
+How to build standalone React apps (calculators, dashboards, visualizations) that integrate into policyengine.org as Next.js multi-zones (preferred) or via iframe (legacy).
 
 ## Examples
 
@@ -37,6 +37,140 @@ How to build standalone React apps (calculators, dashboards, visualizations) tha
 - **NEVER hardcode hex colors or font names** — always use CSS variables from the ui-kit theme (e.g., `var(--primary)`, `var(--chart-1)`, `var(--font-sans)`)
 - **PolicyEngine logo** — always use the actual logo image, never styled text. Files at `policyengine-app-v2/app/public/assets/logos/policyengine/` (white.png for dark backgrounds, teal.png for light)
 - Sentence case on all UI text
+
+## Multi-zone integration (preferred)
+
+PolicyEngine tools integrate with policyengine.org as **Next.js multi-zones**. The host website (`policyengine-app-v2/website/`) proxies specific URL paths to standalone Vercel deployments via `rewrites`, so users see one site while each tool remains independently deployable.
+
+**Multi-zone replaces iframe embedding for all new tools.** Iframe embedding is retained only for legacy tools and the `obbba-iframe` / `custom` apps.json types — see "Legacy iframe embedding" below.
+
+### The decision rule
+
+| Zone build type | Required config |
+|---|---|
+| Server-rendered (default Next.js SSR/ISR) | **`basePath` only** (P1 or P2) |
+| Static export (`output: 'export'`) | **Either: `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P1/P2), OR: no `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P3)** |
+
+### Three valid `basePath` patterns
+
+All three are used in production. Pick one per zone:
+
+- **P1 — Literal:** `basePath: '/us/my-tool'`. Simplest; hardcoded string.
+- **P2 — Env-driven with literal production fallback:** A variable that resolves to a literal at build time, e.g. `process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`. Production builds use the fallback; preview/dev can override via env. Refs: `keep-your-pay-act`, `oregon-kicker-refund`.
+- **P3 — No basePath (zone serves at root):** Zone has no `basePath`; host rewrites map the public path directly to the zone's root. Requires `assetPrefix: '/_zones/<repo-name>'` on static exports to avoid asset collisions. Ref: `household-api-docs`.
+
+Host rewrite shape depends on the chosen pattern — see "Canonical host rewrites" below.
+
+### What each config controls
+
+- `basePath`: **route URLs** — page paths, `next/link` hrefs, API route paths. Auto-scopes `_next/static/` assets for server-rendered builds.
+- `assetPrefix`: **static asset URLs** only — `_next/static/*`, `next/image`, `next/script`. Needed when `basePath` can't scope assets automatically (static exports) or when the zone has no `basePath` (P3).
+
+Both may coexist — they govern different URL types and never conflict.
+
+### Canonical zone config — server-rendered (common case)
+
+```ts
+// zone's next.config.ts
+const nextConfig: NextConfig = {
+  basePath: '/us/my-tool',
+  // no assetPrefix needed — basePath scopes _next/static automatically
+};
+export default nextConfig;
+```
+
+```ts
+// host: policyengine-app-v2/website/next.config.ts — in beforeFiles
+// Hardcode the zone's production Vercel URL (whatever Vercel auto-assigned on first deploy).
+{ source: '/us/my-tool',        destination: 'https://my-tool.vercel.app/us/my-tool' },
+{ source: '/us/my-tool/:path*', destination: 'https://my-tool.vercel.app/us/my-tool/:path*' },
+```
+
+### Canonical zone config — static export
+
+Static exports need **three coordinated pieces** (Option C pattern — production reference: `PolicyEngine/household-api-docs`). Each covers a different environment; omitting any one breaks that environment.
+
+**1. Zone's `next.config.mjs` — phase-gated `assetPrefix`**
+
+```js
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants.js';
+
+export default function nextConfig(phase) {
+  const isDev = phase === PHASE_DEVELOPMENT_SERVER;
+
+  return {
+    output: 'export',
+    basePath: '/us/my-tool',
+    // Drop the prefix in `next dev` so local assets resolve without /_zones/*.
+    // In builds, apply it so assets don't collide with the host's _next/static.
+    assetPrefix: isDev ? undefined : '/_zones/my-tool',
+    trailingSlash: true,
+  };
+}
+```
+
+Export a **function** (not an object) so Next.js passes the build phase. `PHASE_DEVELOPMENT_SERVER` fires during `next dev`; all other phases (`next build`, `next start`) do not.
+
+**2. Zone's `vercel.json` — self-rewrite**
+
+```json
+{
+  "rewrites": [
+    { "source": "/_zones/my-tool/_next/:path*", "destination": "/_next/:path*" }
+  ]
+}
+```
+
+Lets the zone's **own** Vercel deployment serve its built, prefixed assets when hit directly at its `.vercel.app` URL (e.g. for zone-only previews).
+
+**3. Host's `website/next.config.ts` — asset rewrite**
+
+```ts
+// in beforeFiles, alongside the route rewrites
+{ source: '/_zones/my-tool/:path*', destination: 'https://my-tool.vercel.app/_zones/my-tool/:path*' },
+```
+
+Plus the two route rewrites (same as server-rendered). Total: **three rewrites** for static-export zones, two for server-rendered.
+
+### Why all three pieces are needed
+
+| Environment | Who serves the request | Which piece fixes it |
+|---|---|---|
+| `bun dev` at `localhost:3001/us/my-tool` | `next dev` — ignores `vercel.json` | **Phase gate** drops the prefix |
+| Zone-only preview at `my-tool.vercel.app/us/my-tool` | Zone's own Vercel deploy | **`vercel.json` self-rewrite** strips the prefix internally |
+| Prod via host at `policyengine.org/us/my-tool` | Host website, proxying to zone | **Host asset rewrite** forwards `/_zones/*` to the zone |
+
+Drop any one and the corresponding environment 404s its JS/CSS.
+
+### Mandatory rules
+
+1. **Use `beforeFiles` in the host.** Zone rewrites must take priority over the website's dynamic `[slug]` routes.
+2. **Cross-zone navigation uses `<a>`, not `<Link>`.** `next/link` does client-side routing and breaks across zones.
+3. **No absolute-URL `assetPrefix`.** Always use `/_zones/<repo-name>` so the zone isn't hardcoded to a specific Vercel domain.
+4. **Static-export zones gate `assetPrefix` on `PHASE_DEVELOPMENT_SERVER`.** See template above. Unconditional `assetPrefix` breaks `next dev`.
+5. **Shared chrome via `@policyengine/ui-kit`** (Header, Footer) so zones look native to the host.
+
+### Zone path naming
+
+- Country-scoped tools: `/us/<kebab-name>` or `/uk/<kebab-name>` (e.g. `/us/watca`, `/us/keep-your-pay-act`)
+- Cross-country content: `/<kebab-name>` (e.g. `/slides`, `/plugin-blog`)
+- Embedded-only variants: append `/embed` (e.g. `/us/california-wealth-tax/embed`)
+
+The zone path must match the repo name's kebab-case form unless there's a strong reason to differ.
+
+### New-zone checklist
+
+- [ ] Zone path decided and agreed with the team before scaffold
+- [ ] `basePath` pattern chosen (P1 literal, P2 env-driven with fallback, or P3 no-basePath) and matches the zone path
+- [ ] If `output: 'export'`: phase-gated `assetPrefix: '/_zones/<repo-name>'` + `vercel.json` self-rewrite
+- [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` — shape matches the chosen pattern (preserve basePath in destination for P1/P2; map to zone root for P3), hardcoded to the zone's production Vercel URL
+- [ ] Cross-zone links use `<a>`, not `<Link>`
+
+### Retrofitting existing tools
+
+Run `/audit-multizone <path>` to validate an existing tool against these rules. The `multizone-validator` agent reports findings without editing.
+
+Known nonstandard: Model docs use an absolute-URL `assetPrefix` pointing at its Vercel domain — migrate to `/_zones/policyengine-model` when touching that repo.
 
 ## CRITICAL: Never hardcode computed data
 
@@ -512,7 +646,9 @@ Or use `style=` with `var()` for inline styles:
 }}>
 ```
 
-## Embedding in policyengine.org
+## Legacy iframe embedding
+
+> **For new tools, use multi-zone integration instead.** This section covers iframe embedding, retained for legacy tools and for apps.json types that still require it (`obbba-iframe`, `custom`).
 
 ### 1. Register in apps.json
 
@@ -706,7 +842,10 @@ Test API responses against Python fixtures for numerical accuracy. See `PolicyEn
 - [ ] Mobile responsive (768px, 480px breakpoints)
 - [ ] Tests passing
 
-### Additional for embeddable tools
+### Additional for multi-zone tools (preferred)
+See "New-zone checklist" in the Multi-zone integration section above.
+
+### Additional for legacy iframe tools
 - [ ] Country detection from hash (`#country=uk`)
 - [ ] Hash sync with postMessage to parent
 - [ ] Share URLs point to policyengine.org
