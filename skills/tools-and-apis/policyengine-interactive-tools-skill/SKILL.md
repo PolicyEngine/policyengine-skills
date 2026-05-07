@@ -48,18 +48,20 @@ PolicyEngine tools integrate with policyengine.org as **Next.js multi-zones**. T
 
 | Zone build type | Required config |
 |---|---|
-| Server-rendered (default Next.js SSR/ISR) | **`basePath` only** (P1 or P2) |
-| Static export (`output: 'export'`) | **Either: `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P1/P2), OR: no `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P3)** |
+| Server-rendered (default Next.js SSR/ISR) | **`basePath` only** (P1) |
+| Static export (`output: 'export'`) | **Either: `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P1), OR: no `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P3)** |
 
-### Three valid `basePath` patterns
+### Two valid `basePath` patterns
 
-All three are used in production. Pick one per zone:
+Pick one per zone:
 
-- **P1 — Literal:** `basePath: '/us/my-tool'`. Simplest; hardcoded string.
-- **P2 — Env-driven with literal production fallback:** A variable that resolves to a literal at build time, e.g. `process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`. Production builds use the fallback; preview/dev can override via env. Refs: `keep-your-pay-act`, `oregon-kicker-refund`.
+- **P1 — Literal:** `basePath: '/us/my-tool'`. Hardcoded string. Matches the official Next.js [multi-zones guide](https://nextjs.org/docs/app/guides/multi-zones) and [`with-zones` example](https://github.com/vercel/next.js/tree/canary/examples/with-zones). Default for all new zones.
 - **P3 — No basePath (zone serves at root):** Zone has no `basePath`; host rewrites map the public path directly to the zone's root. Requires `assetPrefix: '/_zones/<repo-name>'` on static exports to avoid asset collisions. Ref: `household-api-docs`.
 
-Host rewrite shape depends on the chosen pattern — see "Canonical host rewrites" below.
+> **Why no env-driven `basePath` (e.g. `process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`)?**
+> The official docs only show a literal. The intended dev workflow is to hit the zone at `localhost:<port>/<basePath>` directly, or to run the host with its `rewrites()` `destination` pointed at `localhost:<zone-port>` for end-to-end local development. There is no docs-endorsed "drop the basePath in dev" escape hatch, and adding one hides basePath bugs that would otherwise surface in dev. A few existing zones (`keep-your-pay-act`, `oregon-kicker-refund`, `working-parents-tax-relief-act`) still use this pattern; they're tracked for retrofit but are not multizone blockers.
+
+Host rewrite shape depends on the chosen pattern — see the "Canonical zone config" sections below; each shows the matching host rewrite inline.
 
 ### What each config controls
 
@@ -150,6 +152,19 @@ Drop any one and the corresponding environment 404s its JS/CSS.
 4. **Static-export zones gate `assetPrefix` on `PHASE_DEVELOPMENT_SERVER`.** See template above. Unconditional `assetPrefix` breaks `next dev`.
 5. **Shared chrome via `@policyengine/ui-kit`** (Header, Footer) so zones look native to the host.
 
+### Icons and favicons
+
+Use the [Next.js icon file convention](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons) — drop the icon image directly into `app/`:
+
+- `app/icon.{ico,jpg,jpeg,png,svg}` → emitted as `<link rel="icon">`
+- `app/apple-icon.{jpg,jpeg,png}` (PNG only — Safari ignores SVG; recommended size 180×180) → emitted as `<link rel="apple-touch-icon">`
+
+Next.js generates the link tag with the basePath already prefixed, plus a content hash and the right MIME type, with no extra config.
+
+**Do not** put icon URLs in `metadata.icons` (e.g. `icons: { icon: '/favicon.svg' }`). Those URLs are **not** auto-prefixed with `basePath` — see [vercel/next.js#61487](https://github.com/vercel/next.js/issues/61487) (closed as not planned). Under multi-zone, an icon defined in `metadata.icons` resolves at the host root (`policyengine.org/favicon.svg`) instead of under the zone's basePath, and 404s if the host doesn't serve a file at that path.
+
+Working example: `policyengine-taxsim` (`dashboard/src/app/icon.png`).
+
 ### Zone path naming
 
 - Country-scoped tools: `/us/<kebab-name>` or `/uk/<kebab-name>` (e.g. `/us/watca`, `/us/keep-your-pay-act`)
@@ -161,10 +176,11 @@ The zone path must match the repo name's kebab-case form unless there's a strong
 ### New-zone checklist
 
 - [ ] Zone path decided and agreed with the team before scaffold
-- [ ] `basePath` pattern chosen (P1 literal, P2 env-driven with fallback, or P3 no-basePath) and matches the zone path
+- [ ] `basePath` pattern chosen (P1 literal or P3 no-basePath) and matches the zone path
 - [ ] If `output: 'export'`: phase-gated `assetPrefix: '/_zones/<repo-name>'` + `vercel.json` self-rewrite
-- [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` — shape matches the chosen pattern (preserve basePath in destination for P1/P2; map to zone root for P3), hardcoded to the zone's production Vercel URL
+- [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` — shape matches the chosen pattern (preserve basePath in destination for P1; map to zone root for P3), hardcoded to the zone's production Vercel URL
 - [ ] Cross-zone links use `<a>`, not `<Link>`
+- [ ] Favicon/icon uses the [Next.js file convention](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons) (`app/icon.{png,svg,...}`) so basePath is auto-prefixed — **do not** use `metadata.icons` URLs (see [vercel/next.js#61487](https://github.com/vercel/next.js/issues/61487))
 
 ### Retrofitting existing tools
 

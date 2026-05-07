@@ -31,31 +31,27 @@ Read the zone's `next.config.{ts,mjs,js}` at `TARGET_PATH`. Determine:
 
 - **Build type:** `output: 'export'` present → static export. Absent → server-rendered (default).
 - **Config form:** object export → unconditional config. Function export (`export default function nextConfig(phase)`) → phase-aware config.
-- **basePath pattern** (one of three valid production patterns):
-  - **P1 — Literal basePath:** `basePath: '/us/my-tool'`. Hardcoded string. (Used by watca, wptra.)
-  - **P2 — Env-driven basePath with literal production fallback:** A JS variable that resolves to a literal string at build time, e.g.
-    ```js
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH !== undefined
-      ? process.env.NEXT_PUBLIC_BASE_PATH
-      : "/us/my-tool";
-    ```
-    Production builds use the fallback literal; preview/dev can override via env. (Used by keep-your-pay-act, oregon-kicker-refund.)
+- **basePath pattern** (one of two valid production patterns):
+  - **P1 — Literal basePath:** `basePath: '/us/my-tool'`. Hardcoded string — matches the official Next.js multi-zones guide and `with-zones` example. (Used by watca.)
   - **P3 — No basePath:** Zone serves at root. Host rewrites map the public path (`/us/my-tool/:path*`) directly to the zone's root (`/:path*`). Typically paired with `assetPrefix: '/_zones/<repo-name>'` on static exports. (Used by household-api-docs.)
 
 This choice gates which rules apply. Static exports need more coordination than server-rendered zones.
 
+> **Legacy: env-driven basePath** (`process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`). A few existing zones (`keep-your-pay-act`, `oregon-kicker-refund`, `working-parents-tax-relief-act`) still use this. It is **not** a recommended pattern — the official docs only show literal `basePath`, and the env override hides basePath bugs that would otherwise surface in dev. Treat as a `WARN` ("legacy env-driven basePath; flip to literal P1 in a follow-up PR"), not a `FAIL`. Verify the production fallback matches the repo name and continue with the remaining checks as if it were P1.
+
 ### 1. Check `basePath`
 
-The zone must use one of the three valid production patterns above. Host rewrites must align with whichever pattern is chosen.
+The zone must use one of the two valid production patterns above (P1 or P3). Host rewrites must align with whichever pattern is chosen.
 
 **Pass criteria (any of):**
 - **P1:** `basePath` is a string literal starting with `/`, matching `/us/<kebab-name>`, `/uk/<kebab-name>`, or `/<kebab-name>`. Kebab portion matches the repo name unless documented.
-- **P2:** `basePath` is assigned from a variable whose resolution path includes a literal fallback matching the same naming convention. The fallback is what production actually uses — verify it matches the repo name.
 - **P3:** `basePath` is absent or `undefined`. Zone must serve at root, AND host rewrites must map `/us/<kebab-name>/:path*` → `<zone-url>/:path*` (not `<zone-url>/us/<kebab-name>/:path*`). Usually requires static export with `assetPrefix: '/_zones/<repo-name>'` to avoid asset conflicts with the host.
 
+**Warn conditions:**
+- Legacy env-driven basePath (e.g. `process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`) — verify the production fallback matches the repo name; emit `WARN` with a follow-up note to flip to P1.
+
 **Fail conditions:**
-- None of P1/P2/P3 match → the app will collide with the host's routes or serve broken assets
-- P2 fallback doesn't match the repo name without explanation
+- Neither P1 nor P3 (nor a recognized legacy env-driven shape) → the app will collide with the host's routes or serve broken assets
 - P3 without a corresponding `assetPrefix` on a static-export zone → assets will 404 behind the host
 - `basePath` uses template literals or concatenation with runtime-only values (not resolvable at build time) — makes rewrite matching fragile
 
@@ -97,7 +93,7 @@ Read `vercel.json` at the repo root.
 
 Read `policyengine-app-v2/website/next.config.ts`. Look for entries in `rewrites().beforeFiles` matching the zone's public path. The expected shape depends on the basePath pattern detected in section 0.
 
-**Pass criteria for P1/P2 (zone has basePath matching its public path):**
+**Pass criteria for P1 (zone has a literal basePath matching its public path):**
 - Two route rewrites present:
   - `/<basePath>` → `<zone-url>/<basePath>`
   - `/<basePath>/:path*` → `<zone-url>/<basePath>/:path*`
@@ -115,7 +111,7 @@ Read `policyengine-app-v2/website/next.config.ts`. Look for entries in `rewrites
 
 **Fail conditions:**
 - Host rewrites missing → zone is not reachable through policyengine.org
-- Rewrite destination shape doesn't match the zone's basePath pattern (e.g. P3 zone with rewrites that include the public path in the destination, or P1/P2 zone with rewrites that strip the basePath)
+- Rewrite destination shape doesn't match the zone's basePath pattern (e.g. P3 zone with rewrites that include the public path in the destination, or a P1 zone with rewrites that strip the basePath)
 - Static-export zone missing the asset rewrite → assets 404 in production
 - Rewrites in `afterFiles` → dynamic slug route intercepts before the zone
 
@@ -136,11 +132,25 @@ Grep for imports of `@policyengine/ui-kit`. Zones should use the shared `Header`
 
 This is advisory, not blocking — some internal tools legitimately use custom chrome.
 
+### 7. Check icon/favicon scoping
+
+Look for one of:
+- A file matching `app/icon.{ico,jpg,jpeg,png,svg}` (and optionally `app/apple-icon.{jpg,jpeg,png}`) — Next.js [icon file convention](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons)
+- An `icons:` block in `metadata` exported from `app/layout.{ts,tsx,js,jsx}`
+
+**Pass criteria:**
+- File convention is used (icon image is in `app/`)
+
+**Fail conditions:**
+- `metadata.icons` is set with URL strings (e.g. `icons: { icon: '/favicon.svg' }`) — these URLs are **not** auto-prefixed with `basePath` (see [vercel/next.js#61487](https://github.com/vercel/next.js/issues/61487)), so the icon resolves at the host root and 404s under multi-zone. Recommend moving the image to `app/icon.<ext>` and removing the `metadata.icons` block.
+
+**Skip:** zone has no icon configured at all (uncommon — flag as `WARN` so a follow-up can add one).
+
 ## Workflow
 
 1. Read `next.config.{ts,mjs,js}` at `TARGET_PATH`
 2. Determine zone type (server-rendered vs static export)
-3. Run checks 1–6 in order
+3. Run checks 1–7 in order
 4. For each check, record: `PASS`, `FAIL`, `WARN`, or `SKIP` with a one-line reason and a `file:line` citation
 5. Produce the structured report below — do not edit any files
 
@@ -150,15 +160,15 @@ This is advisory, not blocking — some internal tools legitimately use custom c
 # Multi-zone Validation Report: <repo-name>
 
 **Zone type:** [server-rendered / static-export / non-zone — skipped]
-**basePath pattern:** [P1 literal / P2 env-driven with fallback / P3 no-basePath]
+**basePath pattern:** [P1 literal / P3 no-basePath / legacy env-driven (warn)]
 **Zone path:** [resolved public path, e.g. `/us/my-tool`]
 **Host check:** [performed / skipped — reason]
 
 ## Findings
 
-### 1. basePath: [PASS / FAIL]
-- Pattern: [P1 / P2 / P3]
-- Value: [literal, or fallback expression, or "absent (P3)"]
+### 1. basePath: [PASS / WARN / FAIL]
+- Pattern: [P1 / P3 / legacy env-driven]
+- Value: [literal, or "absent (P3)", or fallback expression for legacy env-driven]
 - Location: [file:line]
 - [Details if FAIL]
 
@@ -186,9 +196,14 @@ This is advisory, not blocking — some internal tools legitimately use custom c
 ### 6. Shared chrome: [PASS / WARN]
 - `@policyengine/ui-kit` imported: [yes / no]
 
+### 7. Icon/favicon scoping: [PASS / FAIL / WARN]
+- File convention (`app/icon.*`): [present / absent]
+- `metadata.icons` URL set: [yes / no]
+- Location: [file:line]
+
 ## Summary
 
-- **Score:** X/6 checks passed
+- **Score:** X/7 checks passed
 - **Critical failures:** [list of FAIL items that break production]
 - **Warnings:** [list of WARN items]
 
