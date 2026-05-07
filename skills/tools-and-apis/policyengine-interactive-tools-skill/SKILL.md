@@ -154,14 +154,16 @@ Drop any one and the corresponding environment 404s its JS/CSS.
 
 ### Icons and favicons
 
-Use the [Next.js icon file convention](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons) — drop the icon image directly into `app/`:
+The Next.js docs [recommend the icon file convention](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons) over `metadata.icons` in general ("the file-based API will automatically generate the correct metadata for you"). Under multi-zone that recommendation becomes load-bearing, because `metadata.icons` URLs aren't basePath-prefixed (see below).
+
+Drop the icon image directly into `app/`:
 
 - `app/icon.{ico,jpg,jpeg,png,svg}` → emitted as `<link rel="icon">`
 - `app/apple-icon.{jpg,jpeg,png}` (PNG only — Safari ignores SVG; recommended size 180×180) → emitted as `<link rel="apple-touch-icon">`
 
 Next.js generates the link tag with the basePath already prefixed, plus a content hash and the right MIME type, with no extra config.
 
-**Do not** put icon URLs in `metadata.icons` (e.g. `icons: { icon: '/favicon.svg' }`). Those URLs are **not** auto-prefixed with `basePath` — see [vercel/next.js#61487](https://github.com/vercel/next.js/issues/61487) (closed as not planned). Under multi-zone, an icon defined in `metadata.icons` resolves at the host root (`policyengine.org/favicon.svg`) instead of under the zone's basePath, and 404s if the host doesn't serve a file at that path.
+**Do not** put icon URLs in `metadata.icons` (e.g. `icons: { icon: '/favicon.svg' }`). The Next.js docs don't explicitly address the multi-zone interaction, but those URLs are not auto-prefixed with `basePath` — see [vercel/next.js#61487](https://github.com/vercel/next.js/issues/61487) (closed as not planned). Under multi-zone, an icon defined in `metadata.icons` resolves at the host root (`policyengine.org/favicon.svg`) instead of under the zone's basePath, and 404s if the host doesn't serve a file at that path.
 
 Working example: `policyengine-taxsim` (`dashboard/src/app/icon.png`).
 
