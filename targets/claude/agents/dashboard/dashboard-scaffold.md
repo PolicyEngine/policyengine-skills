@@ -193,7 +193,7 @@ Generate from the fixed tech stack, including:
 
 #### next.config.mjs (static export with multi-zone)
 
-Dashboards use `output: 'export'` AND mount as multi-zones behind policyengine.org. This requires the three-piece Option C pattern — see `policyengine-interactive-tools-skill` → "Multi-zone integration (preferred)" for full rationale.
+Dashboards use `output: 'export'` AND mount as multi-zones behind policyengine.org. This requires the three-piece static-export pattern (phase-gated `assetPrefix` + `vercel.json` self-rewrite + host asset rewrite) — see `policyengine-interactive-tools-skill` → "Canonical zone config — static export" for full rationale.
 
 The scaffolded `next.config.mjs` MUST:
 1. Export a **function** that takes `phase` (so we can detect `next dev`)

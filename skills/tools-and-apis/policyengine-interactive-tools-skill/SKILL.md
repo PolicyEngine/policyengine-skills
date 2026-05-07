@@ -90,7 +90,7 @@ export default nextConfig;
 
 ### Canonical zone config — static export
 
-Static exports need **three coordinated pieces** (Option C pattern — production reference: `PolicyEngine/household-api-docs`). Each covers a different environment; omitting any one breaks that environment.
+Static exports need **three coordinated pieces** — each covers a different environment; omitting any one breaks that environment. (The P3 variant of this pattern, with no `basePath`, is in production at `PolicyEngine/household-api-docs`.)
 
 **1. Zone's `next.config.mjs` — phase-gated `assetPrefix`**
 

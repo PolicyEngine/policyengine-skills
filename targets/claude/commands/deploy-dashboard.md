@@ -229,7 +229,7 @@ Add these entries to `rewrites().beforeFiles` in `website/next.config.ts` (use `
 { source: '/_zones/<dashboard.name>/:path*', destination: 'https://<VERCEL_PRODUCTION_URL>/_zones/<dashboard.name>/:path*' },
 ```
 
-Skip the asset rewrite if `output: 'export'` is not set in the zone's `next.config`. Skip both route rewrites if the zone uses the "serves-at-root" pattern (no basePath) — adjust rewrites to map `<zone_path>` → root of the zone instead. See `policyengine-interactive-tools-skill` for the three valid patterns.
+Skip the asset rewrite if `output: 'export'` is not set in the zone's `next.config`. Skip both route rewrites if the zone uses the "serves-at-root" pattern (no basePath) — adjust rewrites to map `<zone_path>` → root of the zone instead. See `policyengine-interactive-tools-skill` for the two valid patterns (P1 literal, P3 serves-at-root).
 
 ### 5c. Add apps.json entry (only if `embedding.register_in_apps_json: true`)
 
