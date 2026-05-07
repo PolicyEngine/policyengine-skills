@@ -48,35 +48,35 @@ PolicyEngine tools integrate with policyengine.org as **Next.js multi-zones**. T
 
 Pick the pattern from the zone's path shape first, then layer on the build-type config:
 
-| Zone owns | basePath pattern |
+| Zone owns | Pattern |
 |---|---|
-| One public path matching the repo's kebab name | **P1** — literal `basePath` |
-| Multiple public paths (e.g. `/us/api` + `/uk/api`) | **P3** — no `basePath`, host rewrites map each path |
+| One public path matching the repo's kebab name | **Path-mounted zone** — literal `basePath` |
+| Multiple public paths (e.g. `/us/api` + `/uk/api`) | **Root-served zone** — no `basePath`, host rewrites map each public path to the zone root |
 
 | Zone build type | Additional config |
 |---|---|
-| Server-rendered, P1 | None — `basePath` scopes `_next/*` automatically |
-| Server-rendered, P3 | `assetPrefix: '/_zones/<repo-name>'` (zone has no basePath, so `_next/*` would collide with the host without a prefix) |
-| Static export (`output: 'export'`), P1 or P3 | Phase-gated `assetPrefix: '/_zones/<repo-name>'` + `vercel.json` self-rewrite |
+| Server-rendered, path-mounted | None — `basePath` scopes `_next/*` automatically |
+| Server-rendered, root-served | `assetPrefix: '/_zones/<repo-name>'` (zone has no basePath, so `_next/*` would collide with the host without a prefix) |
+| Static export (`output: 'export'`), either pattern | Phase-gated `assetPrefix: '/_zones/<repo-name>'` + `vercel.json` self-rewrite |
 
-### Two valid `basePath` patterns
+### Two valid Next.js zone patterns
 
 Both patterns are endorsed by the official docs — pick the one that fits the zone's path shape.
 
-- **P1 — Literal `basePath`:** `basePath: '/us/my-tool'`. Hardcoded string matching the public path. Used by the official Next.js [`with-zones` example](https://github.com/vercel/next.js/tree/canary/examples/with-zones). **Default for single-path zones** — i.e. when the zone owns exactly one public path that matches the repo name in kebab case.
-- **P3 — No `basePath` (zone serves at root):** Zone has no `basePath`; host rewrites map each public path to the zone's root. Used by the [Next.js multi-zones guide's own example](https://nextjs.org/docs/app/guides/multi-zones) (the blog zone uses `assetPrefix: '/blog-static'` with no basePath). Requires `assetPrefix: '/_zones/<repo-name>'` on static exports to avoid asset collisions. **Required when one zone owns multiple public paths**, since `basePath` accepts only one literal string. Production reference: `household-api-docs` (serves both `/us/api` and `/uk/api` from one deployment via `[countryId]` dynamic routes).
+- **Path-mounted zone:** `basePath: '/us/my-tool'`. Hardcoded string matching the public path. Used by the official Next.js [`with-zones` example](https://github.com/vercel/next.js/tree/canary/examples/with-zones). **Default for single-path zones** — i.e. when the zone owns exactly one public path that matches the repo name in kebab case.
+- **Root-served zone:** no `basePath`; host rewrites map each public path to the zone's root. Used by the [Next.js multi-zones guide's own example](https://nextjs.org/docs/app/guides/multi-zones) (the blog zone uses `assetPrefix: '/blog-static'` with no basePath). Requires `assetPrefix: '/_zones/<repo-name>'` so the zone's `_next/static/*` assets do not collide with the host or other zones. **Required when one zone owns multiple public paths**, since `basePath` accepts only one literal string. Production reference: `household-api-docs` (serves both `/us/api` and `/uk/api` from one deployment via `[countryId]` dynamic routes).
 
 The Next.js multi-zones guide states only one cross-zone constraint: *"URL paths should be unique to a zone."* A zone can own multiple paths; two zones can't share one.
 
 > **Why no env-driven `basePath` (e.g. `process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`)?**
-> Neither documented pattern uses an env override. The intended dev workflow is to hit the zone at `localhost:<port>/<basePath>` directly (P1) or `localhost:<port>/<public-path>` (P3), or to run the host with its `rewrites()` `destination` pointed at `localhost:<zone-port>` for end-to-end local development. There is no docs-endorsed "drop the basePath in dev" escape hatch, and adding one hides basePath bugs that would otherwise surface in dev. A few existing zones (`keep-your-pay-act`, `oregon-kicker-refund`, `working-parents-tax-relief-act`) still use this pattern; they're tracked for retrofit but are not multizone blockers.
+> Neither documented pattern uses an env override. The intended dev workflow is to hit the zone at `localhost:<port>/<basePath>` directly (path-mounted) or `localhost:<port>/<public-path>` (root-served), or to run the host with its `rewrites()` `destination` pointed at `localhost:<zone-port>` for end-to-end local development. There is no docs-endorsed "drop the basePath in dev" escape hatch, and adding one hides basePath bugs that would otherwise surface in dev. A few existing zones (`keep-your-pay-act`, `oregon-kicker-refund`, `working-parents-tax-relief-act`) still use this pattern; they're tracked for retrofit but are not multizone blockers.
 
 Host rewrite shape depends on the chosen pattern — see the "Canonical zone config" sections below; each shows the matching host rewrite inline.
 
 ### What each config controls
 
 - `basePath`: **route URLs** — page paths, `next/link` hrefs, API route paths. Auto-scopes `_next/static/` assets for server-rendered builds.
-- `assetPrefix`: **static asset URLs** only — `_next/static/*`, `next/image`, `next/script`. Needed when `basePath` can't scope assets automatically (static exports) or when the zone has no `basePath` (P3).
+- `assetPrefix`: **static asset URLs** only — `_next/static/*`, `next/image`, `next/script`. Needed when `basePath` can't scope assets automatically (static exports) or when the zone has no `basePath` (root-served).
 
 Both may coexist — they govern different URL types and never conflict.
 
@@ -100,7 +100,7 @@ export default nextConfig;
 
 ### Canonical zone config — static export
 
-Static exports need **three coordinated pieces** — each covers a different environment; omitting any one breaks that environment. (The P3 variant of this pattern, with no `basePath`, is in production at `PolicyEngine/household-api-docs`.)
+Static exports need **three coordinated pieces** — each covers a different environment; omitting any one breaks that environment. (The root-served variant of this pattern, with no `basePath`, is in production at `PolicyEngine/household-api-docs`.)
 
 **1. Zone's `next.config.mjs` — phase-gated `assetPrefix`**
 
@@ -188,9 +188,9 @@ The zone path must match the repo name's kebab-case form unless there's a strong
 ### New-zone checklist
 
 - [ ] Zone path decided and agreed with the team before scaffold
-- [ ] `basePath` pattern chosen (P1 literal or P3 no-basePath) and matches the zone path
+- [ ] Zone pattern chosen (path-mounted or root-served) and matches the zone's public path ownership
 - [ ] If `output: 'export'`: phase-gated `assetPrefix: '/_zones/<repo-name>'` + `vercel.json` self-rewrite
-- [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` — shape matches the chosen pattern (preserve basePath in destination for P1; map to zone root for P3), hardcoded to the zone's production Vercel URL
+- [ ] Host rewrites added to `policyengine-app-v2/website/next.config.ts` in `beforeFiles` — shape matches the chosen pattern (preserve basePath in destination for path-mounted; map to zone root for root-served), hardcoded to the zone's production Vercel URL
 - [ ] Cross-zone links use `<a>`, not `<Link>`
 - [ ] Favicon/icon uses the [Next.js file convention](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/app-icons) (`app/icon.{png,svg,...}`) so basePath is auto-prefixed — **do not** use `metadata.icons` URLs (see [vercel/next.js#61487](https://github.com/vercel/next.js/issues/61487))
 

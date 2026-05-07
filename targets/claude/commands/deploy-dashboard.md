@@ -221,15 +221,15 @@ git checkout -b wire-DASHBOARD_NAME-zone
 Add these entries to `rewrites().beforeFiles` in `website/next.config.ts` (use `VERCEL_PRODUCTION_URL` captured from Step 4 — e.g. `my-dashboard-policy-engine.vercel.app`):
 
 ```ts
-// Two route rewrites (always required for zones with basePath)
+// Path-mounted zone: two route rewrites preserve the basePath in the destination
 { source: '<zone_path>',        destination: 'https://<VERCEL_PRODUCTION_URL><zone_path>' },
 { source: '<zone_path>/:path*', destination: 'https://<VERCEL_PRODUCTION_URL><zone_path>/:path*' },
 
-// Asset rewrite (required for static-export zones using assetPrefix: '/_zones/<dashboard.name>')
+// Asset rewrite (required for zones using assetPrefix: '/_zones/<dashboard.name>')
 { source: '/_zones/<dashboard.name>/:path*', destination: 'https://<VERCEL_PRODUCTION_URL>/_zones/<dashboard.name>/:path*' },
 ```
 
-Skip the asset rewrite if `output: 'export'` is not set in the zone's `next.config`. Skip both route rewrites if the zone uses the "serves-at-root" pattern (no basePath) — adjust rewrites to map `<zone_path>` → root of the zone instead. See `policyengine-interactive-tools-skill` for the two valid patterns (P1 literal, P3 serves-at-root).
+Skip the asset rewrite only if the zone does not set `assetPrefix`. For root-served zones (no `basePath`), keep the route rewrites but map destinations to the zone root instead: `<zone_path>` → `https://<VERCEL_PRODUCTION_URL>` and `<zone_path>/:path*` → `https://<VERCEL_PRODUCTION_URL>/:path*`. See `policyengine-interactive-tools-skill` for the two valid patterns: path-mounted and root-served.
 
 ### 5c. Add apps.json entry (only if `embedding.register_in_apps_json: true`)
 

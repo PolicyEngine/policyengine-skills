@@ -25,53 +25,57 @@ The invoking command must pass:
 
 ## Instructions
 
-### 0. Detect zone type and basePath pattern
+### 0. Detect zone type and zone pattern
 
 Read the zone's `next.config.{ts,mjs,js}` at `TARGET_PATH`. Determine:
 
 - **Build type:** `output: 'export'` present → static export. Absent → server-rendered (default).
 - **Config form:** object export → unconditional config. Function export (`export default function nextConfig(phase)`) → phase-aware config.
-- **basePath pattern** (one of two valid production patterns):
-  - **P1 — Literal basePath:** `basePath: '/us/my-tool'`. Hardcoded string — matches the official Next.js multi-zones guide and `with-zones` example. (Used by watca.)
-  - **P3 — No basePath:** Zone serves at root. Host rewrites map the public path (`/us/my-tool/:path*`) directly to the zone's root (`/:path*`). Typically paired with `assetPrefix: '/_zones/<repo-name>'` on static exports. (Used by household-api-docs.)
+- **Zone pattern** (one of two valid production patterns):
+  - **Path-mounted zone:** `basePath: '/us/my-tool'`. Hardcoded string — matches the official Next.js multi-zones guide and `with-zones` example. (Used by watca.)
+  - **Root-served zone:** no `basePath`; zone serves at root. Host rewrites map each public path (`/us/my-tool/:path*`) directly to the zone's root (`/:path*`). Requires `assetPrefix: '/_zones/<repo-name>'` so the zone's `_next/static/*` assets do not collide with the host or other zones. (Used by household-api-docs.)
 
 This choice gates which rules apply. Static exports need more coordination than server-rendered zones.
 
-> **Legacy: env-driven basePath** (`process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`). A few existing zones (`keep-your-pay-act`, `oregon-kicker-refund`, `working-parents-tax-relief-act`) still use this. It is **not** a recommended pattern — the official docs only show literal `basePath`, and the env override hides basePath bugs that would otherwise surface in dev. Treat as a `WARN` ("legacy env-driven basePath; flip to literal P1 in a follow-up PR"), not a `FAIL`. Verify the production fallback matches the repo name and continue with the remaining checks as if it were P1.
+> **Legacy: env-driven basePath** (`process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`). A few existing zones (`keep-your-pay-act`, `oregon-kicker-refund`, `working-parents-tax-relief-act`) still use this. It is **not** a recommended pattern — the official docs only show literal `basePath`, and the env override hides basePath bugs that would otherwise surface in dev. Treat as a `WARN` ("legacy env-driven basePath; flip to path-mounted in a follow-up PR"), not a `FAIL`. Verify the production fallback matches the repo name and continue with the remaining checks as if it were path-mounted.
 
 ### 1. Check `basePath`
 
-The zone must use one of the two valid production patterns above (P1 or P3). Host rewrites must align with whichever pattern is chosen.
+The zone must use one of the two valid production patterns above. Host rewrites must align with whichever pattern is chosen.
 
 **Pass criteria (any of):**
-- **P1:** `basePath` is a string literal starting with `/`, matching `/us/<kebab-name>`, `/uk/<kebab-name>`, or `/<kebab-name>`. Kebab portion matches the repo name unless documented.
-- **P3:** `basePath` is absent or `undefined`. Zone must serve at root, AND host rewrites must map `/us/<kebab-name>/:path*` → `<zone-url>/:path*` (not `<zone-url>/us/<kebab-name>/:path*`). Usually requires static export with `assetPrefix: '/_zones/<repo-name>'` to avoid asset conflicts with the host.
+- **Path-mounted:** `basePath` is a string literal starting with `/`, matching `/us/<kebab-name>`, `/uk/<kebab-name>`, or `/<kebab-name>`. Kebab portion matches the repo name unless documented.
+- **Root-served:** `basePath` is absent or `undefined`. Zone must serve at root, host rewrites must map `/us/<kebab-name>/:path*` → `<zone-url>/:path*` (not `<zone-url>/us/<kebab-name>/:path*`), AND the zone must set `assetPrefix: '/_zones/<repo-name>'` so its `_next/static/*` assets are uniquely namespaced.
 
 **Warn conditions:**
-- Legacy env-driven basePath (e.g. `process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`) — verify the production fallback matches the repo name; emit `WARN` with a follow-up note to flip to P1.
+- Legacy env-driven basePath (e.g. `process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`) — verify the production fallback matches the repo name; emit `WARN` with a follow-up note to flip to path-mounted.
 
 **Fail conditions:**
-- Neither P1 nor P3 (nor a recognized legacy env-driven shape) → the app will collide with the host's routes or serve broken assets
-- P3 without a corresponding `assetPrefix` on a static-export zone → assets will 404 behind the host
+- Neither path-mounted nor root-served (nor a recognized legacy env-driven shape) → the app will collide with the host's routes or serve broken assets
+- Root-served without a corresponding `assetPrefix` → assets will collide with the host's `/_next/static/*` assets
 - `basePath` uses template literals or concatenation with runtime-only values (not resolvable at build time) — makes rewrite matching fragile
 
-### 2. Check `assetPrefix` (static exports only)
+### 2. Check `assetPrefix`
 
-Skip for server-rendered zones — they don't need `assetPrefix`. Flag it as an issue if a server-rendered zone has `assetPrefix` set: usually unnecessary and can cause confusion.
+For path-mounted server-rendered zones, skip — `basePath` scopes `_next/static/*` automatically and `assetPrefix` is usually unnecessary.
 
-For static exports:
+For root-served zones (server-rendered or static export), `assetPrefix` is required because the zone has no route-level `basePath` to namespace `_next/static/*`.
+
+For static exports (path-mounted or root-served), phase-gate the `assetPrefix` so local `next dev` stays ergonomic while production assets are namespaced.
 
 **Pass criteria:**
-- Config exports a **function** taking `phase` as an argument
-- Imports `PHASE_DEVELOPMENT_SERVER` from `next/constants.js`
-- `assetPrefix` is gated: `isDev ? undefined : '/_zones/<repo-name>'`
+- Root-served server-rendered: `assetPrefix: '/_zones/<repo-name>'`
+- Static exports: config exports a **function** taking `phase` as an argument
+- Static exports: imports `PHASE_DEVELOPMENT_SERVER` from `next/constants.js`
+- Static exports: `assetPrefix` is gated: `isDev ? undefined : '/_zones/<repo-name>'`
 - The non-dev value is a relative path starting with `/_zones/`, matching the repo name in kebab case
 
 **Fail conditions:**
-- `assetPrefix` is set unconditionally (breaks `next dev`)
+- Root-served without `assetPrefix` → `_next/static/*` can collide with the host or another zone
+- Static export `assetPrefix` is set unconditionally (breaks `next dev`)
 - `assetPrefix` is an absolute URL (e.g. `https://my-tool.vercel.app`) — ties the zone to a specific domain and breaks the `/_zones/*` rewrite model
 - `assetPrefix` path doesn't match the repo name
-- Phase gate uses a different env var or heuristic instead of `PHASE_DEVELOPMENT_SERVER` — flag as nonstandard and recommend the canonical pattern
+- Static export phase gate uses a different env var or heuristic instead of `PHASE_DEVELOPMENT_SERVER` — flag as nonstandard and recommend the canonical pattern
 
 ### 3. Check `vercel.json` self-rewrite (static exports only)
 
@@ -91,35 +95,35 @@ Read `vercel.json` at the repo root.
 
 ### 4. Check host rewrites (if `HOST_CONFIG_PATH` available)
 
-Read `policyengine-app-v2/website/next.config.ts`. Look for entries in `rewrites().beforeFiles` matching the zone's public path. The expected shape depends on the basePath pattern detected in section 0.
+Read `policyengine-app-v2/website/next.config.ts`. Look for entries in `rewrites().beforeFiles` matching the zone's public path. The expected shape depends on the zone pattern detected in section 0.
 
-**Pass criteria for P1 (zone has a literal basePath matching its public path):**
+**Pass criteria for path-mounted zones (zone has a literal basePath matching its public path):**
 - Two route rewrites present:
   - `/<basePath>` → `<zone-url>/<basePath>`
   - `/<basePath>/:path*` → `<zone-url>/<basePath>/:path*`
 - Static-export zones additionally need:
   - `/_zones/<repo-name>/:path*` → `<zone-url>/_zones/<repo-name>/:path*`
 
-**Pass criteria for P3 (zone serves at root):**
+**Pass criteria for root-served zones (zone serves at root):**
 - Route rewrites map the public path to the zone's root:
   - `/<public-path>` → `<zone-url>`
   - `/<public-path>/:path*` → `<zone-url>/:path*`
-- Static-export zones also need the `/_zones/<repo-name>/:path*` asset rewrite
+- Zones using `assetPrefix` also need the `/_zones/<repo-name>/:path*` asset rewrite
 
 **General:**
 - Rewrites must be in `beforeFiles`, not `afterFiles` (host has dynamic `[slug]` routes that would intercept otherwise)
 
 **Fail conditions:**
 - Host rewrites missing → zone is not reachable through policyengine.org
-- Rewrite destination shape doesn't match the zone's basePath pattern (e.g. P3 zone with rewrites that include the public path in the destination, or a P1 zone with rewrites that strip the basePath)
-- Static-export zone missing the asset rewrite → assets 404 in production
+- Rewrite destination shape doesn't match the zone pattern (e.g. root-served zone with rewrites that include the public path in the destination, or a path-mounted zone with rewrites that strip the basePath)
+- Zone using `assetPrefix` missing the asset rewrite → assets 404 in production
 - Rewrites in `afterFiles` → dynamic slug route intercepts before the zone
 
 If `HOST_CONFIG_PATH` is not available, report: "Host rewrite check skipped — policyengine-app-v2 not cloned locally."
 
 ### 5. Check cross-zone navigation
 
-Search the zone's source tree for `<Link` from `next/link` pointing at paths outside the zone's own `basePath`.
+Search the zone's source tree for `<Link` from `next/link` pointing at paths outside the zone's own public path(s).
 
 **Fail condition:**
 - `<Link href="/us/other-tool/...">` where `/us/other-tool` is a different zone or the host — `next/link` does client-side routing and won't cross zones. Must be `<a>`.
@@ -160,19 +164,19 @@ Look for one of:
 # Multi-zone Validation Report: <repo-name>
 
 **Zone type:** [server-rendered / static-export / non-zone — skipped]
-**basePath pattern:** [P1 literal / P3 no-basePath / legacy env-driven (warn)]
+**Zone pattern:** [path-mounted / root-served / legacy env-driven (warn)]
 **Zone path:** [resolved public path, e.g. `/us/my-tool`]
 **Host check:** [performed / skipped — reason]
 
 ## Findings
 
 ### 1. basePath: [PASS / WARN / FAIL]
-- Pattern: [P1 / P3 / legacy env-driven]
-- Value: [literal, or "absent (P3)", or fallback expression for legacy env-driven]
+- Pattern: [path-mounted / root-served / legacy env-driven]
+- Value: [literal, or "absent (root-served)", or fallback expression for legacy env-driven]
 - Location: [file:line]
 - [Details if FAIL]
 
-### 2. assetPrefix (static exports only): [PASS / FAIL / SKIP — server-rendered]
+### 2. assetPrefix: [PASS / FAIL / SKIP — path-mounted server-rendered]
 - Phase-gated: [yes / no]
 - Value: [assetPrefix expression]
 - Location: [file:line]
@@ -185,7 +189,7 @@ Look for one of:
 
 ### 4. Host rewrites: [PASS / FAIL / SKIP — host not available]
 - Route rewrites: [count — expected 2]
-- Asset rewrite (static exports): [present / missing / N/A]
+- Asset rewrite (zones using assetPrefix): [present / missing / N/A]
 - In beforeFiles: [yes / no]
 - Location: [host file:line]
 
@@ -215,6 +219,6 @@ Look for one of:
 ## Escalation rules
 
 - If `next.config` is missing entirely and the repo has a `package.json` declaring a Next.js dependency, report this as a **CRITICAL** failure and stop — no other checks apply.
-- If `basePath` is missing on a deployed zone, mark as **CRITICAL** — the app cannot work as a zone regardless of other settings.
+- If `basePath` is missing on a deployed single-path zone that should be path-mounted, mark as **CRITICAL**. If the app is intentionally root-served, validate root-destination host rewrites plus `assetPrefix` instead.
 - If you detect the target is not a Next.js app (no `next` in `package.json`), stop and report "Not a Next.js app — multi-zone rules don't apply." Do not run any checks.
 - If the target is `policyengine-app-v2` itself, stop and report "Host app — different rules apply, this validator is for zones only."
