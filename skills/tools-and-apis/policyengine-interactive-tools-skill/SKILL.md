@@ -46,20 +46,30 @@ PolicyEngine tools integrate with policyengine.org as **Next.js multi-zones**. T
 
 ### The decision rule
 
-| Zone build type | Required config |
+Pick the pattern from the zone's path shape first, then layer on the build-type config:
+
+| Zone owns | basePath pattern |
 |---|---|
-| Server-rendered (default Next.js SSR/ISR) | **`basePath` only** (P1) |
-| Static export (`output: 'export'`) | **Either: `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P1), OR: no `basePath` + phase-gated `assetPrefix` + `vercel.json` self-rewrite (P3)** |
+| One public path matching the repo's kebab name | **P1** — literal `basePath` |
+| Multiple public paths (e.g. `/us/api` + `/uk/api`) | **P3** — no `basePath`, host rewrites map each path |
+
+| Zone build type | Additional config |
+|---|---|
+| Server-rendered, P1 | None — `basePath` scopes `_next/*` automatically |
+| Server-rendered, P3 | `assetPrefix: '/_zones/<repo-name>'` (zone has no basePath, so `_next/*` would collide with the host without a prefix) |
+| Static export (`output: 'export'`), P1 or P3 | Phase-gated `assetPrefix: '/_zones/<repo-name>'` + `vercel.json` self-rewrite |
 
 ### Two valid `basePath` patterns
 
-Pick one per zone:
+Both patterns are endorsed by the official docs — pick the one that fits the zone's path shape.
 
-- **P1 — Literal:** `basePath: '/us/my-tool'`. Hardcoded string. Matches the official Next.js [multi-zones guide](https://nextjs.org/docs/app/guides/multi-zones) and [`with-zones` example](https://github.com/vercel/next.js/tree/canary/examples/with-zones). Default for all new zones.
-- **P3 — No basePath (zone serves at root):** Zone has no `basePath`; host rewrites map the public path directly to the zone's root. Requires `assetPrefix: '/_zones/<repo-name>'` on static exports to avoid asset collisions. Ref: `household-api-docs`.
+- **P1 — Literal `basePath`:** `basePath: '/us/my-tool'`. Hardcoded string matching the public path. Used by the official Next.js [`with-zones` example](https://github.com/vercel/next.js/tree/canary/examples/with-zones). **Default for single-path zones** — i.e. when the zone owns exactly one public path that matches the repo name in kebab case.
+- **P3 — No `basePath` (zone serves at root):** Zone has no `basePath`; host rewrites map each public path to the zone's root. Used by the [Next.js multi-zones guide's own example](https://nextjs.org/docs/app/guides/multi-zones) (the blog zone uses `assetPrefix: '/blog-static'` with no basePath). Requires `assetPrefix: '/_zones/<repo-name>'` on static exports to avoid asset collisions. **Required when one zone owns multiple public paths**, since `basePath` accepts only one literal string. Production reference: `household-api-docs` (serves both `/us/api` and `/uk/api` from one deployment via `[countryId]` dynamic routes).
+
+The Next.js multi-zones guide states only one cross-zone constraint: *"URL paths should be unique to a zone."* A zone can own multiple paths; two zones can't share one.
 
 > **Why no env-driven `basePath` (e.g. `process.env.NEXT_PUBLIC_BASE_PATH ?? '/us/my-tool'`)?**
-> The official docs only show a literal. The intended dev workflow is to hit the zone at `localhost:<port>/<basePath>` directly, or to run the host with its `rewrites()` `destination` pointed at `localhost:<zone-port>` for end-to-end local development. There is no docs-endorsed "drop the basePath in dev" escape hatch, and adding one hides basePath bugs that would otherwise surface in dev. A few existing zones (`keep-your-pay-act`, `oregon-kicker-refund`, `working-parents-tax-relief-act`) still use this pattern; they're tracked for retrofit but are not multizone blockers.
+> Neither documented pattern uses an env override. The intended dev workflow is to hit the zone at `localhost:<port>/<basePath>` directly (P1) or `localhost:<port>/<public-path>` (P3), or to run the host with its `rewrites()` `destination` pointed at `localhost:<zone-port>` for end-to-end local development. There is no docs-endorsed "drop the basePath in dev" escape hatch, and adding one hides basePath bugs that would otherwise surface in dev. A few existing zones (`keep-your-pay-act`, `oregon-kicker-refund`, `working-parents-tax-relief-act`) still use this pattern; they're tracked for retrofit but are not multizone blockers.
 
 Host rewrite shape depends on the chosen pattern — see the "Canonical zone config" sections below; each shows the matching host rewrite inline.
 
