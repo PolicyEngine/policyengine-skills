@@ -63,6 +63,7 @@ Useful commands:
 ```bash
 uv run pytest
 python3 scripts/build_claude_wrapper.py --source-root . --output-root build/policyengine-claude
+python3 scripts/audit_next_migration.py --root /path/to/next-repo
 ```
 
 The generated wrapper repo must not be edited by hand.
