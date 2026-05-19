@@ -16,6 +16,7 @@ The public Claude marketplace repo stays at `PolicyEngine/policyengine-claude`, 
 policyengine-skills/
 ├── bundles/                 # Bundle manifests for Claude install profiles
 ├── skills/                  # Portable skill folders with SKILL.md
+├── targets/codex/           # Codex-specific repo routing templates
 ├── targets/claude/          # Claude-only wrapper assets
 ├── scripts/                 # Build and install helpers
 └── tests/                   # Wrapper build tests
@@ -34,6 +35,16 @@ cd policyengine-skills
 ```
 
 This installs symlinks into `~/.codex/skills`.
+
+To add repo-aware Codex routing hints to sibling PolicyEngine repos under `~/vscode`:
+
+```bash
+./scripts/install_codex_repo_routing.sh
+```
+
+Set `CODEX_REPOS_ROOT=/path/to/repos` if your PolicyEngine repositories live elsewhere.
+The installer manages a marked block in each target repo's `AGENTS.md` and preserves
+any existing content outside that block.
 
 Codex workflow skills can then be invoked directly:
 

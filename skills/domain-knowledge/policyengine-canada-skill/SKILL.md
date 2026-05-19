@@ -1,26 +1,7 @@
 ---
 name: policyengine-canada
 description: |
-  ALWAYS LOAD THIS SKILL FIRST before writing any PolicyEngine-Canada code.
-  Contains Canadian federal and provincial tax/benefit rules for household calculations.
-  IMPORTANT: PolicyEngine-Canada does NOT have representative population microdata.
-  Do NOT attempt microsimulation or population-level estimates for Canada.
-  Only provide household-level analysis (single-family impacts, eligibility, benefit amounts).
-  Triggers: "what would", "how much would a", "benefit be", "eligible for", "qualify for",
-  "single parent", "married couple", "family of", "household of", "if they earn",
-  "earning $", "making $", "calculate benefits", "calculate taxes", "benefit for a",
-  "what would I get", "what is the maximum", "what is the rate", "income limit",
-  "benefit amount", "maximum benefit", "compare provinces",
-  "CCB", "Canada Child Benefit", "GST credit", "HST credit", "GST/HST",
-  "OAS", "Old Age Security", "GIS", "Guaranteed Income Supplement",
-  "CWB", "Canada Workers Benefit", "EI", "Employment Insurance",
-  "CPP", "Canada Pension Plan", "RRSP", "TFSA",
-  "Ontario Child Benefit", "OCB", "Ontario Trillium Benefit", "OTB",
-  "BC Climate Action", "Alberta Child Benefit", "Quebec",
-  "CRA", "Canada Revenue Agency", "Canadian", "Canada",
-  "Ontario", "British Columbia", "Alberta", "Saskatchewan", "Manitoba",
-  "Nova Scotia", "New Brunswick", "PEI", "Newfoundland", "Yukon", "NWT", "Nunavut",
-  "provincial tax", "federal tax Canada".
+  ALWAYS LOAD THIS SKILL FIRST before writing PolicyEngine-Canada code or answering household-level Canadian tax/benefit questions. Covers federal and provincial taxes and benefits including CCB, GST/HST credit, OAS, GIS, CWB, EI, CPP, Ontario benefits, BC Climate Action, Alberta benefits, Quebec, CRA, provinces, and territories. PolicyEngine-Canada does NOT have representative population microdata: do not attempt microsimulation or aggregate national/provincial estimates. Use household-level analysis only.
 ---
 
 # PolicyEngine-Canada
