@@ -844,15 +844,19 @@ Every review-fix spawn below references these rules. Include the section name in
 **[REVIEW-FIX RULES]**
 - Read `/tmp/{PREFIX}-scope-decision.md` first. For each review item, check whether the scope decision intentionally excluded it or chose a non-default value (e.g., "use 200% FPL because state has transitional rate"). If yes, do NOT fix — append `[SKIPPED-PER-SCOPE]` to your checklist line and move on.
 - Read `/tmp/{PREFIX}-impl-spec.md` ONLY when the fix touches a parameter VALUE or a variable FORMULA. For formatting, references, hard-coded value swaps, naming, or structural fixes — skip it to save context.
-- For round 2+: read `/tmp/{PREFIX}-checklist.md` first to see prior rounds' fixes; do not reintroduce earlier patterns.
+- For round 2+: read `/tmp/{PREFIX}-checklist.md` first to see prior rounds' fixes; do not reintroduce earlier patterns. (Round 1 fixers do NOT read this file — it doesn't exist yet.)
 - **REUSE EXISTING VARIABLES**: before creating any non-program-specific variable, Grep the codebase. PolicyEngine-US likely already has it (`fpg`, `smi`, `tanf_fpg`, `ssi`, etc.).
 - Apply fixes via Edit/MultiEdit, then run `make format`.
-- Append fixes to `/tmp/{PREFIX}-checklist.md`, one line per fix:
+- **WRITE your fix log to a PER-FIXER FILE** (not the shared checklist). The path is in your invocation prompt; it will be one of:
+  - `/tmp/{PREFIX}-checklist-vars-r{N}.md` (rules-engineer)
+  - `/tmp/{PREFIX}-checklist-tests-r{N}.md` (test-creator)
+  Writing to your own file avoids race conditions with the parallel fixer. The orchestrator concatenates both files into the shared `/tmp/{PREFIX}-checklist.md` after you both complete.
+- Format each line as:
   `- [ROUND N] [SCOPE] [{CATEGORY}] {file}:{line} — {what was wrong} → {what you changed}`
-  - SCOPE = `VARS` or `TESTS` (round 1 split); omit for round 2 (single fixer)
+  - SCOPE = `VARS` (rules-engineer) or `TESTS` (test-creator)
   - Categories (vars/params): `HARD-CODED`, `WRONG-PERIOD`, `MISSING-REF`, `BAD-REF`, `DEDUCTION-ORDER`, `UNUSED-PARAM`, `WRONG-ENTITY`, `NAMING`, `FORMULA-LOGIC`, `OTHER`
   - Categories (tests): `TEST-GAP`, `WRONG-PERIOD`, `WRONG-EXPECTATION`, `NON-FUNCTIONAL-TEST`, `OTHER`
-- If a fixer has zero items in its scope, write a single line `- [ROUND N] [SCOPE] NO-ISSUES — nothing to fix` and return DONE with 0 fixes.
+- If you have zero items in scope, write a single line `- [ROUND N] [SCOPE] NO-ISSUES — nothing to fix` to your per-fixer file and return DONE with 0 fixes.
 
 #### Step 6.1C: Fix Critical Issues (parallel — split by ownership)
 
@@ -875,8 +879,10 @@ LESSONS_PATH: {LESSONS_PATH}
 Load skills: /policyengine-variable-patterns, /policyengine-code-style,
   /policyengine-parameter-patterns, /policyengine-period-patterns, /policyengine-vectorization.
 
-Follow [REVIEW-FIX RULES] (see section above this step). Tag your checklist lines with
-SCOPE=VARS, ROUND=1."
+Follow [REVIEW-FIX RULES] (see section above this step). Tag checklist lines with
+SCOPE=VARS, ROUND=1. Write your fix log to /tmp/{PREFIX}-checklist-vars-r1.md
+(NOT the shared checklist — that file is merged by the orchestrator after both
+parallel fixers finish)."
 ```
 
 **Fixer 2: test-creator (test files)**
@@ -900,11 +906,22 @@ LESSONS_PATH: {LESSONS_PATH}
 Load skills: /policyengine-testing-patterns, /policyengine-period-patterns,
   /policyengine-variable-patterns.
 
-Follow [REVIEW-FIX RULES] (see section above this step). Tag your checklist lines with
-SCOPE=TESTS, ROUND=1."
+Follow [REVIEW-FIX RULES] (see section above this step). Tag checklist lines with
+SCOPE=TESTS, ROUND=1. Write your fix log to /tmp/{PREFIX}-checklist-tests-r1.md
+(NOT the shared checklist — that file is merged by the orchestrator after both
+parallel fixers finish)."
 ```
 
-Wait for both fixers to complete before proceeding to 6.1D.
+Wait for both fixers to complete, then **merge their per-fixer files into the shared checklist** (orchestrator step):
+
+```bash
+# Concatenate round-1 per-fixer files into the canonical checklist.
+# Use >> so round 2's merge later appends to (not overwrites) round 1's contents.
+cat /tmp/{PREFIX}-checklist-vars-r1.md /tmp/{PREFIX}-checklist-tests-r1.md \
+  >> /tmp/{PREFIX}-checklist.md 2>/dev/null
+```
+
+Then proceed to 6.1D.
 
 #### Step 6.1D: Run Tests & Commit
 
@@ -984,7 +1001,8 @@ Load skills: /policyengine-variable-patterns, /policyengine-code-style,
   /policyengine-parameter-patterns, /policyengine-period-patterns, /policyengine-vectorization.
 
 Follow [REVIEW-FIX RULES] (see section above 6.1C). Tag checklist lines with SCOPE=VARS,
-ROUND=2."
+ROUND=2. Write your fix log to /tmp/{PREFIX}-checklist-vars-r2.md (NOT the shared
+checklist — orchestrator merges after both fixers complete)."
 ```
 
 **Fixer 2: test-creator (tests)**
@@ -1003,7 +1021,15 @@ Load skills: /policyengine-testing-patterns, /policyengine-period-patterns,
   /policyengine-variable-patterns.
 
 Follow [REVIEW-FIX RULES] (see section above 6.1C). Tag checklist lines with SCOPE=TESTS,
-ROUND=2."
+ROUND=2. Write your fix log to /tmp/{PREFIX}-checklist-tests-r2.md (NOT the shared
+checklist — orchestrator merges after both fixers complete)."
+```
+
+Wait for both fixers to complete, then **merge their per-fixer files into the shared checklist**:
+
+```bash
+cat /tmp/{PREFIX}-checklist-vars-r2.md /tmp/{PREFIX}-checklist-tests-r2.md \
+  >> /tmp/{PREFIX}-checklist.md 2>/dev/null
 ```
 
 Wait for both fixers to complete before 6.2D.
@@ -1156,7 +1182,8 @@ Present to user:
 | `/tmp/{PREFIX}-pr-description.md` | reporter | gh pr edit | Full |
 | `/tmp/{PREFIX}-final-report.md` | reporter | Main Claude | Short (25 lines) |
 | `/tmp/{PREFIX}-new-lessons.md` | lesson-extractor | Main Claude | Short |
-| `/tmp/{PREFIX}-checklist.md` | review-fixer (append) | review-fixer (read) | Growing |
+| `/tmp/{PREFIX}-checklist-{vars,tests}-r{N}.md` | per-fixer (write) | orchestrator (merge) | One per fixer per round |
+| `/tmp/{PREFIX}-checklist.md` | orchestrator (cat-merge) | review-fixer round 2+ (read) | Growing |
 
 ---
 

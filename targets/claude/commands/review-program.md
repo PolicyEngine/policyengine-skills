@@ -150,39 +150,42 @@ BASE_BRANCH=$(gh pr view $PR_NUMBER --json baseRefName --jq '.baseRefName')
 
 **READ-ONLY CONTRACT: `/review-program` MUST NOT change the user's working tree or checked-out branch.** Do NOT use `gh pr checkout`, `git checkout`, `git switch`, or any command that mutates HEAD. Compute everything against fetched refs.
 
+**Both modes resolve to two SHAs — `BASE_SHA` and `PR_HEAD` — and use those directly.** Do NOT compute against `origin/$BASE_BRANCH`: that ref may not be updated by `git fetch origin <branch>` if the user has a non-standard remote config, a shallow clone, or recent `--no-write-fetch-head` operations. Capturing the SHA from `FETCH_HEAD` immediately after each fetch is robust regardless of remote-tracking state.
+
 #### Standard mode (PR exists on GitHub)
 
 ```bash
-# Fetch base branch AND the PR head ref into FETCH_HEAD — no branch switch.
 # Fail loudly if either fetch fails — a silent failure would scope the review to
-# whatever HEAD happens to be checked out, which is exactly the bug we are avoiding.
+# stale local refs or the wrong HEAD.
 set -e
 git fetch origin "$BASE_BRANCH"
+BASE_SHA=$(git rev-parse FETCH_HEAD)
 git fetch origin "pull/$PR_NUMBER/head"
 PR_HEAD=$(git rev-parse FETCH_HEAD)
 set +e
 
-MERGE_BASE=$(git merge-base "origin/$BASE_BRANCH" "$PR_HEAD")
-BEHIND=$(git rev-list --count "$PR_HEAD..origin/$BASE_BRANCH")
-AHEAD=$(git rev-list --count "origin/$BASE_BRANCH..$PR_HEAD")
+MERGE_BASE=$(git merge-base "$BASE_SHA" "$PR_HEAD")
+BEHIND=$(git rev-list --count "$PR_HEAD..$BASE_SHA")
+AHEAD=$(git rev-list --count "$BASE_SHA..$PR_HEAD")
 
 echo "PR is $AHEAD commit(s) ahead, $BEHIND commit(s) behind $BASE_BRANCH"
-echo "Merge-base: $MERGE_BASE   PR head: $PR_HEAD"
+echo "BASE_SHA: $BASE_SHA   PR_HEAD: $PR_HEAD   MERGE_BASE: $MERGE_BASE"
 ```
 
 #### `--local-diff` mode (review the user's local branch without pushing)
 
-In this mode we explicitly use the currently checked-out branch as the PR head — the user opted in by passing `--local-diff`. Still do NOT switch branches; just use `HEAD` as-is.
+In this mode the currently checked-out branch is the PR head — the user opted in via `--local-diff`. Still do NOT switch branches; use `HEAD` as-is.
 
 ```bash
 set -e
 git fetch origin "$BASE_BRANCH"
+BASE_SHA=$(git rev-parse FETCH_HEAD)
 set +e
 
 PR_HEAD=$(git rev-parse HEAD)
-MERGE_BASE=$(git merge-base "origin/$BASE_BRANCH" HEAD)
-BEHIND=$(git rev-list --count "HEAD..origin/$BASE_BRANCH")
-AHEAD=$(git rev-list --count "origin/$BASE_BRANCH..HEAD")
+MERGE_BASE=$(git merge-base "$BASE_SHA" "$PR_HEAD")
+BEHIND=$(git rev-list --count "$PR_HEAD..$BASE_SHA")
+AHEAD=$(git rev-list --count "$BASE_SHA..$PR_HEAD")
 ```
 
 **Save diff to disk — always use explicit merge-base** so the diff contains ONLY what the PR actually changed (no stale-branch artifacts):
