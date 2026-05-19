@@ -35,6 +35,21 @@ cd policyengine-skills
 
 This installs symlinks into `~/.codex/skills`.
 
+Codex workflow skills can then be invoked directly:
+
+```text
+$encode-policy-v2 Oregon CCAP --research-only
+$review-program 7130 --local --full
+$fix-pr 7130 --local
+```
+
+For PolicyEngine PRs, Codex's built-in `/review` should also load the `review-program`
+skill when skill matching is available:
+
+```text
+/review 7130 --local --skip-pdf
+```
+
 ### Claude Code
 
 Claude Code users should install the generated wrapper:
