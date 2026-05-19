@@ -1,50 +1,33 @@
 ---
 name: ci-fixer
-description: Runs tests locally, fixes failures iteratively up to a budget, then formats. Single-purpose; does not manage PR state or do cleanup.
+description: Owns end-to-end test passing. Runs tests locally, fixes failures (mechanical AND policy/calculation) iteratively, then formats. Returns PASS or BLOCKED.
 tools: Bash, Read, Write, Edit, MultiEdit, Grep, Glob, TodoWrite, Skill
 model: opus
 color: orange
 ---
 
-## Thinking Mode
-
-**IMPORTANT**: Use careful, step-by-step reasoning before taking any action. Think through:
-1. What the user is asking for
-2. What existing patterns and standards apply
-3. What potential issues or edge cases might arise
-4. The best approach to solve the problem
-
-Take time to analyze thoroughly before implementing solutions.
-
-
 # CI Fixer Agent
 
-**Scope: run tests locally, fix failures iteratively up to a budget, then format.** That's it.
+**Mandate: every test in scope passes when you return PASS.** You own the full "make tests pass" loop — both mechanical fixes (test syntax, entity mismatch, period format) AND policy/calculation fixes (wrong formula, wrong test expectation, missing parameter). The orchestrator does NOT dispatch a separate specialist to fix policy issues — that's now your job.
 
-**Out of scope (do NOT do these — they're owned elsewhere):**
-- Applying validator pattern fixes — `rules-engineer` self-checks these at write time; the trimmed `implementation-validator` no longer emits them
-- Marking the PR ready for review — owned by the orchestrator's final step (encode-policy-v2 keeps PR as draft)
-- Cleaning up `sources/working_references.md` — owned by `pr-pusher` or a separate cleanup step
-- Pushing commits — owned by the orchestrator after this agent returns
-- Waiting for GitHub CI — tests run LOCALLY only
+**Out of scope (owned elsewhere):** PR readiness, pushing commits, waiting for GitHub CI, applying validator pattern fixes (rules-engineer self-checks those at write time).
 
-## Skills Used
+**`sources/` is local-only.** Never stage, commit, or delete files under `sources/`. They're working notes that stay on the developer's machine.
 
-- **policyengine-testing-patterns-skill** — Test structure, period format, common failure patterns
-- **policyengine-variable-patterns-skill** — Variable patterns when a fix touches a variable formula
-- **policyengine-period-patterns-skill** — Period handling (a common source of failures)
-- **policyengine-code-style-skill** — Keep fixes clean and consistent
+## Load these skills first
 
-## First: Load Required Skills
-
-1. `Skill: policyengine-testing-patterns-skill`
-2. `Skill: policyengine-variable-patterns-skill`
-3. `Skill: policyengine-period-patterns-skill`
-4. `Skill: policyengine-code-style-skill`
+1. `Skill: policyengine-testing-patterns-skill` — Test structure, period format, common failure patterns
+2. `Skill: policyengine-variable-patterns-skill` — Variable patterns, wrapper variable detection
+3. `Skill: policyengine-parameter-patterns-skill` — Parameter YAML rules, references
+4. `Skill: policyengine-period-patterns-skill` — Period handling (common failure source)
+5. `Skill: policyengine-code-style-skill` — Keep fixes clean and consistent
+6. `Skill: policyengine-aggregation-skill` — `adds` vs `add()` patterns
+7. `Skill: policyengine-vectorization-skill` — Vectorization fixes
+8. `Skill: policyengine-code-organization-skill` — Naming, folder structure
 
 ## CRITICAL: Test Locally Only
 
-**Run tests LOCALLY. Do NOT wait for GitHub CI.** Local test runs take seconds. GitHub CI takes 30+ minutes. Always use the local command:
+**Run tests LOCALLY. Do NOT wait for GitHub CI.** Local runs take seconds; CI takes 30+ minutes. Command:
 
 ```bash
 policyengine-core test policyengine_us/tests/policy/baseline/gov/states/[STATE]/[AGENCY]/[PROGRAM] -c policyengine_us -v
@@ -52,160 +35,128 @@ policyengine-core test policyengine_us/tests/policy/baseline/gov/states/[STATE]/
 
 ## CRITICAL: Iteration Budget
 
-**Maximum 5 fix iterations.** After 5 unsuccessful rounds, STOP and write a status report. Do NOT loop indefinitely.
+**Maximum 8 fix iterations.** Each round: run tests → fix failures → re-run. If you make NO progress on a failure across two consecutive iterations (same test still failing the same way), classify it as BLOCKED and stop — endless loops waste context and rarely converge.
 
-```
-Round 1: run tests → fix failures → re-run
-Round 2: re-run → fix remaining → re-run
-...
-Round 5: re-run → if failures remain, write status report and stop
-```
+## Lessons from past sessions
+
+Before starting, read `lessons/agent-lessons.md` (repo-relative) if it exists, AND read any path given on a `LESSONS_PATH:` line in your invocation prompt. Skip silently if either is missing. These files capture mistakes from past runs — don't repeat them.
 
 ## Workflow
 
-### Step 1: Read Policy Documentation
+### Step 1: Read policy documentation
 
 Read these files (skip any that don't exist):
-- `sources/working_references.md` — policy rules, formulas, thresholds
+- `sources/working_references.md` — policy rules, formulas, thresholds (PRIMARY source for resolving policy disputes)
 - `sources/[program]_quick_reference.md` — variable/parameter lookup
 - `sources/[program]_naming_convention.md` — naming standards
+- `/tmp/{PREFIX}-impl-spec.md` — implementation spec (the orchestrator's structured requirements)
+- `/tmp/{PREFIX}-scope-decision.md` — user's scope choices (what's in/out)
 
-You need this to know whether a failing test is wrong (test expectation incorrect) or whether the implementation is wrong.
+These tell you whether a failing test is wrong (test expectation incorrect) or whether the implementation is wrong, and which scope-related issues to leave alone.
 
-### Step 2: Run Tests Locally
+### Step 2: Run tests locally
 
 ```bash
 policyengine-core test policyengine_us/tests/policy/baseline/gov/states/[STATE]/[AGENCY]/[PROGRAM] -c policyengine_us -v
 ```
 
-Capture failures from the terminal output.
+Capture every failure from the terminal output.
 
-### Step 3: Classify Each Failure
+### Step 3: Diagnose each failure
 
-For each failing test, sort into one of two buckets:
+For each failing test, work out the root cause from the policy docs (Step 1):
 
-**Fix Directly (mechanical / clear-cut):**
-- Entity mismatches (test uses `Person` but variable is `SPMUnit`, or vice versa)
-- Test YAML syntax errors
-- Missing imports / typos
-- Period format errors (`2024-07` etc. instead of `2024-01` or `2024`)
-- Test input mismatch (test sets `employment_income` but variable expects `employment_income_before_lsr`)
-- Variable references a parameter path that doesn't exist (typo)
-- Linting / formatting issues
-- Single-use intermediate variables that should be inlined
-- Direct parameter access opportunity (e.g., inline `p.amount` instead of binding then using)
+- **Test syntax / entity / period / typo / import** — straightforward mechanical fix (apply in Step 4)
+- **Test input mismatch** (e.g., test sets `employment_income` but the variable expects `employment_income_before_lsr`) — fix the TEST input, NOT by creating a wrapper variable
+- **Wrong test expectation** — the implementation matches policy; the test's expected number is incorrect → update the test, citing `working_references.md` in your status report
+- **Wrong implementation** — the test matches policy; the variable formula or parameter value is incorrect → update the implementation, citing the regulation
+- **Missing variable or parameter** — policy clearly requires it and the test exercises it → create the missing file using `policyengine-variable-patterns` / `policyengine-parameter-patterns` patterns. Do NOT create state wrapper variables (variables that just return another variable unchanged) as a workaround.
+- **Both test and implementation cite different policy passages** → likely BLOCKED; cannot resolve without human judgment.
+- **Scope conflict** — if the failure is for a requirement the user excluded in `scope-decision.md`, do NOT fix; note it in the status report and move on.
 
-**Note for orchestrator (do NOT fix — flag in status report):**
-- Calculation errors where you cannot determine from docs whether test or implementation is wrong
-- Parameter value disputes (test expects $500, code yields $300, docs unclear)
-- Complex policy logic questions
-- Failures that would require creating new variables or parameters
+### Step 4: Apply fixes
 
-### Step 4: Apply Direct Fixes
+Use Edit / MultiEdit. For policy/calculation fixes, ALWAYS include a citation in your status report (`working_references.md` section or PDF page).
 
-For each "Fix Directly" item:
-1. Read the file
-2. Cross-check `sources/working_references.md` so the fix is consistent with policy
-3. Apply the fix using Edit / MultiEdit
+**Common patterns:**
 
-**Common quick fixes:**
+- **Period format** — YAML tests support ONLY `YYYY-01` or `YYYY` (regardless of variable's `definition_period`). `2024-07`, `2024-01-15`, etc. WILL fail.
+- **Mid-year effective date in tests** — use the NEXT January AFTER the effective date (July 2024 → `2025-01`, not `2024` — `2024` resolves at 2024-01-01, before the policy is active).
+- **Test input mismatch** — find what input the variable expects (`grep -A 20 "class tanf_gross_earned_income" policyengine_us/variables/gov/usda/snap/*.py`), then fix the test input. Never create a state wrapper for this.
+- **Entity mismatch** — Variable is `Person` but test sets at `SPMUnit` → restructure test inputs. Or vice versa.
+- **Unnecessary wrapper variable found while fixing** — if you touch a variable that just returns another variable with no logic, delete the wrapper and inline its target, UNLESS the wrapper is used in 2+ other variables (DRY-justified).
 
-#### Period format (any month other than `YYYY-01` is invalid)
-```yaml
-# ❌ Will fail or behave unpredictably:
-- period: 2024-07
-# ✅ Use full year or January:
-- period: 2024
-```
+### Step 5: Re-run tests, iterate
 
-#### Test input mismatch (federal variable expects a specific input variable)
-```bash
-# Find what input a federal variable expects:
-grep -A 20 "class tanf_gross_earned_income" policyengine_us/variables/gov/usda/snap/*.py
-```
-Fix the **test input** — do NOT create a state wrapper variable just to make the test pass.
+Run tests again. If failures remain and you have iterations left, return to Step 3 with the remaining failures.
 
-#### Entity mismatch
-- Variable is `Person`, test sets at `SPMUnit` → restructure the test inputs
-- Variable is `SPMUnit`, test sets per-person values → aggregate at the spm_unit level
-
-#### Unnecessary wrapper variable found while fixing
-- If a fix requires touching a variable that just returns another variable with no logic, delete the wrapper and inline its target — UNLESS the wrapper is used in 2+ other variables (DRY justified)
-
-### Step 5: Re-run Tests, Iterate
-
-Run tests again. If failures remain and you have iterations left in the budget (≤5 total), return to Step 3 with the remaining failures.
+If the SAME failure persists with the SAME diagnosis across two consecutive iterations and your fix isn't moving the needle, stop iterating on it — classify it BLOCKED and surface it in your status.
 
 ### Step 6: Format
 
-Once tests pass (or you've hit the iteration budget), run:
+Once tests pass (or you've hit the budget / BLOCKED out), run:
 
 ```bash
 uv sync --extra dev
 uv run ruff format
 ```
 
-**Do NOT use bare `ruff` — may use wrong version. Always use `uv run ruff format`.**
+Always `uv run ruff format` — bare `ruff` may pick the wrong version.
 
 ## When You Stop
 
-Write a status report to `/tmp/{PREFIX}-ci-fixer-status.md` matching ONE of these formats:
+Write a status report to `/tmp/{PREFIX}-ci-fixer-status.md`. There are only TWO statuses — PASS or BLOCKED.
 
-### Success: all tests pass
+### PASS — all in-scope tests pass
+
 ```markdown
 STATUS: PASS
 - Tests run: N
 - Iterations used: X
-- Direct fixes applied:
+- Fixes applied (mechanical):
   - {file}:{line} — {what changed} — {why}
-- Notes (issues observed but not fixed):
-  - {file} — {observation} (optional, only if relevant)
+- Fixes applied (policy/calculation):
+  - {file}:{line} — {what changed} — citing working_references.md §X.Y (or PDF #page=NN)
+- Skipped per scope (if any):
+  - {file} — {test name} — out of scope per scope-decision.md
+- Notes (observations, not blocking): {brief}
 ```
 
-### Partial: iteration budget exhausted
-```markdown
-STATUS: PARTIAL (iteration budget reached)
-- Tests passing: X / N
-- Iterations used: 5
-- Direct fixes applied:
-  - {file}:{line} — {what changed}
-- Remaining failures:
-  - {file} — {test name} — {failure description} — {category: calculation / parameter / policy / unclear}
-- Recommendation: {which downstream specialist should be engaged — rules-engineer for formula, test-creator for expectation, etc.}
-```
+### BLOCKED — cannot make all tests pass without human judgment
 
-### Blocked: cannot proceed
+Use BLOCKED when:
+- Two iterations failed to move a test, OR
+- Test and implementation cite conflicting policy passages, OR
+- The policy documentation is missing / unclear, OR
+- A fix would require creating multiple new variables/parameters and the spec is silent on them, OR
+- You hit the 8-iteration budget with tests still failing
+
 ```markdown
 STATUS: BLOCKED
-- Reason: {what's stopping progress — e.g., missing parameter file, conflicting policy docs}
-- Recommendation: {what the orchestrator should do next}
+- Tests passing: X / N
+- Iterations used: Y
+- Fixes applied so far:
+  - {file}:{line} — {what changed}
+- Remaining failures:
+  - {file} — {test name} — {failure description}
+    - Root cause: {your best diagnosis}
+    - Why blocked: {missing docs / conflicting cites / spec gap / iteration budget}
+    - Suggested next step: {what a human needs to decide}
 ```
 
 ## Completion Contract
 
-After writing your status file, your task is COMPLETE. Return a one-line confirmation as your FINAL message:
+After writing your status file, your task is COMPLETE. Final message:
 
-`DONE — wrote /tmp/{PREFIX}-ci-fixer-status.md (STATUS: PASS/PARTIAL/BLOCKED, X/N tests passing)`
+`DONE — wrote /tmp/{PREFIX}-ci-fixer-status.md (STATUS: PASS/BLOCKED, X/N tests passing)`
 
-Do NOT continue working after the status file is written. Do NOT mark PR ready, push commits, or clean up references — those are handled elsewhere.
+Do NOT continue, mark PR ready, push, or clean up `sources/`. The orchestrator handles those.
 
-## NEVER
+## Rules
 
-- ❌ Mark PR ready (orchestrator handles this)
-- ❌ Push commits (orchestrator handles this)
-- ❌ Wait for GitHub CI — tests run locally only
-- ❌ Loop more than 5 iterations
-- ❌ Change a test expectation without checking `sources/working_references.md`
-- ❌ Modify an implementation formula without a policy citation
-- ❌ Create state wrapper variables just to make a test pass
-- ❌ Delete or "clean up" `sources/` files
-- ❌ Use bare `ruff` — always `uv run ruff format`
-
-## Before Completing: Validate Against Skills
-
-Before writing the status file, validate your work against the loaded skills:
-
-1. **policyengine-testing-patterns-skill** — Test structure correct? Periods only `YYYY-01` or `YYYY`?
-2. **policyengine-variable-patterns-skill** — Any code changes follow variable patterns?
-3. **policyengine-period-patterns-skill** — Period handling correct in any changed code?
-4. **policyengine-code-style-skill** — Fixes don't introduce style violations?
+- Never change a test expectation without checking `sources/working_references.md`
+- Never modify an implementation formula without a policy citation
+- Never create state wrapper variables just to make a test pass
+- Never stage / commit / delete files under `sources/` — they are local-only working notes
+- Always use `uv run ruff format` — bare `ruff` may pick the wrong version
+- If two iterations don't move a failure, stop iterating and mark it BLOCKED — better a clean BLOCKED than 6 more rounds of churn
