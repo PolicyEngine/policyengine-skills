@@ -32,6 +32,22 @@ description: Review any PR — code validation + PDF audit in one pass (read-onl
 - Spawn agents (in parallel where possible)
 - Post the final report using `gh pr comment --body-file`
 
+## Agent Completion Contract
+
+**Silent-finish prevention — every agent in this command obeys this contract.** Each agent prompt below includes a short reminder line that points back here. Do not strip these reminders.
+
+**Agent side (applies to every agent spawned in this command):**
+- After writing your output file(s), your task is COMPLETE.
+- Your FINAL message MUST be a one-line confirmation:
+  `DONE — wrote /tmp/{PREFIX}-...md ({brief stat, e.g., "5 findings", "no issues", "manifest written"})`
+- Do NOT continue working after the output file is written.
+- Do NOT go idle without returning the confirmation line — silent finishes block the orchestrator.
+
+**Orchestrator side (Main Claude):**
+- When you spawn background agents (`run_in_background: true`), the harness notifies you on completion. Wait for all notifications in a batch before reading output files.
+- Do NOT sleep, poll, or proactively ask the user about agent progress.
+- Fallback: if you have NOT received a completion notification for one agent in a parallel batch but the rest of the batch is done AND that agent's expected output file exists and is well-formed, treat it as stalled — read the file and proceed.
+
 ## Arguments
 
 `$ARGUMENTS` should contain:
@@ -127,20 +143,50 @@ Options:
 ```bash
 gh pr view $PR_NUMBER --json title,body,author,baseRefName,headRefName
 gh pr checks $PR_NUMBER
+BASE_BRANCH=$(gh pr view $PR_NUMBER --json baseRefName --jq '.baseRefName')
 ```
 
-**Save diff to disk** (method depends on `--local-diff`):
+**Check branch staleness against base** — required so the review is strictly scoped to what the PR actually changed:
 
 ```bash
-# Standard mode: read from GitHub remote
-gh pr diff $PR_NUMBER > /tmp/{PREFIX}-review-diff.txt
+# Fetch latest base
+git fetch origin "$BASE_BRANCH" 2>/dev/null
 
-# --local-diff mode: read from local commits (no push required)
-BASE_BRANCH=$(gh pr view $PR_NUMBER --json baseRefName --jq '.baseRefName')
-git diff "$BASE_BRANCH"...HEAD > /tmp/{PREFIX}-review-diff.txt
+# Compute merge-base (where this PR diverged from base) and how far the branch is behind base.
+# Use 'gh pr checkout' to make the branch available locally if it isn't already.
+gh pr checkout $PR_NUMBER 2>/dev/null || true
+
+MERGE_BASE=$(git merge-base "origin/$BASE_BRANCH" HEAD)
+BEHIND=$(git rev-list --count HEAD.."origin/$BASE_BRANCH")
+AHEAD=$(git rev-list --count "origin/$BASE_BRANCH"..HEAD)
+
+echo "PR is $AHEAD commit(s) ahead, $BEHIND commit(s) behind $BASE_BRANCH"
+echo "Merge-base: $MERGE_BASE"
+```
+
+**Save diff to disk — always use explicit merge-base** so the diff contains ONLY what the PR actually changed (no stale-branch artifacts):
+
+```bash
+# Standard mode: diff from merge-base to PR HEAD
+git diff "$MERGE_BASE"..HEAD > /tmp/{PREFIX}-review-diff.txt
+
+# --local-diff mode: same approach, works for unpushed work
+# (BASE_BRANCH already resolved above; MERGE_BASE already computed above)
 ```
 
 **Main Claude does NOT read the diff file.** It only saves it to disk for agents.
+
+### Step 1A.5: Staleness Notice (friendly reminder — not blocking)
+
+**If `BEHIND > 0`**, print a one-line friendly reminder to the user and continue automatically. Do NOT ask a question or block the review:
+
+```
+⚠ Friendly reminder: PR branch is {BEHIND} commit(s) behind {BASE_BRANCH}. Consider rebasing soon (`git pull --rebase origin {BASE_BRANCH}`). This review is scoped strictly to the PR's actual changes (merge-base diff), so the staleness will NOT cause false-positive findings here.
+```
+
+The staleness count is recorded for the final report (under a "Branch Status" note, not as a critical issue).
+
+**If `BEHIND == 0`**: skip this step silently.
 
 ### Step 1B: Delegate diff analysis to agent (PARALLEL with Phase 2)
 
@@ -155,6 +201,11 @@ run_in_background: true
 
 "Analyze the PR diff at /tmp/{PREFIX}-review-diff.txt and write a context summary.
 
+CONTEXT: The diff at /tmp/{PREFIX}-review-diff.txt is the merge-base diff — it contains
+ONLY what this PR actually changed (no stale-branch artifacts). Trust the file list you
+derive from this diff as the AUTHORITATIVE scope. Do not include files that exist in the
+branch but are not in this diff.
+
 TASK:
 1. Read /tmp/{PREFIX}-review-diff.txt
 2. Write /tmp/{PREFIX}-review-context.md (MAX 25 LINES):
@@ -166,19 +217,22 @@ TASK:
    - Year: {year being updated} — or 'N/A'
    - PR type: {new program / bug fix / enhancement / parameter update / refactor / infrastructure}
    - CI status: {from gh pr checks output if available}
+   - Branch staleness: {AHEAD} ahead, {BEHIND} behind {BASE_BRANCH} (from orchestrator)
    - Has source documents: {yes / no} — true if YAML refs contain PDF URLs or PR body links to docs
-   ## Files Changed
-   - Parameters: {list of YAML file paths, or 'none'}
-   - Variables: {list of .py file paths, or 'none'}
-   - Tests: {list of test file paths, or 'none'}
-   - Other: {list of other changed files, if any}
+   ## Files Changed (PR scope — DO NOT add files outside this list)
+   - Parameters: {list of YAML file paths from diff, or 'none'}
+   - Variables: {list of .py file paths from diff, or 'none'}
+   - Tests: {list of test file paths from diff, or 'none'}
+   - Other: {list of other changed files in diff, if any}
    ## Topics
    - {topic 1}: {file paths}
    - {topic 2}: {file paths}
    ## PDF References Found
    - {any PDF URLs found in PR body or YAML reference fields, or 'none'}
 
-Keep it CONCISE — paths and classifications only. Max 25 lines."
+Keep it CONCISE — paths and classifications only. Max 25 lines.
+
+Completion: after writing /tmp/{PREFIX}-review-context.md, return `DONE — wrote /tmp/{PREFIX}-review-context.md` as your final message (see Agent Completion Contract)."
 ```
 
 ### Step 1C: Read context summary
@@ -253,7 +307,9 @@ TASK:
    ### No PDF Found (if applicable)
    - Reason: [why no source was found]
 
-If no PDF is found, write that in the manifest and the review will continue with code-only validators."
+If no PDF is found, write that in the manifest and the review will continue with code-only validators.
+
+Completion: after writing /tmp/{PREFIX}-review-pdf-manifest.md, return `DONE — wrote /tmp/{PREFIX}-review-pdf-manifest.md` as your final message (see Agent Completion Contract)."
 ```
 
 ### Read Manifest
@@ -359,7 +415,9 @@ Load skills: /policyengine-variable-patterns, /policyengine-parameter-patterns.
 KEY QUESTION: Does this implementation correctly reflect the law?
 
 Files to review: {list from Phase 3}
-PDF text available at: {paths from manifest, for cross-reference only}"
+PDF text available at: {paths from manifest, for cross-reference only}
+
+Completion: after writing /tmp/{PREFIX}-review-regulatory.md, return `DONE — wrote /tmp/{PREFIX}-review-regulatory.md` as your final message (see Agent Completion Contract)."
 ```
 
 #### Validator 2: Reference Quality (Critical)
@@ -389,7 +447,9 @@ Load skills: /policyengine-parameter-patterns.
 KEY QUESTION: Can every value be traced to an authoritative source?
 
 Files to review: {list from Phase 3}
-PDF manifest: /tmp/{PREFIX}-review-pdf-manifest.md"
+PDF manifest: /tmp/{PREFIX}-review-pdf-manifest.md
+
+Completion: after writing /tmp/{PREFIX}-review-references.md, return `DONE — wrote /tmp/{PREFIX}-review-references.md` as your final message (see Agent Completion Contract)."
 ```
 
 #### Validator 3: Code Patterns (Critical + Should)
@@ -428,7 +488,9 @@ Load skills: /policyengine-variable-patterns, /policyengine-parameter-patterns,
 
 KEY QUESTION: Does the code follow PolicyEngine standards?
 
-Files to review: {list from Phase 3}"
+Files to review: {list from Phase 3}
+
+Completion: after writing /tmp/{PREFIX}-review-code.md, return `DONE — wrote /tmp/{PREFIX}-review-code.md` as your final message (see Agent Completion Contract)."
 ```
 
 #### Validator 4: Test Coverage (Should)
@@ -452,7 +514,9 @@ Load skills: /policyengine-testing-patterns, /policyengine-period-patterns.
 
 KEY QUESTION: Are the important scenarios tested?
 
-Files to review: {list from Phase 3}"
+Files to review: {list from Phase 3}
+
+Completion: after writing /tmp/{PREFIX}-review-tests.md, return `DONE — wrote /tmp/{PREFIX}-review-tests.md` as your final message (see Agent Completion Contract)."
 ```
 
 ### Group B: PDF Audit Agents
@@ -505,7 +569,9 @@ TASK: Report only — do NOT edit any files.
    Expected value: [X], repo value: [Y], reason: [why you suspect a mismatch].
 
 Do NOT read pages outside your assigned range.
-Do NOT guess values you haven't seen. Flag it and move on."
+Do NOT guess values you haven't seen. Flag it and move on.
+
+Completion: after writing /tmp/{PREFIX}-review-pdf-{topic}.md, return `DONE — wrote /tmp/{PREFIX}-review-pdf-{topic}.md` as your final message (see Agent Completion Contract)."
 ```
 
 ---
@@ -543,7 +609,9 @@ STEPS:
 3. Report to /tmp/{PREFIX}-review-xref-{N}.md:
    - The value you see on that page
    - What confirms it (table name, worksheet line, etc.)
-   - PDF page number for citation: #page=XX"
+   - PDF page number for citation: #page=XX
+
+Completion: after writing /tmp/{PREFIX}-review-xref-{N}.md, return `DONE — wrote /tmp/{PREFIX}-review-xref-{N}.md` as your final message (see Agent Completion Contract)."
 ```
 
 ### Step 5B: Handle EXTERNAL PDF NEEDED Flags
@@ -579,7 +647,9 @@ STEPS:
 6. Report to /tmp/{PREFIX}-review-ext-{N}.md:
    - PDF URL (for reference link with #page=XX)
    - Correct value with exact PDF page number
-   - Confirmation details"
+   - Confirmation details
+
+Completion: after writing /tmp/{PREFIX}-review-ext-{N}.md, return `DONE — wrote /tmp/{PREFIX}-review-ext-{N}.md` as your final message (see Agent Completion Contract)."
 ```
 
 ### Step 5C: Code-Path Verification of Mismatches (CRITICAL)
@@ -641,7 +711,9 @@ Report to /tmp/{PREFIX}-review-codepath-{N}.md:
 - Parameter: {name}
 - Code path trace: {top-level variable → ... → this parameter}
 - Reasoning: {detailed explanation}
-- If REJECTED: what code path evidence disproves the mismatch"
+- If REJECTED: what code path evidence disproves the mismatch
+
+Completion: after writing /tmp/{PREFIX}-review-codepath-{N}.md, return `DONE — wrote /tmp/{PREFIX}-review-codepath-{N}.md (verdict: CONFIRMED/REJECTED/INCONCLUSIVE)` as your final message (see Agent Completion Contract)."
 ```
 
 **Spawn ALL code-path verifiers in a single message for parallelism.** Wait for all to complete before proceeding.
@@ -694,7 +766,9 @@ Report to /tmp/{PREFIX}-review-mismatch-{N}.md:
 - FALSE POSITIVE: agent misread, actual value is {Z}
 - Evidence: what you see on the 600 DPI screenshot and in extracted text
 
-Error margin: flag any difference > 0.3."
+Error margin: flag any difference > 0.3.
+
+Completion: after writing /tmp/{PREFIX}-review-mismatch-{N}.md, return `DONE — wrote /tmp/{PREFIX}-review-mismatch-{N}.md (verdict: CONFIRMED/FALSE POSITIVE)` as your final message (see Agent Completion Contract)."
 ```
 
 Spawn ALL visual verifiers in a single message for parallelism.
@@ -731,7 +805,9 @@ STEPS:
 
 Report to /tmp/{PREFIX}-review-pages.md:
 - CORRECT: {file} #page=XX — confirmed, [value] found on page
-- WRONG: {file} #page=XX — should be #page=YY, [value] is actually on page YY"
+- WRONG: {file} #page=XX — should be #page=YY, [value] is actually on page YY
+
+Completion: after writing /tmp/{PREFIX}-review-pages.md, return `DONE — wrote /tmp/{PREFIX}-review-pages.md` as your final message (see Agent Completion Contract)."
 ```
 
 ---
@@ -776,8 +852,34 @@ TASK:
      formula variables with zero test coverage (no unit test at all),
      non-functional tests (e.g., absolute_error_margin >= 1 on boolean outputs)
    - SHOULD ADDRESS: code pattern violations, missing edge case tests for already-tested variables,
-     naming conventions, period usage errors, formatting issues (params & vars)
+     naming conventions, period usage errors, formatting issues (params & vars),
+     missing rounding/flooring/capping when the formula is otherwise structurally correct
+     (e.g., regulation says "round to nearest dollar" but formula returns the unrounded value)
    - SUGGESTIONS: documentation improvements, performance optimizations, code style
+
+   ROUNDING RULE: If the implementation matches the regulation in structure but is missing
+   a rounding, flooring, or capping step, classify as SHOULD ADDRESS — NOT CRITICAL. This
+   is a refinement, not a fundamentally wrong formula. (Exception: if a test case proves
+   the missing step produces a wrong output that crosses an eligibility threshold or
+   changes a categorical outcome, upgrade to CRITICAL.)
+
+   MICROSIM DEFAULT RULE: When a default value materially affects population-level
+   microsimulation output (e.g., an enum default that biases aggregate benefits, a
+   bare-input default of 0 that zeros out the program), the reviewer MUST report the
+   *direction and magnitude* of the bias but MUST NOT prescribe a specific default
+   (do NOT say "change to NONE", "change to 0", "change to X"). Prescribing a default
+   direction creates inconsistencies across reviews — one PR gets told to use 0 (opt-in),
+   another gets told 0 is wrong (zeros out the program). Neither bias direction is
+   universally correct.
+
+   Valid remedies to suggest:
+   (a) Populate the variable in the dataset (microdata enhancement)
+   (b) Document the limitation in the changelog / PR description
+   (c) Accept the bias if quantified and small
+
+   Classify as SHOULD ADDRESS by default. Upgrade to CRITICAL only if the bias is
+   large enough to flip eligibility for a meaningful share of the population OR
+   change aggregate program cost by a documented threshold (e.g., >10%).
 
 5. Write FULL report to /tmp/{PREFIX}-review-full-report.md (for archival/posting)
 6. Write SHORT summary to /tmp/{PREFIX}-review-summary.md (MAX 20 LINES):
@@ -787,10 +889,26 @@ TASK:
    - PDF audit: N values confirmed correct, M mismatches, K unmodeled items
    - Recommended severity: APPROVE / COMMENT / REQUEST_CHANGES
 
+BRANCH STATUS NOTE (friendly reminder, NOT a critical issue):
+If the PR context summary at /tmp/{PREFIX}-review-context.md notes the branch is behind
+the base (e.g., 'Branch staleness: X ahead, Y behind {base}' with Y > 0), include a
+small 'Branch Status' section near the top of the full report (just below 'Source
+Documents'):
+
+  ### Branch Status
+  ⚠ Friendly reminder: PR branch is Y commit(s) behind {base}. Consider rebasing
+  (`git pull --rebase origin {base}`) before merging. This review was scoped to the
+  PR's actual changes only — staleness did not affect findings.
+
+If Y == 0, omit this section entirely. NEVER classify the staleness itself as a
+critical, should-address, or suggestion finding — it is purely informational.
+
 SEVERITY RULES:
 - APPROVE: No critical issues, minor suggestions only
 - COMMENT: Has issues but not blocking (educational)
-- REQUEST_CHANGES: Has critical issues that must be fixed"
+- REQUEST_CHANGES: Has critical issues that must be fixed
+
+Completion: after writing both /tmp/{PREFIX}-review-full-report.md and /tmp/{PREFIX}-review-summary.md, return `DONE — wrote full report + summary ({critical}/{should}/{suggestion} findings)` as your final message (see Agent Completion Contract)."
 ```
 
 After the consolidator completes, read ONLY `/tmp/{PREFIX}-review-summary.md` (max 20 lines).
@@ -803,18 +921,7 @@ After the consolidator completes, read ONLY `/tmp/{PREFIX}-review-summary.md` (m
 
 ### Step 7A: Display or Post
 
-**If user chose local-only mode**: Spawn a `general-purpose` agent to read and summarize the full report for display:
-
-```
-subagent_type: "general-purpose"
-team_name: "{PREFIX}-review"
-name: "display-agent"
-
-"Read /tmp/{PREFIX}-review-full-report.md and present it to the user.
-Format it clearly with markdown sections. Include all findings."
-```
-
-Main Claude shows the agent's summary to the user.
+**If user chose local-only mode**: Main Claude reads `/tmp/{PREFIX}-review-full-report.md` and presents it directly in the conversation. The short summary (`/tmp/{PREFIX}-review-summary.md`) has already been read in Phase 6 — at this point all heavy lifting is done and presenting the full report is the final step, so reading it into Main Claude's context is acceptable.
 
 **If user chose to post to GitHub**: Post using `--body-file` (no need to read the file into context):
 
@@ -881,11 +988,13 @@ The context-analyzer (Phase 1) captures CI status. The consolidator includes CI 
 
 ## Context Protection Rules
 
-**Main Claude reads ONLY these short files:**
+**Main Claude reads ONLY these short files during phases 0-6:**
 - `/tmp/{PREFIX}-review-context.md` (max 25 lines) — from context-analyzer
 - `/tmp/{PREFIX}-review-pdf-manifest.md` (max 30 lines) — from pdf-collector
 - `/tmp/{PREFIX}-review-full-filelist.md` (max 30 lines) — from Explore agent, only if `--full`
 - `/tmp/{PREFIX}-review-summary.md` (max 20 lines) — from consolidator
+
+**In Phase 7 (final step), Main Claude reads `/tmp/{PREFIX}-review-full-report.md`** in local mode to present it to the user. This is the last step, so loading it into context is acceptable. In GitHub mode the file is posted via `--body-file` without reading.
 
 **All other data flows through files on disk.** Agent prompts reference file paths, never paste content.
 
@@ -895,7 +1004,6 @@ The context-analyzer (Phase 1) captures CI status. The consolidator includes CI 
 - PDF screenshots (`/tmp/{PREFIX}-review-pdf-*-page-*.png`, `/tmp/{PREFIX}-600dpi-*.png`)
 - Parameter YAML files or variable .py files
 - Individual agent finding files (regulatory, references, code, tests, pdf-audit, codepath, mismatch, pages)
-- The full report (`/tmp/{PREFIX}-review-full-report.md`) — posted via `--body-file`
 
 ---
 
@@ -916,10 +1024,10 @@ The context-analyzer (Phase 1) captures CI status. The consolidator includes CI 
 | 5D | verifier-mismatch-{N} | `general-purpose` | 600 DPI re-render of CONFIRMED/INCONCLUSIVE mismatches |
 | 5E | verifier-pages | `general-purpose` | Page number verification (instruction vs file page) |
 | 6 | consolidator | `general-purpose` | Merges all findings, deduplicates, classifies priority |
-| 7 | display-agent (if local) | `general-purpose` | Reads and presents full report to user |
+| 7 | _(none — Main Claude presents the full report directly in local mode, or posts via `gh --body-file` in GitHub mode)_ | — | — |
 
-**5 plugin agents + 5-14 general-purpose agents.**
-Main Claude only reads short summaries (≤30 lines) and runs `gh` commands.
+**5 plugin agents + 4-13 general-purpose agents.**
+Main Claude reads short summaries (≤30 lines) during phases 0-6, then reads the full report in Phase 7 (local mode only).
 
 ---
 

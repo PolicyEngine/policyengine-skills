@@ -19,6 +19,105 @@ Take time to analyze thoroughly before implementing solutions.
 
 Creates parameter YAML files and variable Python files for government benefit programs. All patterns and standards are in the skills — load them first.
 
+## CRITICAL: Parameter Description Format
+
+**EVERY parameter YAML's `description:` field MUST be exactly ONE short sentence — no exceptions.**
+
+**Required template:**
+```yaml
+description: [State] [verb] [category] [generic placeholder] under the [Full Program Name] program.
+```
+
+- **Allowed verbs (ONLY these)**: `limits`, `provides`, `sets`, `excludes`, `deducts`, `uses`
+- **Generic placeholders (use, don't substitute the actual value)**: `this amount`, `this share`, `this percentage`, `this threshold`
+- **Full program name** — spell it out: `Temporary Assistance for Needy Families`, NOT `TANF`. `Supplemental Nutrition Assistance Program`, NOT `SNAP`.
+
+**✅ CORRECT — one sentence, full name, generic placeholder:**
+```yaml
+description: Oregon limits gross income to this amount under the Temporary Assistance for Needy Families program.
+description: Indiana provides this amount as the payment standard under the Temporary Assistance for Needy Families program.
+description: Rhode Island excludes this share of earnings from countable income under the Child Care Assistance Program.
+```
+
+**❌ FORBIDDEN — multi-sentence descriptions:**
+```yaml
+# ❌ More than one period — multiple sentences:
+description: Oregon limits gross income to $2,430 for TANF eligibility. This applies to families of 3. See OAR 461-155-0180 for details.
+
+# ❌ Comma-splice that's effectively two sentences:
+description: Oregon limits gross income to this amount, which is calculated based on household size and federal poverty guidelines under the TANF program.
+```
+
+**❌ FORBIDDEN — acronyms instead of full program names:**
+```yaml
+description: Oregon limits gross income to this amount under the TANF program.
+```
+
+**❌ FORBIDDEN — concrete values instead of generic placeholders:**
+```yaml
+description: Oregon limits gross income to $2,430 under the Temporary Assistance for Needy Families program.
+```
+
+**❌ FORBIDDEN — explanatory tails ("by X", "based on Y", "for eligibility"):**
+```yaml
+description: Oregon limits gross income to this amount by household size under the Temporary Assistance for Needy Families program.
+```
+
+**Self-check before saving every parameter file**: read the `description:` line and verify:
+1. Exactly ONE period (`.`) at the end — no other periods anywhere.
+2. Full program name spelled out — no acronyms (TANF, SNAP, SSI, CCAP, etc.).
+3. Generic placeholder used (`this amount` / `this share` / `this percentage` / `this threshold`) — NOT a concrete number.
+4. Under ~20 words.
+5. No "based on X", "by household size", "for eligibility" — keep it clean.
+
+If any answer is no, rewrite using the template before saving.
+
+## CRITICAL: Parameter Reference Format — Page Number Placement
+
+**Page numbers go in `href:` ONLY. NEVER in `title:`.**
+
+In a parameter YAML reference, the `title:` field is the legal section path (statute, regulation, manual section). The `href:` field is the URL that links to it. PDF page anchors (`#page=XX`) belong at the end of the URL, not in the title.
+
+**✅ CORRECT — page number in href only:**
+```yaml
+reference:
+  - title: OAR 461-155-0030(2)(a)(B)
+    href: https://oregon.public.law/rules/oar_461-155-0030
+  - title: Oregon DHS TANF Policy Manual Section 4.3.2
+    href: https://oregon.gov/dhs/tanf-manual.pdf#page=23
+  - title: Arkansas TEA Manual Section 2100
+    href: https://humanservices.arkansas.gov/wp-content/uploads/TEA_MANUAL.pdf#page=45
+```
+
+**❌ FORBIDDEN — page number in title:**
+```yaml
+reference:
+  - title: Arkansas TEA Manual, page 13      # ❌ Page belongs in href, not title!
+    href: https://humanservices.arkansas.gov/wp-content/uploads/TEA_MANUAL.pdf
+
+  - title: OAR 461-155-0030 (p. 5)           # ❌ Page belongs in href!
+    href: https://oregon.public.law/rules/oar_461-155-0030
+
+  - title: TANF Manual, page 23, Section 4.3 # ❌ Page belongs in href!
+    href: https://oregon.gov/dhs/tanf-manual.pdf
+```
+
+**Title format rules:**
+- Include the FULL section path with all subsections (e.g., `(2)(a)(B)`)
+- Do NOT include page numbers, "p.", "page", or "pg" anywhere in the title
+- Do NOT abbreviate the legal citation
+
+**href format rules:**
+- For PDFs: append `#page=XX` where XX is the **file page number** (1st page in PDF = 1), not the printed page number
+- For HTML: no page anchor needed; use section anchors if available (e.g., `#p-273.9(d)(6)(ii)(A)`)
+
+**Self-check before saving every parameter file**: scan every `title:` value and verify:
+1. No digits that represent a page number (e.g., "page 13", "p. 5", "pg 23")
+2. No `#page=` substring in any title — that belongs in href only
+3. Full section path included (subsections like `(2)(a)(B)`, not just `OAR 461-155`)
+
+If any check fails, move the page info to the href line and remove it from the title.
+
 ## First: Load Required Skills
 
 **Before starting ANY work, use the Skill tool to load each required skill:**
@@ -102,6 +201,49 @@ Create Python variable files following `policyengine-variable-patterns` and `pol
   # ❌ WRONG — don't use list:
   reference = ["https://...", "https://..."]
   ```
+
+- **CRITICAL: NEVER use the parameter (YAML) reference format inside a variable (Python).**
+  These are two completely different syntaxes. Parameter references are structured
+  dicts with `title:` + `href:`. Variable references are bare URL strings (or a tuple
+  of strings). Do NOT copy one format into the other file type.
+
+  **PARAMETER (YAML)** — structured dicts:
+  ```yaml
+  metadata:
+    reference:
+      - title: OAR 461-155-0030(2)(a)(B)
+        href: https://oregon.public.law/rules/oar_461-155-0030
+      - title: Oregon DHS TANF Policy Manual Section 4.3.2
+        href: https://oregon.gov/dhs/tanf-manual.pdf#page=23
+  ```
+
+  **VARIABLE (Python)** — bare URL string or tuple of strings:
+  ```python
+  reference = "https://oregon.public.law/rules/oar_461-155-0030"
+  # or:
+  reference = (
+      "https://oregon.public.law/rules/oar_461-155-0030",
+      "https://oregon.gov/dhs/tanf-manual.pdf#page=23",
+  )
+  ```
+
+  ❌ **FORBIDDEN** — applying the YAML structure to a Python variable:
+  ```python
+  # ❌ This is a parameter format, not a variable format:
+  reference = [
+      {"title": "OAR 461-155-0030(2)(a)(B)",
+       "href": "https://oregon.public.law/rules/oar_461-155-0030"},
+  ]
+
+  # ❌ Also wrong — using title/href keys inside a tuple:
+  reference = (
+      {"title": "...", "href": "..."},
+  )
+  ```
+
+  **Rule of thumb:** `.yaml` files use the structured format with titles. `.py` files
+  use bare URL strings only — no titles, no dicts. If you're writing Python and find
+  yourself typing `title:` or `href:`, stop — you're mixing formats.
 
 - **TANF Countable Income — verify deduction order from legal code:**
   ```python

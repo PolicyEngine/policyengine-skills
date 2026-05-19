@@ -57,6 +57,8 @@ Analyze variable implementations and parameter definitions to automatically gene
 - Policy effective October 1, 2023 → Use `period: 2024-01`
 - Never use the exact effective month
 
+**Self-check before saving every test file**: search for any `period:` field where the value is not `YYYY` or `YYYY-01`. If found, fix it before writing the file.
+
 ## Edge Case Detection Strategy
 
 ### 1. Boundary Analysis

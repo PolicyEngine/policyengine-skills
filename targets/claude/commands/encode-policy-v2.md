@@ -469,6 +469,15 @@ LEARN FROM PAST SESSIONS (read if they exist — skip if not found):
 - {LESSONS_PATH}
 - lessons/agent-lessons.md
 
+OUTPUT LOCATION — IMPORTANT:
+- Edge case scenarios MUST be APPENDED to the existing test files created in Step 3B,
+  located at policyengine_us/tests/policy/baseline/gov/states/{ST}/...
+- Find the existing unit test file for each variable and add edge case scenarios to it.
+- Find the existing integration test file and add edge case scenarios to it.
+- DO NOT create new files (no separate edge_cases.yaml, no test_edge_cases.yaml, etc.).
+- If no existing test file covers the variable in question, flag it — do not silently
+  create a new file.
+
 Focus on:
 - Income at threshold boundaries (threshold-1, threshold, threshold+1)
 - Zero income, maximum income
@@ -567,26 +576,80 @@ After gap-fixer completes, re-run the requirements-tracker (same prompt as above
 
 ## Phase 4: Validation & Fix
 
-### Step 4A: Implementation Validator
+### Step 4A: Implementation Validator (cross-file structural)
 
 ```
 subagent_type: "complete:country-models:implementation-validator"
 team_name: "{PREFIX}-encode"
 name: "implementation-validator"
 
-"Validate and fix {STATE} {PROGRAM} implementation for PolicyEngine standards compliance.
-Load skills: /policyengine-variable-patterns, /policyengine-parameter-patterns,
-  /policyengine-code-style, /policyengine-period-patterns, /policyengine-vectorization,
-  /policyengine-aggregation, /policyengine-review-patterns, /policyengine-code-organization.
+"Validate {STATE} {PROGRAM} for cross-file structural issues, fix mechanical issues yourself,
+and escalate judgmental ones.
+
+Scope (3 phases only):
+- Phase 1: YAML structural integrity (orphaned values after metadata:, breakdown enum
+  mismatches, duplicate keys, effective-date placement)
+- Phase 2: Cross-reference linkage (orphan parameters, missing param references, empty
+  directories, orphan files)
+- Phase 3: Federal/State jurisdiction placement (federal-sourced values in /gov/{agency}/,
+  state-sourced in /gov/states/{state}/, defined_for present on state variables)
+
+Load skills: /policyengine-parameter-patterns, /policyengine-variable-patterns,
+  /policyengine-code-organization.
 
 LEARN FROM PAST SESSIONS (read if they exist — skip if not found):
 - {LESSONS_PATH}
 - lessons/agent-lessons.md
 
-Check AND fix: naming conventions, folder structure, parameter formatting, variable code style,
-hard-coded values, adds vs add(), reference format, entity levels, period handling.
-Fix all issues directly — do not just report them."
+Per-file rules (description format, reference format, period format, hard-coded values,
+naming, adds/add(), wrappers) are NOT your scope — they are self-checked by rules-engineer
+and test-creator, and re-checked by /review-program later. Note such issues in 'Notes for
+review' but do NOT make them blocking.
+
+Fix MECHANICAL issues yourself (orphan dirs, breakdown enum renames, YAML block moves,
+git mv for placement, adding defined_for). Escalate JUDGMENTAL issues (orphan parameter
+needing variable, missing param ref with no obvious typo) to rules-engineer.
+
+Write your report to /tmp/{PREFIX}-validator-report.md with two sections:
+1. FIXED — what you fixed and where
+2. ESCALATED — issues for rules-engineer with proposed fix, OR 'NONE' if no escalations.
+
+DO NOT commit — pr-pusher handles all commits."
 ```
+
+### Step 4A-fix: Handle Validator Escalations
+
+After implementation-validator completes, read `/tmp/{PREFIX}-validator-report.md`.
+
+**If the ESCALATED section is 'NONE'**: proceed to Step 4B.
+
+**If the ESCALATED section has items**: spawn rules-engineer to fix them:
+
+```
+subagent_type: "complete:country-models:rules-engineer"
+team_name: "{PREFIX}-encode"
+name: "validator-escalation-fixer"
+
+"Fix the judgmental issues escalated by implementation-validator for {STATE} {PROGRAM}.
+Read the validator report at /tmp/{PREFIX}-validator-report.md.
+Focus ONLY on items under the ESCALATED section.
+Read the implementation spec at /tmp/{PREFIX}-impl-spec.md for policy context.
+Read the scope decision at /tmp/{PREFIX}-scope-decision.md.
+Load skills: /policyengine-variable-patterns, /policyengine-parameter-patterns,
+  /policyengine-code-organization.
+
+LEARN FROM PAST SESSIONS (read if they exist — skip if not found):
+- {LESSONS_PATH}
+- lessons/agent-lessons.md
+
+After fixing, append a 'POST-FIX' section to /tmp/{PREFIX}-validator-report.md
+listing what you changed.
+
+DO NOT commit — pr-pusher handles all commits."
+```
+
+After validator-escalation-fixer completes, proceed to Step 4B. (No re-run of the validator
+unless you specifically suspect the fixer introduced new structural issues.)
 
 ### Step 4B: CI Fixer
 
@@ -595,9 +658,10 @@ subagent_type: "complete:country-models:ci-fixer"
 team_name: "{PREFIX}-encode"
 name: "ci-fixer"
 
-"Run tests for {STATE} {PROGRAM}, fix failures, iterate until all pass.
+"Run tests locally for {STATE} {PROGRAM}, fix failures up to a 5-iteration budget,
+then format.
 Load skills: /policyengine-testing-patterns, /policyengine-variable-patterns,
-  /policyengine-code-style, /policyengine-period-patterns.
+  /policyengine-period-patterns, /policyengine-code-style.
 Read sources/working_references.md for policy rules.
 
 LEARN FROM PAST SESSIONS (read if they exist — skip if not found):
@@ -605,9 +669,58 @@ LEARN FROM PAST SESSIONS (read if they exist — skip if not found):
 - lessons/agent-lessons.md
 
 Run: policyengine-core test policyengine_us/tests/policy/baseline/gov/states/{ST}/... -c policyengine_us -v
-Fix failures based on documentation. Iterate until pass.
-After tests pass, run make format."
+
+Fix MECHANICAL test issues directly (entity mismatch, YAML syntax, period format errors,
+test input variable mismatch, missing imports).
+
+Escalate POLICY/CALCULATION issues by classifying in your status report:
+- Recommend rules-engineer for: variable formula errors, parameter value disputes,
+  missing variable/parameter
+- Recommend test-creator for: test expectation errors, test entity structure problems
+
+Write status to /tmp/{PREFIX}-ci-fixer-status.md with STATUS: PASS / PARTIAL / BLOCKED
+and a clear recommendation if not PASS.
+
+DO NOT commit — pr-pusher handles all commits."
 ```
+
+### Step 4B-fix: Handle CI Fixer Escalations
+
+After ci-fixer completes, read `/tmp/{PREFIX}-ci-fixer-status.md`.
+
+**If STATUS = PASS**: proceed to Step 4C.
+
+**If STATUS = PARTIAL or BLOCKED**: read the Recommendation line and spawn the right specialist:
+
+```
+# If recommendation is rules-engineer:
+subagent_type: "complete:country-models:rules-engineer"
+name: "ci-failure-fixer"
+
+# If recommendation is test-creator:
+subagent_type: "complete:country-models:test-creator"
+name: "ci-failure-fixer"
+
+"Fix the failures classified in the ci-fixer status report for {STATE} {PROGRAM}.
+Read /tmp/{PREFIX}-ci-fixer-status.md — focus on the 'Remaining failures' section.
+Read the implementation spec at /tmp/{PREFIX}-impl-spec.md and scope decision at
+/tmp/{PREFIX}-scope-decision.md for policy context.
+Read sources/working_references.md for policy rules.
+
+LEARN FROM PAST SESSIONS (read if they exist — skip if not found):
+- {LESSONS_PATH}
+- lessons/agent-lessons.md
+
+Apply fixes. After fixing, append a 'POST-FIX' section to the status report listing
+what you changed.
+
+DO NOT commit — pr-pusher handles all commits."
+```
+
+After ci-failure-fixer completes, re-spawn ci-fixer (same prompt as Step 4B) to verify
+the failures are resolved. If ci-fixer STATUS is still PARTIAL/BLOCKED after one
+escalation+re-run cycle, report remaining failures to the user and proceed to 4C.
+(Do not loop indefinitely.)
 
 ### Step 4C: Quick Audit
 
@@ -645,10 +758,13 @@ subagent_type: "complete:country-models:pr-pusher"
 team_name: "{PREFIX}-encode"
 name: "pr-pusher"
 
-"Ensure {STATE} {PROGRAM} PR is ready:
+"Prepare {STATE} {PROGRAM} PR for review (but keep it as a draft):
 - Create changelog fragment in changelog.d/ (towncrier format)
 - Run make format
-- Push branch"
+- Push branch
+
+CRITICAL: The PR MUST remain a draft. Do NOT run `gh pr ready` or any flag that converts
+the draft. The orchestrator (or user) marks ready later — never this agent."
 ```
 
 ### Step 5B: PR Description
@@ -751,18 +867,36 @@ Read `/tmp/review-program-summary.md` (max 20 lines).
 
 **If critical > 0**: Proceed to Step 6.1C.
 
-#### Step 6.1C: Fix Critical Issues
+#### Step 6.1C: Fix Critical Issues (parallel — split by ownership)
+
+Spawn BOTH fixers in parallel. Each reads the same review report but only fixes items
+in its own scope. If a fixer's scope has zero items, it returns DONE with 0 fixes.
+
+**Fixer 1: rules-engineer (parameters and variables)**
 
 ```
 subagent_type: "complete:country-models:rules-engineer"
 team_name: "{PREFIX}-encode"
-name: "review-fixer-1"
+name: "review-fixer-1-vars"
+run_in_background: true
 
-"Fix the critical issues from the /review-program review (round 1).
+"Fix critical issues in PARAMETERS and VARIABLES from the /review-program review (round 1).
 Read the full review report at /tmp/review-program-full-report.md.
-Focus ONLY on items marked CRITICAL — do not change anything else.
+Focus ONLY on items marked CRITICAL that live in parameter (.yaml) or variable (.py) files.
+SKIP items that live in test files — test-creator handles those in parallel.
 Load skills: /policyengine-variable-patterns, /policyengine-code-style,
   /policyengine-parameter-patterns, /policyengine-period-patterns, /policyengine-vectorization.
+
+BEFORE APPLYING ANY FIX:
+- Read /tmp/{PREFIX}-scope-decision.md (short — captures user's scope choices from Phase 2).
+- For each review item, check: is it consistent with the scope decision? If the review
+  says 'fix X' but the scope decision says X was intentionally excluded or uses a
+  non-default value (e.g., 'use 200% FPL because state has transitional rate'),
+  do NOT fix — flag it in your checklist output as [SKIPPED-PER-SCOPE] and move on.
+- Read /tmp/{PREFIX}-impl-spec.md ONLY when the fix touches a parameter VALUE or a
+  variable FORMULA. For formatting, references, hard-coded value swaps, naming, or
+  structural fixes — skip impl-spec to save context.
+
 Apply fixes. Run make format.
 
 REUSE EXISTING VARIABLES: Before creating any non-program-specific variable, Grep the
@@ -772,13 +906,60 @@ LEARN FROM PAST SESSIONS (read if they exist — skip if not found):
 - {LESSONS_PATH}
 - lessons/agent-lessons.md
 
-AFTER fixing, write your fixes to /tmp/{PREFIX}-checklist.md:
+AFTER fixing, APPEND your fixes to /tmp/{PREFIX}-checklist.md:
 Format each line as:
-- [ROUND 1] [{CATEGORY}] {file}:{line} — {what was wrong} → {what you changed}
+- [ROUND 1] [VARS] [{CATEGORY}] {file}:{line} — {what was wrong} → {what you changed}
 
 Categories: HARD-CODED, WRONG-PERIOD, MISSING-REF, BAD-REF, DEDUCTION-ORDER,
-UNUSED-PARAM, WRONG-ENTITY, NAMING, FORMULA-LOGIC, TEST-GAP, OTHER"
+UNUSED-PARAM, WRONG-ENTITY, NAMING, FORMULA-LOGIC, OTHER"
 ```
+
+**Fixer 2: test-creator (test files)**
+
+```
+subagent_type: "complete:country-models:test-creator"
+team_name: "{PREFIX}-encode"
+name: "review-fixer-1-tests"
+run_in_background: true
+
+"Fix critical issues in TEST files from the /review-program review (round 1).
+Read the full review report at /tmp/review-program-full-report.md.
+Focus ONLY on items marked CRITICAL that live in test (.yaml under tests/) files.
+SKIP items in parameter (.yaml under parameters/) or variable (.py) files — rules-engineer
+handles those in parallel.
+
+Common critical test issues to expect: missing unit tests for formula variables,
+non-functional tests (e.g., absolute_error_margin >= 1 on boolean outputs),
+wrong period format (anything other than YYYY-01 or YYYY), wrong test expectations.
+
+Load skills: /policyengine-testing-patterns, /policyengine-period-patterns,
+  /policyengine-variable-patterns.
+
+BEFORE APPLYING ANY FIX:
+- Read /tmp/{PREFIX}-scope-decision.md (short — captures user's scope choices from Phase 2).
+- For each review item, check: does the test cover a requirement the user excluded
+  in scope review? If yes, do NOT add or fix tests for it — flag in your checklist
+  output as [SKIPPED-PER-SCOPE] and move on.
+- Read /tmp/{PREFIX}-impl-spec.md ONLY when fixing requires checking the EXPECTED
+  numerical value against the regulation. For period format, test structure,
+  missing-test creation, or non-functional-test fixes — skip impl-spec to save context.
+
+LEARN FROM PAST SESSIONS (read if they exist — skip if not found):
+- {LESSONS_PATH}
+- lessons/agent-lessons.md
+
+AFTER fixing, APPEND your fixes to /tmp/{PREFIX}-checklist.md:
+Format each line as:
+- [ROUND 1] [TESTS] [{CATEGORY}] {file}:{line} — {what was wrong} → {what you changed}
+
+Categories: TEST-GAP, WRONG-PERIOD, WRONG-EXPECTATION, NON-FUNCTIONAL-TEST, OTHER
+
+If there are NO test items in the report, write a single line:
+- [ROUND 1] [TESTS] NO-TEST-ISSUES — nothing to fix
+then return DONE with 0 fixes."
+```
+
+Wait for both fixers to complete before proceeding to 6.1D.
 
 #### Step 6.1D: Run Tests & Commit
 
@@ -787,8 +968,15 @@ subagent_type: "complete:country-models:ci-fixer"
 team_name: "{PREFIX}-encode"
 name: "ci-fixer-1"
 
-"Run tests for {STATE} {PROGRAM} after review-fix round 1.
-Fix any test failures introduced by the fixes. Run make format."
+"Run tests locally for {STATE} {PROGRAM} after review-fix round 1.
+Apply your 5-iteration budget. Fix mechanical test failures directly; classify and
+escalate policy/calculation issues in your status report.
+Run make format after tests pass (or budget exhausted).
+
+Write status to /tmp/{PREFIX}-ci-fixer-status.md with STATUS: PASS / PARTIAL / BLOCKED.
+
+NOTE: PARTIAL status is acceptable here — round 2 will re-run /review-program and pick
+up any remaining issues. Do NOT loop beyond your 5-iteration budget."
 ```
 
 ```bash
@@ -842,6 +1030,17 @@ Read the full review report at /tmp/review-program-full-report.md.
 Focus ONLY on items marked CRITICAL — do not change anything else.
 Load skills: /policyengine-variable-patterns, /policyengine-code-style,
   /policyengine-parameter-patterns, /policyengine-period-patterns, /policyengine-vectorization.
+
+BEFORE APPLYING ANY FIX:
+- Read /tmp/{PREFIX}-scope-decision.md (short — captures user's scope choices from Phase 2).
+- For each review item, check: is it consistent with the scope decision? If the review
+  says 'fix X' but the scope decision says X was intentionally excluded or uses a
+  non-default value, do NOT fix — flag it in your checklist output as
+  [SKIPPED-PER-SCOPE] and move on.
+- Read /tmp/{PREFIX}-impl-spec.md ONLY when the fix touches a parameter VALUE or a
+  variable FORMULA. For formatting, references, hard-coded value swaps, naming, or
+  structural fixes — skip impl-spec to save context.
+
 Apply fixes. Run make format.
 
 REUSE EXISTING VARIABLES: Before creating any non-program-specific variable, Grep the

@@ -20,6 +20,23 @@ Take time to analyze thoroughly before implementing solutions.
 
 Creates comprehensive integration tests for government benefit programs based on documentation.
 
+## CRITICAL: Test Period Format
+
+**ALWAYS use `YYYY-01` or `YYYY` format ONLY:**
+- ✅ `2024-01` — First month of year (CORRECT)
+- ✅ `2024` — Whole year (CORRECT)
+- ❌ `2024-02`, `2024-03`, `2024-04`, `2024-05`, `2024-06`, `2024-07`, `2024-08`, `2024-09`, `2024-10`, `2024-11`, `2024-12` — **WILL FAIL OR BEHAVE UNPREDICTABLY**
+- ❌ `2024-01-15` or any other date-with-day format — **WILL FAIL**
+
+**PolicyEngine's YAML test system only supports first month (`YYYY-01`) or whole year (`YYYY`).**
+
+**When policy effective mid-year:**
+- Policy effective July 1, 2024 → Use `period: 2024` (NOT `2024-07`)
+- Policy effective October 1, 2023 → Use `period: 2024-01` or `2024` (NOT `2023-10`)
+- Never use the exact effective month — use the next January or the full year.
+
+**Self-check before saving every test file**: search for any `period:` field where the value is not `YYYY` or `YYYY-01`. If found, fix it before writing the file.
+
 ## Skills Used
 
 - **policyengine-testing-patterns-skill** - Test file structure, naming conventions, period formats

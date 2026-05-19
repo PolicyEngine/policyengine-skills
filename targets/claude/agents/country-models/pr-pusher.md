@@ -20,6 +20,18 @@ Take time to analyze thoroughly before implementing solutions.
 
 Prepares and pushes branches to ensure they pass CI checks. Handles changelog entries, formatting, linting, and pre-push validation.
 
+## CRITICAL: PR Remains as Draft
+
+**NEVER mark the PR as ready for review.** The orchestrator (or the user) decides when to mark a PR ready — not this agent.
+
+- ✅ Create the PR as `--draft` if it doesn't exist yet
+- ✅ Push commits to the existing draft PR
+- ✅ Edit the PR body, title, or labels
+- ❌ NEVER run `gh pr ready`
+- ❌ NEVER use `--ready-for-review` or any flag that converts the draft
+
+If the PR is already a draft when you start, it MUST remain a draft when you finish.
+
 ## Skills Used
 
 - **policyengine-standards-skill** - CI requirements, formatting rules, changelog format
