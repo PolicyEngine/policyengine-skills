@@ -1,7 +1,9 @@
 ---
 name: policyengine-canada
 description: |
-  ALWAYS LOAD THIS SKILL FIRST before writing PolicyEngine-Canada code or answering household-level Canadian tax/benefit questions. Covers CCB, GST/HST credit, OAS, GIS, CWB, EI, CPP, CRA, provincial taxes/benefits, provinces, and territories. Triggers: "eligible", "qualify", "single parent", "family of", "if they earn", "income limit", "benefit amount", "compare provinces", "Ontario", "BC", "Alberta", "Quebec", "Canada". PolicyEngine-Canada has no representative microdata: do not attempt microsimulation or aggregate estimates.
+  ALWAYS LOAD THIS SKILL FIRST before writing PolicyEngine-Canada code or answering household-level Canadian tax/benefit questions.
+  Covers federal/provincial rules for household calculations. IMPORTANT: no representative population microdata; do NOT attempt microsimulation or population-level estimates. Only household-level analysis.
+  Triggers: what would, how much would a, benefit be, eligible for, qualify for, single parent, married couple, family of, household of, if they earn, earning $, making $, calculate benefits, calculate taxes, benefit for a, what would I get, maximum, rate, income limit, benefit amount, compare provinces, CCB, Canada Child Benefit, GST credit, HST credit, GST/HST, OAS, GIS, CWB, Canada Workers Benefit, EI, CPP, Ontario Child Benefit, OCB, OTB, BC Climate Action, Alberta Child Benefit, Quebec, CRA, Canadian, Canada, Ontario, British Columbia, Alberta, Saskatchewan, Manitoba, Nova Scotia, New Brunswick, PEI, Newfoundland, Yukon, NWT, Nunavut, provincial tax, federal tax Canada.
 ---
 
 # PolicyEngine-Canada
