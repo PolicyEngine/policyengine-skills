@@ -34,6 +34,11 @@ while IFS= read -r template; do
 
   if [ -f "$target" ]; then
     if grep -q "$BEGIN_MARKER" "$target"; then
+      if ! grep -q "$END_MARKER" "$target"; then
+        echo "Found $BEGIN_MARKER without matching $END_MARKER in $target" >&2
+        rm "$block"
+        exit 1
+      fi
       awk -v begin="$BEGIN_MARKER" -v end="$END_MARKER" '
         $0 == begin { skipping = 1; next }
         $0 == end { skipping = 0; next }

@@ -169,3 +169,31 @@ def test_install_codex_repo_routing_preserves_existing_agents(tmp_path: Path) ->
     assert "# Existing Guidance" in us_agents
     assert "$policyengine-app" in app_agents
     assert "$policyengine-ui-kit-consumer" in app_agents
+
+
+def test_install_codex_repo_routing_rejects_malformed_managed_block(
+    tmp_path: Path,
+) -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    repos_root = tmp_path / "repos"
+    us_repo = repos_root / "policyengine-us"
+    us_repo.mkdir(parents=True)
+    original = (
+        "<!-- BEGIN POLICYENGINE CODEX ROUTING -->\n"
+        "old managed content without an end marker\n"
+        "# Existing Guidance\n"
+    )
+    target = us_repo / "AGENTS.md"
+    target.write_text(original)
+
+    result = subprocess.run(
+        [str(repo_root / "scripts" / "install_codex_repo_routing.sh")],
+        check=False,
+        env={**os.environ, "CODEX_REPOS_ROOT": str(repos_root)},
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "without matching" in result.stderr
+    assert target.read_text() == original
