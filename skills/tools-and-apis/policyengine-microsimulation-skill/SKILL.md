@@ -1,7 +1,7 @@
 ---
 name: policyengine-microsimulation
 description: |
-  ALWAYS USE THIS SKILL for PolicyEngine microsimulation and population-level estimates: budgetary cost, revenue impact, poverty impact, distributional analysis, winners/losers, weighted statistics, deciles, Gini, marginal/effective tax rates, UBI, flat tax, SALT, and state-level aggregate impacts. NOT for single-household calculations like "what would my benefit be" - use policyengine-us or policyengine-uk for those. Use this skill's code patterns, but explore the codebase to find specific parameter paths if needed.
+  ALWAYS USE THIS SKILL for PolicyEngine microsimulation and population-level estimates: budgetary cost, revenue impact, poverty impact, distributional analysis, winners/losers, weighted statistics, deciles, Gini, marginal/effective tax rates, UBI, flat tax, SALT, and state-level aggregate impacts. Triggers: "cost of", "budget score", "how many people", "poverty reduction", "share who gain", "share who lose", "national average", "aggregate impact", "state-level", "California", "New York". NOT for single-household calculations like "what would my benefit be" - use policyengine-us or policyengine-uk.
 ---
 
 # PolicyEngine Microsimulation
