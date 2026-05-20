@@ -11,7 +11,9 @@ count=0
 while IFS= read -r skill_file; do
   skill_dir="$(dirname "$skill_file")"
   skill_name="$(basename "$skill_dir")"
-  ln -sfn "$skill_dir" "$TARGET_DIR/$skill_name"
+  target="$TARGET_DIR/$skill_name"
+  rm -rf "$target"
+  ln -s "$skill_dir" "$target"
   count=$((count + 1))
 done < <(find "$ROOT/skills" -type f -name SKILL.md | sort)
 
