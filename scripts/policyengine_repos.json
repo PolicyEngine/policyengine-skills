@@ -1,0 +1,1196 @@
+[
+  {
+    "name": "auth0-setup-script",
+    "description": "",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-28T14:17:21Z"
+  },
+  {
+    "name": "policyengine-api-v2",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T13:59:39Z"
+  },
+  {
+    "name": "policyengine-taxsim",
+    "description": "TAXSIM emulator using the PolicyEngine US federal and state tax calculator",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T13:56:07Z"
+  },
+  {
+    "name": "prd-comparison",
+    "description": "",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-28T13:38:23Z"
+  },
+  {
+    "name": "newsletters",
+    "description": "Newsletters",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T13:36:24Z"
+  },
+  {
+    "name": "microplex-us",
+    "description": "US-specific adapters and benchmark harnesses for microplex",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T13:34:39Z"
+  },
+  {
+    "name": "policyengine-us",
+    "description": "The PolicyEngine US Python package contains a rules engine of the US tax-benefit system, and microdata generation for microsimulation analysis.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T13:26:48Z"
+  },
+  {
+    "name": "california-wealth-tax",
+    "description": "Interactive tool analyzing fiscal impacts of California's proposed billionaire wealth tax under varying assumptions",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T13:18:12Z"
+  },
+  {
+    "name": "policyengine-app-v2",
+    "description": "The second iteration of PolicyEngine's free web app for computing the impact of public policy. Currently under development. ",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T13:10:20Z"
+  },
+  {
+    "name": "arch-data",
+    "description": "Canonical documentation of microdata sources and their mappings to statute-defined concepts",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T12:57:43Z"
+  },
+  {
+    "name": "policyengine.py",
+    "description": "PolicyEngine's main user-facing Python package, incorporating country packages and integrating data visualization and analytics.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T12:37:26Z"
+  },
+  {
+    "name": "presentation-amplifi-2026-06-02",
+    "description": "Amplifi reliability presentation for June 2, 2026",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-28T12:07:25Z"
+  },
+  {
+    "name": "policyengine-uk-chat",
+    "description": "UK tax and benefit policy chat assistant powered by PolicyEngine and Claude",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T11:20:59Z"
+  },
+  {
+    "name": "uc-rebalancing",
+    "description": "PolicyEngine UK validation of the Universal Credit rebalancing package (UCA 2025): standard allowance uplift plus new-claimant health element freeze",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T08:44:36Z"
+  },
+  {
+    "name": "cancelling-fuel-duty-rise",
+    "description": "PolicyEngine UK analysis of cancelling the Autumn Budget 2025 fuel-duty rise \u2014 interactive dashboard at https://cancelling-fuel-duty-rise.vercel.app",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T08:22:36Z"
+  },
+  {
+    "name": "policyengine-ads-dashboard",
+    "description": "Public transparency dashboard for PolicyEngine advertising performance",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T07:32:57Z"
+  },
+  {
+    "name": "microplex",
+    "description": "Conditional microdata synthesis using normalizing flows",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T06:01:04Z"
+  },
+  {
+    "name": "policyengine-api",
+    "description": "PolicyEngine's REST API for computing policy impacts.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T03:10:30Z"
+  },
+  {
+    "name": "policyengine-api-v2-alpha",
+    "description": "Testing out a reduced APIv2 as a middle ground",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T03:05:57Z"
+  },
+  {
+    "name": "policyengine-us-data",
+    "description": "A package to create representative microdata for PolicyEngine US.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-28T01:09:25Z"
+  },
+  {
+    "name": "policyengine-household-api",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-27T22:37:59Z"
+  },
+  {
+    "name": "child-poverty-impact-dashboard",
+    "description": "Child Poverty Impact Dashboard - Model and compare policy reforms across US states",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-27T21:04:37Z"
+  },
+  {
+    "name": "refundable-credit-conversion",
+    "description": "Internal exploration tool for federal income tax reform that converts itemized/standard deductions, CTC, CDCTC, and EITC into a flat refundable credit.",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-27T19:36:31Z"
+  },
+  {
+    "name": "working-parents-tax-relief-act",
+    "description": "PolicyEngine dashboard for the Working Parents Tax Relief Act of 2026",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-27T16:00:25Z"
+  },
+  {
+    "name": "utah-2026-tax-changes",
+    "description": "PolicyEngine dashboard for Utah's 2026 tax changes (SB60 & HB290)",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-27T15:51:21Z"
+  },
+  {
+    "name": "policyengine-slides",
+    "description": "Monorepo for PolicyEngine presentation slide decks",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-27T15:47:27Z"
+  },
+  {
+    "name": "cliff-watch",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-27T13:01:10Z"
+  },
+  {
+    "name": "policybench",
+    "description": "LLM benchmark for public policy",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-27T12:23:48Z"
+  },
+  {
+    "name": "policyengine-uk",
+    "description": "An open-source static tax-benefit microsimulation model for the UK.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-27T10:43:32Z"
+  },
+  {
+    "name": "cost-dashboard",
+    "description": "Cost monitoring dashboard for PolicyEngine infrastructure",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-27T00:13:54Z"
+  },
+  {
+    "name": "microunit",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T18:12:46Z"
+  },
+  {
+    "name": "microplex-evals",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T18:12:42Z"
+  },
+  {
+    "name": "microplex-uk",
+    "description": "UK-specific adapters and benchmark harnesses for microplex",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T18:12:39Z"
+  },
+  {
+    "name": "calibration-diagnostics",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T15:48:10Z"
+  },
+  {
+    "name": "south-carolina-2026-tax-changes",
+    "description": "PolicyEngine dashboard for South Carolina's 2026 tax changes (H.4216)",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T15:02:25Z"
+  },
+  {
+    "name": "missouri-income-tax-elimination",
+    "description": "PolicyEngine dashboard exploring paths to eliminate Missouri's state income tax (HJR 173 & 174)",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T14:55:05Z"
+  },
+  {
+    "name": "qbi-visualizer",
+    "description": "Qualified Business Income Deduction (\u00a7199A) calculator and implementation visualizer powered by PolicyEngine US",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T14:48:11Z"
+  },
+  {
+    "name": "social-security-model",
+    "description": "Open-source Social Security dynamic microsimulation model - planning documentation",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T14:46:16Z"
+  },
+  {
+    "name": "household-api-docs",
+    "description": "PolicyEngine household API documentation",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T14:16:34Z"
+  },
+  {
+    "name": "policyengine-model",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T14:16:28Z"
+  },
+  {
+    "name": "scotland-income-tax-reform",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T13:46:55Z"
+  },
+  {
+    "name": "policyengine-uk-data",
+    "description": "Repository creating UK microdata.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-26T12:41:33Z"
+  },
+  {
+    "name": "CRM",
+    "description": "A CRM tool for handling PolicyEngine's external communications and prospect tracking",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-25T21:50:37Z"
+  },
+  {
+    "name": "policyengine-app",
+    "description": "PolicyEngine's free web app for computing the impact of public policy.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-25T16:00:28Z"
+  },
+  {
+    "name": "Coverage-Compass",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-25T14:12:07Z"
+  },
+  {
+    "name": "obbba-household-by-household",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-25T13:24:36Z"
+  },
+  {
+    "name": "github-wrapped",
+    "description": "Year in Code: PolicyEngine team GitHub activity for self-reviews",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-25T07:56:39Z"
+  },
+  {
+    "name": "policyengine-claude",
+    "description": "Official Claude Code plugin for PolicyEngine development - agents, commands, and skills for tax/benefit microsimulation",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-23T14:49:42Z"
+  },
+  {
+    "name": "policyengine-skills",
+    "description": "Portable PolicyEngine skills and Claude wrapper source",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-23T14:49:32Z"
+  },
+  {
+    "name": "microdf",
+    "description": "Analysis tools for working with survey microdata as DataFrames.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-23T14:25:08Z"
+  },
+  {
+    "name": "policyengine-bundles",
+    "description": "Testing scaffold for immutable PolicyEngine bundle manifests, locks, constraints, and validation reports.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-22T20:54:50Z"
+  },
+  {
+    "name": "economic-parameter-atlas",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-22T20:43:02Z"
+  },
+  {
+    "name": "crfb-tob-impacts",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-22T20:14:18Z"
+  },
+  {
+    "name": "marriage",
+    "description": "App to evaluate marriage penalties and bonuses",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-22T19:38:41Z"
+  },
+  {
+    "name": "policyengine-uk-rust",
+    "description": "High-performance UK tax-benefit microsimulation engine in Rust",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-22T11:09:06Z"
+  },
+  {
+    "name": "ssi-asset-limits",
+    "description": "SSI asset limit reform analysis dashboard",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-22T09:36:20Z"
+  },
+  {
+    "name": "bottom-50-tax-analysis",
+    "description": "Analysis of federal income tax burden by income percentile using PolicyEngine",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-21T18:59:38Z"
+  },
+  {
+    "name": "microimpute",
+    "description": "Repository for benchmarking different imputation methods for survey data.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-21T18:32:27Z"
+  },
+  {
+    "name": "policyengine-core",
+    "description": "Core microsimulation engine for PolicyEngine models. Forked from OpenFisca-Core.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-21T17:59:33Z"
+  },
+  {
+    "name": "taxsim-emulator-demo-day-slides",
+    "description": "Demo day slide deck for the PolicyEngine TAXSIM Emulator",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-21T13:59:48Z"
+  },
+  {
+    "name": "georgia-2026-tax-changes",
+    "description": "Dashboard modelling Georgia HB463 (2026 tax cuts: flat rate 4.99%, higher standard deduction + dependent exemption, new overtime/tip exclusions) using the inverse-reform pattern from south-carolina-2026-tax-changes",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-20T20:53:33Z"
+  },
+  {
+    "name": "ACA-Calc",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-20T16:11:04Z"
+  },
+  {
+    "name": "policyengine-section-8",
+    "description": "Section 8 (Housing Choice Voucher) household calculator and microsimulation viewer, powered by policyengine.py",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-20T15:16:23Z"
+  },
+  {
+    "name": "L0",
+    "description": "A package that implements the L0 penalty per Luizos, Welling, & Kingma (2017) https://arxiv.org/abs/1712.01312",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-19T18:43:51Z"
+  },
+  {
+    "name": "policyengine-demo",
+    "description": "PolicyEngine presentation demo slides",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-19T14:44:27Z"
+  },
+  {
+    "name": "ri-ctc-calculator",
+    "description": "Rhode Island Child Tax Credit Calculator - Model RI CTC reforms and their impact on households",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-19T14:28:19Z"
+  },
+  {
+    "name": "policyengine-developer-portal",
+    "description": "Developer portal for PolicyEngine API clients \u2014 sandbox, analytics, migration guides",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-19T12:49:33Z"
+  },
+  {
+    "name": "ai-inequality",
+    "description": "Research examining how economic policies mediate AI's impact on income, consumption, and wealth distribution",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-18T21:00:39Z"
+  },
+  {
+    "name": "us-state-eitcs-ctcs",
+    "description": "Dashboard showing the impacts of state EITCs and CTCs",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-18T18:22:05Z"
+  },
+  {
+    "name": "aspen-eitc-ctc",
+    "description": "Interactive calculator for the Aspen ESG EITC & CTC reform proposal",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-18T15:25:13Z"
+  },
+  {
+    "name": "policyengine-household-wizard",
+    "description": "Shared wizard primitives and US household draft contract for PolicyEngine apps.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-17T22:20:43Z"
+  },
+  {
+    "name": "poverty-dashboard",
+    "description": "Internal PolicyEngine dashboard for baseline federal and per-state poverty / child poverty checks",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-17T12:38:05Z"
+  },
+  {
+    "name": "wv-sb392-tax-cut",
+    "description": "Dashboard modeling West Virginia's SB 392 (2026) income tax rate cut",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T11:08:33Z"
+  },
+  {
+    "name": "oregon-kicker-refund",
+    "description": "Oregon Kicker (Surplus Revenue Credit) calculator for 2025",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T11:08:25Z"
+  },
+  {
+    "name": "keep-your-pay-act",
+    "description": "Modeling the Keep Your Pay Act from Cory Booker",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T11:08:21Z"
+  },
+  {
+    "name": "working-Americans-tax-cut-act-",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T11:08:17Z"
+  },
+  {
+    "name": "2024-election-dashboard",
+    "description": "Create a streamlit application that highlights all previous research done by PolicyEngine regarding the 2024 election ",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T10:51:08Z"
+  },
+  {
+    "name": "healthcare-calculator",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T10:45:49Z"
+  },
+  {
+    "name": "givecalc",
+    "description": "Giving pledge calculator",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T10:45:46Z"
+  },
+  {
+    "name": "snap-district-map",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T01:30:16Z"
+  },
+  {
+    "name": "uk-public-services-imputation",
+    "description": "A project to impute public service spending to household microdata.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T01:15:24Z"
+  },
+  {
+    "name": "uk-autumn-budget-dashboard",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:07:18Z"
+  },
+  {
+    "name": "vance-harris-ctc-comparison",
+    "description": "Create a household calculator for the impact of the impact of the Harris and Vance CTC expansion proposals",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:04:16Z"
+  },
+  {
+    "name": "uk-two-child-limit-app",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:04:07Z"
+  },
+  {
+    "name": "uk-spring-statement-2026",
+    "description": "Interactive analysis of the UK Spring Statement 2026 household impact",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:04:03Z"
+  },
+  {
+    "name": "uk-salary-sacrifice-analysis",
+    "description": "Analysis of UK salary sacrifice pension cap policy using PolicyEngine",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:04:00Z"
+  },
+  {
+    "name": "uk-land-value-tax",
+    "description": "Interactive dashboard modelling the impact of replacing council tax with a land value tax in the UK",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:03:53Z"
+  },
+  {
+    "name": "uk-2024-manifestos-comparison",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:03:50Z"
+  },
+  {
+    "name": "tanf-calculator",
+    "description": "TANF Calculator",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:03:46Z"
+  },
+  {
+    "name": "student-loan-calculator",
+    "description": "Student loan calculator: marginal deduction rates, take-home pay, and lifetime costs for UK graduates",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:03:43Z"
+  },
+  {
+    "name": "spm-calculator",
+    "description": "Calculate SPM (Supplemental Poverty Measure) thresholds for any US geography and year",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:03:39Z"
+  },
+  {
+    "name": "scottish-budget-2026-2027",
+    "description": "Interactive dashboard analysing the Scottish Budget 2026-27 impact on living standards, poverty, and local areas",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:03:33Z"
+  },
+  {
+    "name": "salt-amt-calculator",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:03:26Z"
+  },
+  {
+    "name": "energy-price-shock",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:02:58Z"
+  },
+  {
+    "name": "ctc-calculator",
+    "description": "Child Tax Credit calculator under current law",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:02:55Z"
+  },
+  {
+    "name": "april-fools-2026",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:02:42Z"
+  },
+  {
+    "name": "Autumn-budget-local-area",
+    "description": "Interactive dashboard exploring how the UK Autumn Budget 2025 affects households at the constituency level",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:02:31Z"
+  },
+  {
+    "name": "2025-year-in-review",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-15T00:02:25Z"
+  },
+  {
+    "name": "policyengine-ui-kit",
+    "description": "PolicyEngine UI kit \u2014 design tokens, Tailwind CSS v4 theme, and React components for dashboards and calculators",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-14T21:49:26Z"
+  },
+  {
+    "name": "student-loan-visualisation",
+    "description": "Interactive visualisation comparing the distributional impact of student loan reforms",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-14T21:49:06Z"
+  },
+  {
+    "name": "nj-ctc-eitc-expansion",
+    "description": "Dashboard modeling the NJ Cash Alliance coalition's CTC + EITC expansion proposal",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-12T15:38:04Z"
+  },
+  {
+    "name": "nc-stein-2027-tax-proposals",
+    "description": "Dashboard for NC Gov. Josh Stein's FY2026-27 Budget tax proposals",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-12T15:30:13Z"
+  },
+  {
+    "name": "neophil-emof-2025",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-10T13:39:56Z"
+  },
+  {
+    "name": "ahs-accessibility-viz",
+    "description": "Interactive visualization of AHS accessibility features by building age and structure type",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-10T13:39:53Z"
+  },
+  {
+    "name": "atlas",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-10T08:31:38Z"
+  },
+  {
+    "name": "uk-spring-statement-analysis",
+    "description": "PolicyEngine analysis of UK Spring Statement 2026 \u2014 OBR forecast changes and household impacts",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-10T08:31:37Z"
+  },
+  {
+    "name": "uk-childcare-reforms-audit",
+    "description": "Stress-testing UK childcare subsidy reforms using PolicyEngine microsimulation, benchmarked against IFS, IPPR, Resolution Foundation, WBG, and OBR estimates",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-10T00:05:11Z"
+  },
+  {
+    "name": "policyengine-spm-decomposition",
+    "description": "Decomposing PolicyEngine vs Census SPM child poverty rate divergence",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-10T00:05:11Z"
+  },
+  {
+    "name": "wa-millionaires-tax",
+    "description": "Washington State millionaires tax analysis",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T23:31:13Z"
+  },
+  {
+    "name": "plugin-blog",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T23:31:11Z"
+  },
+  {
+    "name": "pe-rf-compare-uc",
+    "description": "RF vs PolicyEngine UK: Universal Credit Comparison Dashboard",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T23:19:54Z"
+  },
+  {
+    "name": "gov-canada-presentation",
+    "description": "Presentation slides for Government of Canada",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T23:17:22Z"
+  },
+  {
+    "name": "comparing-pe-obr-salary-sacrifice-cap",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T23:16:21Z"
+  },
+  {
+    "name": "nsf-cssi-2025",
+    "description": "NSF CSSI Elements proposal for PolicyEngine cyberinfrastructure (2025)",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T23:12:06Z"
+  },
+  {
+    "name": "uk-two-child-limit-reintroduction",
+    "description": "Restoring the two-child benefit cap would save \u00a33.9bn in 2029-30, affecting 713k households and 1.0m children (7.2%) \u2014 counting only 3rd+ children who directly lose entitlement. Built with PolicyEngine UK.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T23:11:52Z"
+  },
+  {
+    "name": "state-outreach",
+    "description": "Interactive dashboard for managing PolicyEngine state-level policy partnerships and tracking tax legislation",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-09T23:11:38Z"
+  },
+  {
+    "name": "state-medicaid-dashboard",
+    "description": "State Medicaid Dashboard ",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T23:11:22Z"
+  },
+  {
+    "name": "tech-team-roadmap-2026",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T23:08:01Z"
+  },
+  {
+    "name": "state-legislative-tracker",
+    "description": "2026 State Legislative Tracker - PolicyEngine State Tax Research",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T22:18:06Z"
+  },
+  {
+    "name": "nuffield-rda-2025",
+    "description": "",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-09T18:56:14Z"
+  },
+  {
+    "name": "nsf-pose-phase-2",
+    "description": "PolicyEngine's application for Phase 2 of the National Science Foundation's Pathways to Enable Open Source Ecosystems grant program.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:55:23Z"
+  },
+  {
+    "name": "openai-people-first-ai-fund-2025",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:55:20Z"
+  },
+  {
+    "name": "nuffield-2025-interactive",
+    "description": "Interactive version of the Nuffield RDA 2025 grant application",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:55:17Z"
+  },
+  {
+    "name": "perf-2025",
+    "description": "PolicyEngine 2025 Performance Review Microsite",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:55:15Z"
+  },
+  {
+    "name": "og-model-dashboard",
+    "description": "Interactive dashboard explaining OG-UK \u2014 the UK calibration of OG-Core (PSL) \u2014 with methodology walk-through and side-by-side comparison to the OBR's UK OLG model.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:46:29Z"
+  },
+  {
+    "name": "spring-statement-personal-calculator",
+    "description": "Spring Statement 2025 Personal Calculator \u2014 see how policy changes affect your household's taxes and benefits",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:46:01Z"
+  },
+  {
+    "name": "policyengine-project-management-comparison",
+    "description": "Interactive comparison of project management tools for PolicyEngine (Plane, Jira, Linear, GitHub Projects + CiviCRM)",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:44:32Z"
+  },
+  {
+    "name": "publishing-strategy",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:41:33Z"
+  },
+  {
+    "name": "vanderbilt-state-tax-policy-academy-2025",
+    "description": "PolicyEngine presentation for Vanderbilt Prenatal-to-3 Policy Impact Center's State Tax Policy Academy - 45 minute session on modeling state tax policies",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:34:00Z"
+  },
+  {
+    "name": "team-meeting-2026-slides",
+    "description": "",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-09T18:33:56Z"
+  },
+  {
+    "name": "talk-georgetown-ppol6362-2026-01-12",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:33:50Z"
+  },
+  {
+    "name": "slides-2026-01-16-arnold",
+    "description": "Arnold Ventures organizational update slides - Jan 2026",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-09T18:33:47Z"
+  },
+  {
+    "name": "ri-ctc-calculator-webinar",
+    "description": "Rhode Island Child Tax Credit Calculator Webinar - Feb 5, 2026",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:33:44Z"
+  },
+  {
+    "name": "nuffield-2026-01-09-slides",
+    "description": "",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-09T18:33:39Z"
+  },
+  {
+    "name": "mn-house-research-demo-2025",
+    "description": "PolicyEngine presentation for Minnesota House Research Department - January 2025",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:33:36Z"
+  },
+  {
+    "name": "uk-property-tax-model",
+    "description": "",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-09T18:14:50Z"
+  },
+  {
+    "name": "uk-income-tax-freeze-app",
+    "description": "An interactive application to analyze the impact of extending the freeze on income tax thresholds in the UK",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:14:48Z"
+  },
+  {
+    "name": "state-millionaire-surtax-interactive",
+    "description": "Interactive calculator for exploring state millionaire surtax proposals",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:14:45Z"
+  },
+  {
+    "name": "marketing-materials",
+    "description": "Marketing materials for PolicyEngine conferences and events",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:14:34Z"
+  },
+  {
+    "name": "obr-forecast-household-calculator",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:14:34Z"
+  },
+  {
+    "name": "pci-grant-dashboard",
+    "description": "Dashboard for tracking Pritzker Children's Initiative grant progress",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-05-09T18:14:33Z"
+  },
+  {
+    "name": "liheap-repeal-dashboard",
+    "description": "Impact dashboard for federal LIHEAP repeal (DC, MA, IL)",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:13:42Z"
+  },
+  {
+    "name": "deduction-repeal-analysis",
+    "description": "10-year federal revenue scores for repealing US tax deductions",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:13:34Z"
+  },
+  {
+    "name": "nics-exemption-inactive-employees",
+    "description": "NICs exemption for recently-inactive employees \u2014 microsimulation dashboard",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:09:20Z"
+  },
+  {
+    "name": "impact-iran-war-living-standards",
+    "description": "How an Iran conflict would affect UK living standards \u2014 microsimulation analysis with interactive dashboard",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:09:18Z"
+  },
+  {
+    "name": "housing-policy-dashboard",
+    "description": "UK housing policy dashboard \u2014 fiscal and distributional impact estimates via PolicyEngine microsimulation",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T18:08:28Z"
+  },
+  {
+    "name": "senior-state-tax-breaks",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T17:50:11Z"
+  },
+  {
+    "name": "policyengine-us-improvements-2026",
+    "description": "Interactive dashboard and inventory summarizing improvements to policyengine-us and policyengine-us-data since January 1, 2026",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T17:34:46Z"
+  },
+  {
+    "name": "council-tax-ctr-map",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T17:34:31Z"
+  },
+  {
+    "name": "missouri-transitional-benefits",
+    "description": "Benefits cliffs analysis: conservation of means-testing, MTR comparison, and microsimulation tools",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T16:17:45Z"
+  },
+  {
+    "name": "snap-bbce-repeal",
+    "description": "Analysis of repealing SNAP Broad-Based Categorical Eligibility (BBCE)",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T16:08:51Z"
+  },
+  {
+    "name": "cbo-baseline-tracker",
+    "description": "Interactive dashboard comparing CBO Budget and Economic Outlook baseline projections",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T16:03:46Z"
+  },
+  {
+    "name": "payroll-deficit-explorer",
+    "description": "How much would US payroll tax rates need to rise to eliminate the 2036 primary deficit? PolicyEngine \u00d7 CBO baseline.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T15:57:52Z"
+  },
+  {
+    "name": "policyengine-prompt-impacts",
+    "description": "Compute distributional impacts for the typewriter prompts on the PolicyEngine homepage",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-09T01:15:21Z"
+  },
+  {
+    "name": "code-snippets",
+    "description": "A home for code snippets and fragments relevant to the team",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-06T19:25:03Z"
+  },
+  {
+    "name": "analysis-notebooks",
+    "description": "Notebooks for policy analysis using PolicyEngine software",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-06T15:30:09Z"
+  },
+  {
+    "name": "us-cliff-survey",
+    "description": "Empirical survey of the largest income tax cliffs in the US, using PolicyEngine-US to sweep earnings across archetypes and households.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-05-05T15:27:32Z"
+  },
+  {
+    "name": "weightedpandas",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:39:53Z"
+  },
+  {
+    "name": "yaml-changelog",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:38:53Z"
+  },
+  {
+    "name": "venezuela-tax-benefit-explainer",
+    "description": "Interactive scrollytelling visualization of Venezuela's tax and benefit system",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:38:47Z"
+  },
+  {
+    "name": "utah-sb60-calc",
+    "description": "Impacts of bill SB60 in Utah",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:38:40Z"
+  },
+  {
+    "name": "us-healthcare",
+    "description": "A project to model healthcare in the U.S.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:38:37Z"
+  },
+  {
+    "name": "us-congressional-districts",
+    "description": "A project to create microdata representative of the U.S. household sector in every congressional district.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:38:34Z"
+  },
+  {
+    "name": "ukds-mcp",
+    "description": "MCP server for the UK Data Service \u2014 search datasets, manage projects, download microdata",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:38:31Z"
+  },
+  {
+    "name": "uk-mansion-tax",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:38:14Z"
+  },
+  {
+    "name": "uk-local-areas-dashboard-claude",
+    "description": "",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-04-28T00:38:11Z"
+  },
+  {
+    "name": "uk-autumn-budget-lifecycle",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:38:01Z"
+  },
+  {
+    "name": "stronger-start-calc",
+    "description": "Analysis of the Stronger Start for Working Families Act - CTC earnings threshold elimination",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:37:48Z"
+  },
+  {
+    "name": "policyengine.dev",
+    "description": "Information for PolicyEngine developers on how to contribute and how it's structured.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:37:46Z"
+  },
+  {
+    "name": "strategy",
+    "description": "Site with PolicyEngine's strategy",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:37:45Z"
+  },
+  {
+    "name": "scotland-mansion-tax",
+    "description": "Analysis of Scottish mansion tax (council tax reform for \u00a31m+ properties from Budget 2026-27) by Scottish Parliament constituency",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:37:22Z"
+  },
+  {
+    "name": "sc-h3492-eitc-calc",
+    "description": "Analysis of South Carolina H.3492 Partially Refundable EITC",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:37:16Z"
+  },
+  {
+    "name": "ri-mckee-ctc-calc",
+    "description": "Analysis of Rhode Island Governor McKee's proposed child tax credit",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:37:09Z"
+  },
+  {
+    "name": "reweight",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:37:00Z"
+  },
+  {
+    "name": "rdbl",
+    "description": "A Python package to format numbers for readability",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:57Z"
+  },
+  {
+    "name": "pulse",
+    "description": "Team meeting coordination hub for PolicyEngine",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:54Z"
+  },
+  {
+    "name": "pritzker",
+    "description": "Pritzker Family Foundation grant application materials for PolicyEngine",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:48Z"
+  },
+  {
+    "name": "policyengine-ve",
+    "description": "PolicyEngine Venezuela tax-benefit microsimulation model",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:39Z"
+  },
+  {
+    "name": "policyengine-us-old",
+    "description": "Source code for PolicyEngine US",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:36Z"
+  },
+  {
+    "name": "policyengine-ie",
+    "description": "PolicyEngine Ireland: Microsimulation model for the Irish tax and benefit system",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:33Z"
+  },
+  {
+    "name": "policyengine-uk-old",
+    "description": "Source code for PolicyEngine-UK",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:30Z"
+  },
+  {
+    "name": "policyengine-uk-event-2025",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:26Z"
+  },
+  {
+    "name": "policyengine-it",
+    "description": "Combined country package for all OECD countries not currently modelled by PolicyEngine",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:26Z"
+  },
+  {
+    "name": "policyengine-social",
+    "description": "Automated social media posting for PolicyEngine blog articles",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:06Z"
+  },
+  {
+    "name": "policyengine-snapscreener-validation",
+    "description": "Validation tool for comparing PolicyEngine US calculations with SNAP screener",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:36:03Z"
+  },
+  {
+    "name": "policyengine-scoring",
+    "description": "Reform impact scoring pipeline + methodology dashboard for PolicyEngine. Pre-implementation design phase.",
+    "visibility": "PRIVATE",
+    "pushed_at": "2026-04-28T00:35:56Z"
+  },
+  {
+    "name": "policyengine-il",
+    "description": "A model of Israel's tax-benefit system.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:35:52Z"
+  },
+  {
+    "name": "policyengine-nz",
+    "description": "PolicyEngine New Zealand: Microsimulation model for the New Zealand tax and benefit system",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:35:50Z"
+  },
+  {
+    "name": "policyengine-data",
+    "description": "",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:35:47Z"
+  },
+  {
+    "name": "policyengine-ng",
+    "description": "A model of the Nigerian tax-benefit system",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:35:46Z"
+  },
+  {
+    "name": "ira-calculator",
+    "description": "A hackathon project to create a calculator to compute the impact of IRA subsidies.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:35:26Z"
+  },
+  {
+    "name": "policyengine-canada",
+    "description": "Country model of Canada's tax-benefit system, using PolicyEngine Core.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:35:24Z"
+  },
+  {
+    "name": "policyengine-au",
+    "description": "PolicyEngine Australia: Microsimulation model for the Australian tax and benefit system",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:35:21Z"
+  },
+  {
+    "name": "pe-compile",
+    "description": "Compile PolicyEngine country models into fast standalone calculators",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:34:59Z"
+  },
+  {
+    "name": "openfisca-tools",
+    "description": "Python tools for enhancing OpenFisca country packages.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:34:56Z"
+  },
+  {
+    "name": "mortality",
+    "description": "Practical mortality calculations and projections for Python",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:34:28Z"
+  },
+  {
+    "name": "microcalibrate",
+    "description": "A package to calibrate survey data.",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:34:26Z"
+  },
+  {
+    "name": "maria-microintern",
+    "description": "Maria Juaristi's recap of her 2025 PolicyEngine internship",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:34:09Z"
+  },
+  {
+    "name": "linecheck",
+    "description": "Utility for enforcing newline endings",
+    "visibility": "PUBLIC",
+    "pushed_at": "2026-04-28T00:34:06Z"
+  }
+]
