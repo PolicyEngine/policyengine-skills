@@ -1,19 +1,31 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { manifest, kindLabel, getArtifact } from "../data";
-import type { Artifact, ArtifactKind } from "../types";
+import type { Artifact, ArtifactKind, RegistryStatus } from "../types";
 import { ArtifactDrawer } from "../components/Drawer";
 import { RepoChip } from "../components/RepoChip";
+import { StatusChip } from "../components/StatusChip";
 
 const ALL_KINDS: ArtifactKind[] = ["skill", "agent", "command", "bundle"];
+const STATUSES: RegistryStatus[] = [
+  "recommended",
+  "internal-only",
+  "use-with-care",
+  "experimental",
+  "deprecated",
+];
 
 export default function CatalogPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialRepo = searchParams.get("repo");
   const [query, setQuery] = useState("");
   const [activeKinds, setActiveKinds] = useState<Set<ArtifactKind>>(
     new Set(ALL_KINDS),
   );
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeBundle, setActiveBundle] = useState<string | null>(null);
-  const [activeRepo, setActiveRepo] = useState<string | null>(null);
+  const [activeRepo, setActiveRepo] = useState<string | null>(initialRepo);
+  const [activeStatus, setActiveStatus] = useState<RegistryStatus | null>(null);
   const [selected, setSelected] = useState<Artifact | null>(null);
 
   const categories = useMemo(() => {
@@ -44,12 +56,13 @@ export default function CatalogPage() {
       if (activeCategory && a.category !== activeCategory) return false;
       if (activeBundle && !a.bundles.includes(activeBundle)) return false;
       if (activeRepo && !a.target_repos.includes(activeRepo)) return false;
+      if (activeStatus && a.registry_status !== activeStatus) return false;
       if (!q) return true;
       const hay =
-        `${a.name} ${a.id} ${a.description} ${a.triggers.join(" ")} ${a.category}`.toLowerCase();
+        `${a.name} ${a.id} ${a.description} ${a.triggers.join(" ")} ${a.category} ${a.registry_owner} ${a.registry_status}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [query, activeKinds, activeCategory, activeBundle, activeRepo]);
+  }, [query, activeKinds, activeCategory, activeBundle, activeRepo, activeStatus]);
 
   const toggleKind = (k: ArtifactKind) => {
     const next = new Set(activeKinds);
@@ -57,6 +70,11 @@ export default function CatalogPage() {
     else next.add(k);
     if (next.size === 0) next.add(k);
     setActiveKinds(next);
+  };
+
+  const setRepoFilter = (repo: string | null) => {
+    setActiveRepo(repo);
+    setSearchParams(repo ? { repo } : {});
   };
 
   return (
@@ -116,13 +134,25 @@ export default function CatalogPage() {
         </select>
         <select
           value={activeRepo ?? ""}
-          onChange={(e) => setActiveRepo(e.target.value || null)}
+          onChange={(e) => setRepoFilter(e.target.value || null)}
           style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)" }}
         >
           <option value="">All target repos</option>
           {repos.map(([r, n]) => (
             <option key={r} value={r}>
               {r} ({n})
+            </option>
+          ))}
+        </select>
+        <select
+          value={activeStatus ?? ""}
+          onChange={(e) => setActiveStatus((e.target.value || null) as RegistryStatus | null)}
+          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)" }}
+        >
+          <option value="">All statuses</option>
+          {STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {status}
             </option>
           ))}
         </select>
@@ -136,6 +166,7 @@ export default function CatalogPage() {
           <tr>
             <th style={{ width: 80 }}>Kind</th>
             <th style={{ width: "18%" }}>Name</th>
+            <th style={{ width: "12%" }}>Status</th>
             <th style={{ width: "28%" }}>Description</th>
             <th style={{ width: "10%" }}>Category</th>
             <th style={{ width: "22%" }}>Target repos</th>
@@ -159,6 +190,12 @@ export default function CatalogPage() {
                 )}
               </td>
               <td>
+                <StatusChip status={a.registry_status} size="sm" />
+                <div style={{ fontSize: 11, color: "var(--fg-muted)", marginTop: 4 }}>
+                  {a.registry_owner}
+                </div>
+              </td>
+              <td>
                 <div className="truncate-2">{a.description}</div>
               </td>
               <td>
@@ -174,8 +211,9 @@ export default function CatalogPage() {
                       key={r}
                       repo={r}
                       size="sm"
-                      onClick={() => {
-                        setActiveRepo(r);
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setRepoFilter(r);
                       }}
                     />
                   ))}
@@ -197,7 +235,7 @@ export default function CatalogPage() {
           ))}
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={6}>
+              <td colSpan={7}>
                 <div className="empty">No artifacts match these filters.</div>
               </td>
             </tr>

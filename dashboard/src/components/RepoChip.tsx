@@ -1,10 +1,12 @@
+import type { MouseEvent } from "react";
+
 export function RepoChip({
   repo,
   onClick,
   size = "md",
 }: {
   repo: string;
-  onClick?: () => void;
+  onClick?: (event: MouseEvent<HTMLSpanElement>) => void;
   size?: "sm" | "md";
 }) {
   return (

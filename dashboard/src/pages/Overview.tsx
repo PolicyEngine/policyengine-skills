@@ -22,6 +22,12 @@ export default function OverviewPage() {
   const agentsInBundles = agents.filter((s) => s.bundles.length > 0).length;
   const avgBundlesPerSkill =
     skills.reduce((s, a) => s + a.bundles.length, 0) / Math.max(skills.length, 1);
+  const deprecated = manifest.artifacts.filter(
+    (a) => a.registry_status === "deprecated",
+  ).length;
+  const useWithCare = manifest.artifacts.filter(
+    (a) => a.registry_status === "use-with-care",
+  ).length;
 
   const repoCounts = new Map<string, { skill: number; agent: number; command: number }>();
   for (const a of manifest.artifacts) {
@@ -113,6 +119,32 @@ export default function OverviewPage() {
           <div className="stat-meta">
             tooling-relevant; of {manifest.known_repos?.length ?? 0} org repos
           </div>
+        </div>
+        <div
+          className="stat-card"
+          style={{
+            borderLeftWidth: 3,
+            borderLeftStyle: "solid",
+            borderLeftColor: "var(--danger)",
+          }}
+        >
+          <div className="stat-label">Do not use</div>
+          <div className="stat-value">{deprecated}</div>
+          <div className="stat-meta">{useWithCare} more need confirmation</div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Internal registry workflow</h3>
+        <p style={{ color: "var(--fg-muted)", fontSize: 13, margin: "0 0 12px" }}>
+          Use Find when choosing an entry point, Catalog when inspecting a known
+          artifact, and Cleanup before wiring a direct agent call or creating another
+          skill.
+        </p>
+        <div className="toolbar" style={{ marginBottom: 0 }}>
+          <Link className="secondary-btn" to="/find">Find what to use</Link>
+          <Link className="secondary-btn" to="/catalog">Inspect catalog</Link>
+          <Link className="secondary-btn" to="/cleanup">Review cleanup queue</Link>
         </div>
       </div>
 
@@ -257,9 +289,10 @@ export default function OverviewPage() {
       </div>
 
       <div style={{ marginTop: 24, fontSize: 12, color: "var(--fg-muted)" }}>
+        <Link to="/find">Find what to use →</Link> &nbsp; · &nbsp;{" "}
         <Link to="/catalog">Browse the catalog →</Link> &nbsp; · &nbsp;{" "}
         <Link to="/duplicates">Inspect duplicates →</Link> &nbsp; · &nbsp;{" "}
-        <Link to="/workflows">Workflow graph →</Link> &nbsp; · &nbsp;{" "}
+        <Link to="/workflows">Workflow map →</Link> &nbsp; · &nbsp;{" "}
         <Link to="/gaps">Coverage gaps →</Link>
       </div>
     </div>

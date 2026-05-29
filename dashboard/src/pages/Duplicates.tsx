@@ -115,9 +115,8 @@ function FunctionalOverlapCard({
       </div>
       <div className="pair">
         {arts.map((a, idx) => (
-          <>
+          <div key={`${a.kind}:${a.id}`} style={{ display: "contents" }}>
             <div
-              key={a.id}
               className="pair-card"
               onClick={() => onSelect(a)}
               style={{ cursor: "pointer" }}
@@ -139,7 +138,7 @@ function FunctionalOverlapCard({
               </div>
             </div>
             {idx < arts.length - 1 && <div className="pair-arrow">⇆</div>}
-          </>
+          </div>
         ))}
       </div>
       <div

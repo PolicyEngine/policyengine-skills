@@ -3,6 +3,7 @@ import { manifest, getArtifact } from "../data";
 import type { Artifact, ArtifactKind } from "../types";
 import { ArtifactDrawer } from "../components/Drawer";
 import { RepoChip } from "../components/RepoChip";
+import { StatusChip } from "../components/StatusChip";
 
 type Filter = "tooling-relevant" | "all" | "uncovered";
 
@@ -111,6 +112,17 @@ function RepoCard({
   onSelectArtifact: (a: Artifact) => void;
 }) {
   const uncovered = repo.total === 0;
+  const artifacts = [
+    ...repo.commands.map((id) => getArtifact("command", id)),
+    ...repo.agents.map((id) => getArtifact("agent", id)),
+    ...repo.skills.map((id) => getArtifact("skill", id)),
+  ].filter((a): a is Artifact => Boolean(a));
+  const risky = artifacts.filter(
+    (a) =>
+      a.registry_status === "deprecated" ||
+      a.registry_status === "use-with-care" ||
+      a.registry_status === "experimental",
+  );
 
   return (
     <div className="card" style={{ padding: 14 }}>
@@ -136,6 +148,14 @@ function RepoCard({
           </span>
         )}
       </div>
+      {risky.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          <StatusChip status={risky[0].registry_status} size="sm" />
+          <span style={{ marginLeft: 6, fontSize: 11, color: "var(--fg-muted)" }}>
+            {risky.length} artifact{risky.length === 1 ? "" : "s"} need review
+          </span>
+        </div>
+      )}
       {repo.description && (
         <div
           style={{

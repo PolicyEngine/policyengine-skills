@@ -1,4 +1,10 @@
 export type ArtifactKind = "skill" | "agent" | "command" | "bundle";
+export type RegistryStatus =
+  | "recommended"
+  | "use-with-care"
+  | "deprecated"
+  | "experimental"
+  | "internal-only";
 
 export interface Artifact {
   id: string;
@@ -16,6 +22,11 @@ export interface Artifact {
   functional_summary: string | null;
   functional_scope: string[];
   functional_supersedes: string[];
+  registry_status: RegistryStatus;
+  registry_owner: string;
+  recommended_for: string[];
+  use_instead: string[];
+  registry_notes: string;
   references: Partial<Record<ArtifactKind, string[]>>;
   body_length: number;
 }

@@ -1,6 +1,7 @@
 import type { Artifact, ArtifactKind } from "../types";
 import { kindLabel, manifest, getArtifact } from "../data";
 import { RepoChip } from "./RepoChip";
+import { StatusChip } from "./StatusChip";
 
 export function ArtifactDrawer({
   artifact,
@@ -29,6 +30,9 @@ export function ArtifactDrawer({
 
   const otherSide = (o: (typeof relatedOverlaps)[number]) =>
     o.a.kind === artifact.kind && o.a.id === artifact.id ? o.b : o.a;
+  const replacements = artifact.use_instead
+    .map((id) => getArtifact(artifact.kind, id))
+    .filter((a): a is Artifact => Boolean(a));
 
   return (
     <>
@@ -39,6 +43,7 @@ export function ArtifactDrawer({
             <span className={`chip kind-${artifact.kind}`}>
               {kindLabel[artifact.kind]}
             </span>
+            <StatusChip status={artifact.registry_status} />
             <span className="chip">{artifact.category}</span>
             <span className="spacer" />
             <button className="close-btn" onClick={onClose}>
@@ -51,6 +56,49 @@ export function ArtifactDrawer({
           </code>
         </div>
         <div className="drawer-body">
+          <div className="drawer-section">
+            <h4>Registry guidance</h4>
+            <div
+              style={{
+                padding: 12,
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                background: "var(--muted)",
+              }}
+            >
+              <div className="row wrap" style={{ marginBottom: 6 }}>
+                <StatusChip status={artifact.registry_status} />
+                <span className="tag">{artifact.registry_owner}</span>
+              </div>
+              {artifact.registry_notes && (
+                <p style={{ margin: "0 0 8px", fontSize: 13 }}>
+                  {artifact.registry_notes}
+                </p>
+              )}
+              {artifact.recommended_for.length > 0 && (
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+                  {artifact.recommended_for.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              )}
+              {replacements.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 13, color: "var(--danger)" }}>
+                  Use instead:{" "}
+                  {replacements.map((replacement) => (
+                    <button
+                      key={replacement.id}
+                      className="link-btn"
+                      onClick={() => onSelect(replacement.kind, replacement.id)}
+                    >
+                      {replacement.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {artifact.functional_role && (
             <div className="drawer-section">
               <h4>Functional role</h4>

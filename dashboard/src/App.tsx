@@ -1,11 +1,13 @@
 import { NavLink, Route, Routes, Navigate } from "react-router-dom";
 import { manifest } from "./data";
 import OverviewPage from "./pages/Overview";
+import FinderPage from "./pages/Finder";
 import CatalogPage from "./pages/Catalog";
 import DuplicatesPage from "./pages/Duplicates";
 import WorkflowsPage from "./pages/Workflows";
 import ReposPage from "./pages/Repos";
 import GapsPage from "./pages/Gaps";
+import CleanupPage from "./pages/Cleanup";
 
 const generated = new Date(manifest.generated_at);
 
@@ -18,6 +20,10 @@ function Sidebar() {
         <NavLink to="/overview">
           <span className="nav-icon">◆</span>
           <span>Overview</span>
+        </NavLink>
+        <NavLink to="/find">
+          <span className="nav-icon">⌕</span>
+          <span>Find</span>
         </NavLink>
         <NavLink to="/catalog">
           <span className="nav-icon">▦</span>
@@ -50,6 +56,19 @@ function Sidebar() {
             {Object.values(manifest.gaps).reduce((s, arr) => s + arr.length, 0)}
           </span>
         </NavLink>
+        <NavLink to="/cleanup">
+          <span className="nav-icon">!</span>
+          <span>Cleanup</span>
+          <span className="nav-count">
+            {
+              manifest.artifacts.filter(
+                (a) =>
+                  a.registry_status === "deprecated" ||
+                  a.registry_status === "use-with-care",
+              ).length
+            }
+          </span>
+        </NavLink>
       </nav>
       <div className="sidebar-footer">
         Manifest generated
@@ -68,11 +87,13 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route path="/overview" element={<OverviewPage />} />
+          <Route path="/find" element={<FinderPage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/duplicates" element={<DuplicatesPage />} />
           <Route path="/workflows" element={<WorkflowsPage />} />
           <Route path="/repos" element={<ReposPage />} />
           <Route path="/gaps" element={<GapsPage />} />
+          <Route path="/cleanup" element={<CleanupPage />} />
         </Routes>
       </main>
     </div>

@@ -97,8 +97,9 @@ The generated wrapper repo must not be edited by hand.
 ## Ecosystem dashboard
 
 `dashboard/` is a React app that maps every skill, agent, command, and
-bundle in this repo — searchable catalog, TF-IDF duplicate detection,
-react-flow workflow graph, and a coverage-gaps view. See
+bundle in this repo — internal "what should I use?" finder, searchable
+catalog, TF-IDF duplicate detection, workflow mapping, repo coverage, and
+cleanup views for deprecated or risky artifacts. See
 [`dashboard/README.md`](dashboard/README.md) for details.
 
 ```bash

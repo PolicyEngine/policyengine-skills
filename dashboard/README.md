@@ -14,15 +14,22 @@ all of that legible in one place.
 ## Views
 
 - **Overview** — counts, top-referenced skills/agents, bundle composition.
+- **Find** — task-based internal registry for "what should I use?" decisions,
+  prioritizing recommended commands and flagging direct agent use.
 - **Catalog** — searchable, filterable table of every artifact. Click any
-  row to see its description, triggers, dependencies, and overlap candidates.
+  row to see registry status, owner, description, triggers, dependencies,
+  and overlap candidates.
 - **Duplicates** — TF-IDF cosine similarity over name + description +
   triggers + body for every artifact pair. Filter by kind, threshold, and
   same-kind vs. cross-kind to find merge candidates.
-- **Workflows** — interactive react-flow graph laying out commands → agents
-  → skills. Filter by a specific command to focus on one workflow.
+- **Workflows** — topic-organized workflow cards showing commands, agent
+  chains, and reference skills.
+- **Repos** — every active PolicyEngine org repo, classified and linked to
+  skills, agents, and commands inferred to cover it.
 - **Gaps** — orphaned skills, uncalled agents, broken bundle refs, missing
   descriptions/triggers, and a bundle coverage matrix.
+- **Cleanup** — deprecated, use-with-care, experimental, and internal-only
+  artifacts so maintainers can decide what to remove, merge, or document.
 
 ## How the data is built
 
@@ -34,7 +41,8 @@ all of that legible in one place.
 - `bundles/*.json`
 
 It parses YAML frontmatter, extracts trigger phrases, infers references
-(commands → agents/skills, agents → skills) from body text, computes
+(commands → agents/skills, agents → skills) from body text, derives internal
+registry metadata (status, owner, recommended use, replacements), computes
 overlap pairs via TF-IDF cosine, and emits
 `dashboard/src/data/manifest.json` — the single file the React app reads.
 
@@ -89,7 +97,6 @@ misclassifies something.
 
 ## What to read first
 
-Open the **Duplicates** view and lower the threshold to 30% — that surfaces
-the dozen or so genuine candidate consolidations across the ecosystem.
-Then jump to **Workflows** to see which commands are wired up to which
-agents and which agents lean on which skills.
+Open **Find** first when deciding what to use for a task. Use **Cleanup**
+before creating a new artifact or wiring an agent directly. Open
+**Duplicates** when consolidating overlapping skills, agents, or commands.

@@ -136,6 +136,11 @@ class Artifact:
     functional_summary: str | None = None
     functional_scope: list[str] = field(default_factory=list)
     functional_supersedes: list[str] = field(default_factory=list)
+    registry_status: str = "recommended"
+    registry_owner: str = ""
+    recommended_for: list[str] = field(default_factory=list)
+    use_instead: list[str] = field(default_factory=list)
+    registry_notes: str = ""
     # For commands: agents/skills referenced in body. For agents: skills.
     references: dict[str, list[str]] = field(default_factory=lambda: defaultdict(list))
 
@@ -811,6 +816,116 @@ def build_edges(
     return edges
 
 
+def owner_for_artifact(art: Artifact) -> str:
+    """Return the likely internal owner for registry triage."""
+    scope = set(art.functional_scope or art.target_repos)
+    if art.kind == "agent" and art.category == "dashboard":
+        return "Dashboard tooling"
+    if art.category in {"frontend", "content"} or scope & {
+        "policyengine-app-v2",
+        "policyengine-ui-kit",
+        "interactive-tools",
+        "dashboards",
+    }:
+        return "Frontend & product"
+    if art.category in {"domain-knowledge", "technical-patterns", "workflows"} or scope & {
+        "policyengine-us",
+        "policyengine-uk",
+        "policyengine-canada",
+    }:
+        return "Country model engineering"
+    if art.category == "data-science" or scope & {
+        "policyengine-us-data",
+        "policyengine-uk-data",
+        "microdf",
+        "microimpute",
+        "microcalibrate",
+    }:
+        return "Data science"
+    if scope & {"policyengine-api", "policyengine-api-v2", "policyengine-core"}:
+        return "Platform engineering"
+    if scope & {"policyengine-skills", "policyengine-claude"}:
+        return "AI tooling"
+    return "PolicyEngine"
+
+
+def registry_recommendation(art: Artifact) -> list[str]:
+    summary = art.functional_summary or art.description
+    if not summary:
+        return []
+    if art.kind == "command":
+        return [f"Use this command when you need to {summary[0].lower() + summary[1:]}"]
+    if art.kind == "skill":
+        return [f"Load this skill for work involving: {summary}"]
+    if art.kind == "agent":
+        return [
+            f"Use indirectly through its workflow unless you are maintaining agent orchestration: {summary}"
+        ]
+    if art.kind == "bundle":
+        return [f"Install this bundle when you need: {summary}"]
+    return []
+
+
+def attach_registry_metadata(
+    artifacts_by_kind: dict[str, list[Artifact]],
+    edges: list[dict],
+) -> None:
+    """Add internal registry metadata used by the dashboard.
+
+    The functional tag file can override these fields, but most values are
+    derived so every artifact gets useful guidance without hand-maintaining a
+    second catalog.
+    """
+    flat = [a for arts in artifacts_by_kind.values() for a in arts]
+    by_kind_id = {(a.kind, a.id): a for a in flat}
+
+    for art in flat:
+        for old_id in art.functional_supersedes:
+            old = by_kind_id.get((art.kind, old_id))
+            if old and art.id not in old.use_instead:
+                old.use_instead.append(art.id)
+
+    invoked_agents = {
+        e["target"]
+        for e in edges
+        if e["target_kind"] == "agent" and e["source_kind"] != "bundle"
+    }
+
+    for art in flat:
+        art.registry_owner = art.registry_owner or owner_for_artifact(art)
+        art.recommended_for = art.recommended_for or registry_recommendation(art)
+
+        if art.use_instead:
+            art.registry_status = "deprecated"
+            art.registry_notes = (
+                "A newer artifact explicitly supersedes this one. Prefer the replacement."
+            )
+        elif art.kind == "agent":
+            art.registry_status = "internal-only"
+            art.registry_notes = (
+                "Agents are usually implementation details of commands; call directly only "
+                "when maintaining or debugging the workflow."
+            )
+            if art.id not in invoked_agents:
+                art.registry_status = "use-with-care"
+                art.registry_notes = (
+                    "This agent is not currently invoked by any command or agent. Confirm "
+                    "it is still intended before relying on it."
+                )
+        elif art.kind in {"skill", "command"} and not art.bundles:
+            art.registry_status = "use-with-care"
+            art.registry_notes = (
+                "This artifact is not shipped in any bundle, so most users will not load it "
+                "unless they have a local checkout."
+            )
+        elif art.kind == "bundle":
+            art.registry_status = "recommended"
+            art.registry_notes = "Bundle install profile."
+        else:
+            art.registry_status = "recommended"
+            art.registry_notes = "Recommended for the listed scope."
+
+
 def artifact_to_dict(art: Artifact) -> dict:
     return {
         "id": art.id,
@@ -828,6 +943,11 @@ def artifact_to_dict(art: Artifact) -> dict:
         "functional_summary": art.functional_summary,
         "functional_scope": art.functional_scope,
         "functional_supersedes": art.functional_supersedes,
+        "registry_status": art.registry_status,
+        "registry_owner": art.registry_owner,
+        "recommended_for": art.recommended_for,
+        "use_instead": sorted(art.use_instead),
+        "registry_notes": art.registry_notes,
         "references": {k: sorted(v) for k, v in (art.references or {}).items()},
         "body_length": len(art.body),
     }
@@ -857,6 +977,11 @@ def attach_functional_tags(artifacts_by_kind: dict[str, list[Artifact]]) -> None
             art.functional_summary = entry.get("summary")
             art.functional_scope = entry.get("scope_repos", [])
             art.functional_supersedes = entry.get("supersedes", [])
+            art.registry_status = entry.get("status", art.registry_status)
+            art.registry_owner = entry.get("owner", art.registry_owner)
+            art.recommended_for = entry.get("recommended_for", art.recommended_for)
+            art.use_instead = entry.get("use_instead", art.use_instead)
+            art.registry_notes = entry.get("notes", art.registry_notes)
 
 
 def compute_functional_overlaps(
@@ -1050,6 +1175,7 @@ def main() -> None:
         for kind, arts in artifacts_by_kind.items()
     }
     edges = build_edges(artifacts_by_kind, known_ids)
+    attach_registry_metadata(artifacts_by_kind, edges)
 
     flat = skills + agents + commands + bundles
     overlaps = compute_overlaps([a for a in flat if a.kind != "bundle"])
