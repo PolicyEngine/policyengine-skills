@@ -15,7 +15,7 @@ description: |
 
 # PolicyEngine healthcare programs
 
-> **Scope:** This skill covers the healthcare domain — Medicaid, ACA marketplace, CHIP, and Medicare as modeled in PolicyEngine-US. For general PolicyEngine-US patterns, see the `policyengine-us` skill. For variable/parameter implementation patterns, see the `policyengine-variable-patterns` and `policyengine-parameter-patterns` skills.
+> **Scope:** This skill covers the healthcare domain — Medicaid, ACA marketplace, CHIP, and Medicare as modeled in PolicyEngine-US. For population analysis, default to `policyengine.py` and the `policyengine-microsimulation` patterns; use direct `policyengine_us` examples here only for low-level country-package reform work. For general PolicyEngine-US patterns, see the `policyengine-us` skill. For variable/parameter implementation patterns, see the `policyengine-variable-patterns` and `policyengine-parameter-patterns` skills.
 
 ## For users
 
@@ -149,7 +149,6 @@ def create_medicaid_expansion_repeal(state="UT"):
 The most common ACA policy question: extending the IRA-enhanced subsidies beyond their 2025 sunset. **`Reform.from_dict()` does not work** for ACA contribution rate parameters because they are list-valued (threshold + initial + final arrays). Use a variable-override reform instead:
 
 ```python
-from policyengine_us import Microsimulation
 from policyengine_core.reforms import Reform
 
 ANALYSIS_YEAR = 2026  # Don't use "YEAR" — it shadows model_api.YEAR
@@ -200,24 +199,30 @@ Also see existing reforms in `policyengine_us/reforms/aca/` for production examp
 ### Population-level healthcare analysis
 
 ```python
-from policyengine_us import Microsimulation
-import numpy as np
+from policyengine.core import Simulation
+from policyengine.provenance.manifest import resolve_region_dataset_path
+from policyengine.tax_benefit_models.us import ensure_datasets, us_latest
 
 YEAR = 2026
 
 # Use state-calibrated dataset for state-level analysis (much more accurate)
-sim = Microsimulation(
-    dataset="hf://policyengine/policyengine-us-data/states/UT.h5"
+state_dataset = resolve_region_dataset_path("us", "state", state_code="UT")
+datasets = ensure_datasets(
+    datasets=[state_dataset],
+    years=[YEAR],
+    data_folder="./data",
 )
+dataset = datasets[f"UT_{YEAR}"]
 
-# Calculate baseline
-weights = sim.calculate("person_weight", YEAR).values
-medicaid_enrolled = sim.calculate("medicaid_enrolled", YEAR).values
-aca_ptc = sim.calculate("aca_ptc", YEAR, map_to="person").values
+sim = Simulation(dataset=dataset, tax_benefit_model_version=us_latest)
+sim.ensure()
+output = sim.output_dataset.data
 
-# Weighted population counts
-total_medicaid = (weights * medicaid_enrolled.astype(float)).sum()
-total_aca_spending = (weights * aca_ptc).sum()
+# Weighted population counts and spending; no manual weights.
+medicaid_enrolled = output.person["medicaid_enrolled"]
+aca_ptc = output.tax_unit["aca_ptc"]
+total_medicaid = medicaid_enrolled.sum()
+total_aca_spending = aca_ptc.sum()
 
 print(f"Medicaid enrollment: {total_medicaid:,.0f}")
 print(f"Total ACA PTC spending: ${total_aca_spending:,.0f}")
@@ -230,30 +235,33 @@ print(f"Total ACA PTC spending: ${total_aca_spending:,.0f}")
 When modeling reforms that change Medicaid eligibility, track where people go:
 
 ```python
-baseline_medicaid = baseline.calculate("medicaid_enrolled", YEAR).values
-reform_medicaid = reform_sim.calculate("medicaid_enrolled", YEAR).values
-reform_ptc_eligible = reform_sim.calculate("is_aca_ptc_eligible", YEAR).values
+baseline_out = baseline.output_dataset.data
+reform_out = reform_sim.output_dataset.data
+
+baseline_medicaid = baseline_out.person["medicaid_enrolled"]
+reform_medicaid = reform_out.person["medicaid_enrolled"]
+reform_ptc_eligible = reform_out.person["is_aca_ptc_eligible"]
 
 loses_medicaid = baseline_medicaid & ~reform_medicaid
 gains_aca = loses_medicaid & reform_ptc_eligible
 coverage_gap = loses_medicaid & ~reform_ptc_eligible  # Below 100% FPL, no ACA access
 
-print(f"Lose Medicaid: {(weights * loses_medicaid.astype(float)).sum():,.0f}")
-print(f"Transition to ACA: {(weights * gains_aca.astype(float)).sum():,.0f}")
-print(f"Fall into coverage gap: {(weights * coverage_gap.astype(float)).sum():,.0f}")
+print(f"Lose Medicaid: {loses_medicaid.sum():,.0f}")
+print(f"Transition to ACA: {gains_aca.sum():,.0f}")
+print(f"Fall into coverage gap: {coverage_gap.sum():,.0f}")
 ```
 
 #### Distributional analysis by income
 
 ```python
-income_level = sim.calculate("medicaid_income_level", YEAR).values
+income_level = output.person["medicaid_income_level"]
 
 # Group by FPL brackets
 brackets = [(0, 1.0), (1.0, 1.38), (1.38, 2.0), (2.0, 4.0)]
 for low, high in brackets:
     mask = (income_level >= low) & (income_level < high)
-    enrolled = (weights * mask * medicaid_enrolled.astype(float)).sum()
-    total = (weights * mask.astype(float)).sum()
+    enrolled = (medicaid_enrolled & mask).sum()
+    total = mask.sum()
     print(f"{low*100:.0f}-{high*100:.0f}% FPL: {enrolled:,.0f} / {total:,.0f}")
 ```
 
@@ -273,13 +281,13 @@ There is a toggle parameter `gov.simulation.include_health_benefits_in_net_incom
 
 ```python
 # Option 1: Use household_net_income_including_health_benefits
-baseline_hni = baseline.calc("household_net_income_including_health_benefits", period=YEAR)
-reformed_hni = reformed.calc("household_net_income_including_health_benefits", period=YEAR)
+baseline_hni = baseline_out.household["household_net_income_including_health_benefits"]
+reformed_hni = reform_out.household["household_net_income_including_health_benefits"]
 cost = (reformed_hni - baseline_hni).sum()
 
 # Option 2: Measure the PTC change directly
-baseline_ptc = baseline.calc("aca_ptc", period=YEAR).sum()
-reformed_ptc = reformed.calc("aca_ptc", period=YEAR).sum()
+baseline_ptc = baseline_out.tax_unit["aca_ptc"].sum()
+reformed_ptc = reform_out.tax_unit["aca_ptc"].sum()
 ptc_cost = reformed_ptc - baseline_ptc
 
 # Option 3: Enable the toggle in the reform
@@ -318,10 +326,10 @@ class my_reform_variable(Variable):
 The `slcsp` variable (second-lowest silver plan premium) returns $0 when the person is not ACA-eligible — the model skips the premium lookup entirely. If you need the unsubsidized benchmark premium for comparison purposes (e.g., "what would this person pay without subsidies?"), you can't just read `slcsp`. Instead, look up the premium from the rating area cost parameters directly:
 
 ```python
-from policyengine_us import CountryTaxBenefitSystem
-p = CountryTaxBenefitSystem().parameters
-# state_rating_area_cost is indexed by state and rating area
-p.gov.aca.state_rating_area_cost("2026-01-01")
+from policyengine.tax_benefit_models.us import us_latest
+
+node = us_latest.get_parameter_node("gov.aca.state_rating_area_cost")
+print(node.name)
 ```
 
 #### `healthcare_benefit_value` entity mapping in population analysis
@@ -333,11 +341,14 @@ p.gov.aca.state_rating_area_cost("2026-01-01")
 The national CPS dataset can give implausible state-level results. For example, national CPS showed 76% employer-sponsored insurance at 100-138% FPL in Utah — the state-calibrated dataset gives much more realistic estimates.
 
 ```python
-# National (less accurate for state analysis)
-sim = Microsimulation(dataset="hf://policyengine/policyengine-us-data/enhanced_cps_2024.h5")
+from policyengine.provenance.manifest import resolve_region_dataset_path
 
-# State-calibrated (preferred for state analysis)
-sim = Microsimulation(dataset="hf://policyengine/policyengine-us-data/states/UT.h5")
+# National (less accurate for state analysis)
+national = ensure_datasets(datasets=["enhanced_cps_2024"], years=[YEAR], data_folder="./data")
+
+# State-calibrated (preferred for state analysis, release-pinned by policyengine.py)
+ut_path = resolve_region_dataset_path("us", "state", state_code="UT")
+ut = ensure_datasets(datasets=[ut_path], years=[YEAR], data_folder="./data")
 ```
 
 #### California ACA rating area bug

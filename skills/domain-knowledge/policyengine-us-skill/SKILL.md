@@ -264,18 +264,19 @@ policy = Policy(
 For quick parameter lookups:
 
 ```python
-from policyengine_us import CountryTaxBenefitSystem
-
-params = CountryTaxBenefitSystem().parameters
+from policyengine.tax_benefit_models.us import us_latest
 
 # CTC amount
-ctc = params.gov.irs.credits.ctc.amount.base_amount("2026-01-01")
+ctc = us_latest.get_parameter("gov.irs.credits.ctc.amount.base[0].amount")
+print([(v.start_date, v.end_date, v.value) for v in ctc.parameter_values[-5:]])
 
-# SNAP max (use .children["N"] for indexed params)
-snap_max = params.gov.usda.snap.income.max_allotment.children["4"]("2026-01-01")
+# SNAP max
+snap_max = us_latest.get_parameter("gov.usda.snap.income.max_allotment[4]")
+print([(v.start_date, v.end_date, v.value) for v in snap_max.parameter_values[-5:]])
 
 # State TANF
-dc_tanf = params.gov.states.dc.dhs.tanf.standard_payment.amount.children["3"]("2026-01-01")
+dc_tanf = us_latest.get_parameter("gov.states.dc.dhs.tanf.standard_payment.amount[3]")
+print([(v.start_date, v.end_date, v.value) for v in dc_tanf.parameter_values[-5:]])
 ```
 
 ---
@@ -390,11 +391,12 @@ for node in sim.tracer.trees:
 
 ### Key Gotcha: Simulation vs Microsimulation
 ```python
-# ✅ CORRECT for custom situations
-from policyengine_us import Simulation
-sim = Simulation(situation=situation)
+# ✅ CORRECT for custom households with policyengine.py
+from policyengine.tax_benefit_models.us import calculate_household
 
-# ❌ WRONG - Microsimulation expects a dataset, not a situation
+result = calculate_household(**household)
+
+# ❌ WRONG - country-package Microsimulation expects a dataset, not a situation
 from policyengine_us import Microsimulation
 sim = Microsimulation(situation=situation)  # Raises ValueError
 ```

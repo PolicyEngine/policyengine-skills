@@ -293,14 +293,23 @@ def add_wealth_components(frs, was):
 6. Use for UK policy simulations
 ```
 
-**In policyengine-uk:**
+**In policyengine.py analysis:**
 ```python
-from policyengine_uk import Microsimulation
+from policyengine.core import Simulation
+from policyengine.tax_benefit_models.uk import ensure_datasets, uk_latest
 
-# Uses enhanced FRS under the hood
-sim = Microsimulation()
-sim.calculate('student_loan_repayment', period='2026')
-# Uses imputed student_loan_balance variable
+datasets = ensure_datasets(
+    datasets=["enhanced_frs_2023_24"],
+    years=[2026],
+    data_folder="./data",
+)
+dataset = datasets["enhanced_frs_2023_24_2026"]
+
+simulation = Simulation(dataset=dataset, tax_benefit_model_version=uk_latest)
+simulation.ensure()
+
+# Uses imputed student_loan_balance from the enhanced FRS.
+student_loan_repayment = simulation.output_dataset.data.person["student_loan_repayment"]
 ```
 
 ## Related Skills

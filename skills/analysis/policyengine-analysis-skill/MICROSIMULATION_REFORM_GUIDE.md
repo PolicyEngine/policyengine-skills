@@ -1,5 +1,7 @@
 # Microsimulation reform implementation guide
 
+> **Status**: Legacy country-package guidance. For new population analysis, default to `policyengine.py` (`policyengine.core.Simulation`, `Policy`, `ParameterValue`, and `ensure_datasets()`) and use the `policyengine-microsimulation` / `policyengine-simulation-mechanics` skills. Use the direct `policyengine_uk` patterns below only when maintaining older UK-only projects or debugging the country package itself.
+
 > **Note**: Always use MicroSeries arithmetic (`.sum()`, `.mean()`, `*`, `>`) instead of extracting `.values` and using numpy. MicroSeries handles weighting automatically. Only use `household_weight` — it's the only calibrated weight.
 
 Guide for implementing policy reforms and microsimulation analysis in PolicyEngine  UK ONLY projects.
