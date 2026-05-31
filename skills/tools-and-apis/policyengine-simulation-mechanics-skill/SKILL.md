@@ -84,7 +84,7 @@ from policyengine.utils.plotting import COLORS, format_fig
 
 ### Loading UK datasets
 
-Use `ensure_datasets()` — it returns a `dict[str, PolicyEngineUKDataset]`, building files in `./data/` on first run and loading from disk on subsequent runs.
+Use `ensure_datasets()` — it returns a `dict[str, PolicyEngineUKDataset]`, building files in `./data/` on first run and loading from disk on subsequent runs. Pass logical dataset names so policyengine.py resolves the release-pinned artifacts; raw Hugging Face URLs bypass that bundle unless they include an explicit `@revision`.
 
 **WARNING:** `from policyengine.tax_benefit_models.uk import datasets` gives you the Python **submodule**, not a dict. Never index it like a dict.
 
@@ -93,8 +93,8 @@ from policyengine.tax_benefit_models.uk import ensure_datasets
 
 uk = ensure_datasets(
     datasets=[
-        "hf://policyengine/policyengine-uk-data/frs_2023_24.h5",
-        "hf://policyengine/policyengine-uk-data/enhanced_frs_2023_24.h5",
+        "frs_2023_24",
+        "enhanced_frs_2023_24",
     ],
     years=[2026],
     data_folder="./data",
@@ -114,7 +114,7 @@ frs  = uk["frs_2023_24_2026"]
 from policyengine.tax_benefit_models.us import ensure_datasets
 
 us = ensure_datasets(
-    datasets=["hf://policyengine/policyengine-us-data/enhanced_cps_2024.h5"],
+    datasets=["enhanced_cps_2024"],
     years=[2026],
     data_folder="./data",
 )

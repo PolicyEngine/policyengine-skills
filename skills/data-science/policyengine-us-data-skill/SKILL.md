@@ -263,15 +263,23 @@ The GitHub Actions CI has PUF access via secrets. Push to a branch and check the
 7. Use in policyengine-us simulations
 ```
 
-**In policyengine-us:**
+**In policyengine.py analysis:**
 ```python
-from policyengine_us import Microsimulation
-from policyengine_us_data import EnhancedCPS_2024
+from policyengine.core import Simulation
+from policyengine.tax_benefit_models.us import ensure_datasets, us_latest
 
-# Uses enhanced CPS with PUF imputations
-sim = Microsimulation(dataset=EnhancedCPS_2024)
-sim.calculate('self_employment_tax', period=2026)
+datasets = ensure_datasets(
+    datasets=["enhanced_cps_2024"],
+    years=[2026],
+    data_folder="./data",
+)
+dataset = datasets["enhanced_cps_2024_2026"]
+
+simulation = Simulation(dataset=dataset, tax_benefit_model_version=us_latest)
+simulation.ensure()
+
 # Uses imputed self_employment_income, farm_income, etc.
+self_employment_tax = simulation.output_dataset.data.tax_unit["self_employment_tax"]
 ```
 
 ## Related Skills

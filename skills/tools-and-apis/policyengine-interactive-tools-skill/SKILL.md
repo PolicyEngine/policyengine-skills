@@ -251,14 +251,20 @@ Best when the parameter space is small enough to enumerate, or the tool shows st
 
 ```python
 # scripts/precompute.py
-from policyengine_us import Microsimulation
+from policyengine.core import Simulation
+from policyengine.tax_benefit_models.us import ensure_datasets, us_latest
+
+datasets = ensure_datasets(datasets=["enhanced_cps_2024"], years=[2026], data_folder="./data")
+dataset = datasets["enhanced_cps_2024_2026"]
 
 results = {}
-for reform_id, reform in reforms.items():
-    sim = Microsimulation(reform=reform)
-    results[reform_id] = {
-        "revenue_change": float(sim.calculate("revenue_change")),
-        "poverty_change": float(sim.calculate("poverty_change")),
+for policy_id, policy in policies.items():
+    sim = Simulation(dataset=dataset, tax_benefit_model_version=us_latest, policy=policy)
+    sim.ensure()
+    output = sim.output_dataset.data
+    results[policy_id] = {
+        "income_tax": float(output.tax_unit["income_tax"].sum()),
+        "poverty_rate": float(output.person["person_in_poverty"].mean()),
     }
 
 with open("src/data/results.json", "w") as f:
@@ -426,18 +432,29 @@ def compute_statewide(params: dict) -> dict:
 Pure business logic — **policyengine imports at module level** (captured in the image snapshot via `.run_function()`). No Modal imports here.
 
 ```python
-from policyengine_us import Simulation, Microsimulation  # Snapshotted at build time
+from policyengine.core import Simulation  # Snapshotted at build time
+from policyengine.tax_benefit_models.us import calculate_household, ensure_datasets, us_latest
+
+DATASETS = ensure_datasets(datasets=["enhanced_cps_2024"], years=[2026], data_folder="./data")
+DATASET = DATASETS["enhanced_cps_2024_2026"]
 
 def run_household(params: dict) -> dict:
-    sim = Simulation(situation=params["household"])
+    result = calculate_household(**params["household"])
+    net_income = (
+        result.household.household_net_income
+        if hasattr(result.household, "household_net_income")
+        else result.household["household_net_income"]
+    )
     return {
-        "net_income": float(sim.calculate("household_net_income", 2025).sum()),
+        "net_income": float(net_income),
     }
 
 def run_statewide(params: dict) -> dict:
-    baseline = Microsimulation()
-    reform = Microsimulation(reform=params["reform"])
-    # ... compute impacts
+    baseline = Simulation(dataset=DATASET, tax_benefit_model_version=us_latest)
+    reform = Simulation(dataset=DATASET, tax_benefit_model_version=us_latest, policy=params["policy"])
+    baseline.ensure()
+    reform.ensure()
+    # ... compute impacts from output_dataset.data MicroSeries
     return {"revenue_change": ..., "winners": ..., "losers": ...}
 ```
 

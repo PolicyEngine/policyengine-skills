@@ -186,7 +186,7 @@ net_income = result.household['hbai_household_net_income']
 
 ## 2. Population Simulations
 
-Use `Simulation` with datasets for population-level microsimulation analysis.
+Use `Simulation` with datasets for population-level microsimulation analysis. This is the `policyengine.py` API; do not default to importing `policyengine_uk.Microsimulation` directly for population work.
 
 ### Loading Data
 
@@ -270,7 +270,7 @@ For complex reforms that need programmatic control:
 
 ```python
 def my_reform_modifier(sim):
-    """Modify the underlying policyengine_uk Microsimulation."""
+    """Modify the underlying country-model simulation."""
     # Modify parameters
     sim.tax_benefit_system.parameters.get_child(
         "gov.dwp.universal_credit.elements.child.limit.child_count"
@@ -347,21 +347,24 @@ print(f"Total UC spending: £{agg.result / 1e9:.1f}bn")
 
 ## Parameter Lookup
 
-For quick parameter lookups (rates, thresholds), use the old API directly:
+For quick parameter lookups (rates, thresholds), use the `policyengine.py` model version:
 
 ```python
-from policyengine_uk import CountryTaxBenefitSystem
-
-params = CountryTaxBenefitSystem().parameters
+from policyengine.tax_benefit_models.uk import uk_latest
 
 # Personal allowance
-pa = params.gov.hmrc.income_tax.allowances.personal_allowance.amount("2026-01-01")
+pa = uk_latest.get_parameter("gov.hmrc.income_tax.allowances.personal_allowance.amount")
+print([(v.start_date, v.end_date, v.value) for v in pa.parameter_values[-5:]])
 
-# Basic rate (use .children["N"] for brackets)
-basic_rate = params.gov.hmrc.income_tax.rates.uk.brackets.children["0"].rate("2026-01-01")
+# Basic rate bracket
+basic_rate = uk_latest.get_parameter("gov.hmrc.income_tax.rates.uk[0].rate")
+print([(v.start_date, v.end_date, v.value) for v in basic_rate.parameter_values[-5:]])
 
 # UC standard allowance
-uc_standard = params.gov.dwp.universal_credit.elements.standard_allowance.amount.single.over_25("2026-01-01")
+uc_standard = uk_latest.get_parameter(
+    "gov.dwp.universal_credit.elements.standard_allowance.amount.single.over_25"
+)
+print([(v.start_date, v.end_date, v.value) for v in uc_standard.parameter_values[-5:]])
 ```
 
 **When to use parameter lookup vs simulation:**
