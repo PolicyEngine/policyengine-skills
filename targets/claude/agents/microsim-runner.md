@@ -173,7 +173,10 @@ The comparator agent expects BOTH absolute and relative values for Gini — publ
 - **Unsupported jurisdiction:** if `country=ca`, surface that Canada has no microdata — only household calculations are supported.
 - **Reform-dict syntax error:** PE API returns 400; surface the error so `parameter-locator` can fix the snippet.
 - **Silently-wrong reforms:** the API may accept a half-baked reform-dict (e.g., setting CTC bracket amounts without enabling `phase_out.arpa.in_effect`) and return numbers that look plausible but are wrong. ALWAYS sanity-check the result against the prior anchor before continuing. If cost is off by >30%, suspect a missing toggle/switch and re-read the country-model formula file.
-- **`Infinity` literal rejected:** the policy DB stores reform-dicts as JSON in a MySQL JSON column, which rejects bare `Infinity`. Use either the string `".inf"` or a large numeric like `1e15`. Both work; prefer `.inf` for clarity.
+- **`Infinity` encoding depends on the parameter's value type.** The policy DB stores reform-dicts as JSON in a MySQL JSON column, which rejects bare `Infinity`.
+  - **Float-typed parameters** (caps, thresholds, amounts): accept either the string `".inf"` OR a large numeric like `1e15`. Prefer `.inf` for clarity.
+  - **Integer-typed parameters** (ages, qualifying-children counts): the string `".inf"` fails silently — the POST is accepted but the `/economy` call later returns `status: "error", message: null` with no diagnostic. Use a large *integer* like `999` instead.
+  - When unsure, read the YAML — if it has `value_type: int` or values look like integers (no decimal), use the integer form.
 - **Wrong baseline ID:** calling `/over/1` against an arbitrary reform returns a parse error or a stale baseline. Always use `/over/{baseline_policy_id}` — see Step 2.
 - **Multi-year discontinuities:** TCJA / OBBBA / similar regime-shift parameters cause naive `year1 × 11` extrapolation to be wrong by 10-30%. When the reform touches a parameter that sunsets, run the actual end-year (e.g., 2030) and compare to year-1 before extrapolating.
 

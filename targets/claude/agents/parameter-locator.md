@@ -70,6 +70,50 @@ Inspect the YAML:
 - Is there a historical row (e.g., 2021 ARPA values) that mirrors the reform? That's the strongest "parametric" signal.
 - Is the value structure compatible with the proposed change?
 
+### Step 3b: Deployed-model pre-flight (REQUIRED before submitting any reform)
+
+**A parameter existing on master is not the same as existing in the deployed API.** When you hit `api.policyengine.org`, you're hitting a specific PE-US release tag, which may lag master by days or weeks. New parameters and variables silently produce errors at the `/economy` call rather than at policy creation.
+
+Always pre-flight by querying `/{country}/metadata` and checking every parameter path in your reform-dict:
+
+```bash
+curl -sS https://api.policyengine.org/us/metadata | jq -r '.result.parameters | keys[]' | grep -c '^gov.states.ri.tax.income.credits.ctc'
+```
+
+If the count is `0`, the deployed model doesn't have the parameter family. Stop and surface this as a `verdict: "deployed-model-lag"`:
+
+```json
+{
+  "verdict": "deployed-model-lag",
+  "missing_paths": ["gov.states.ri.tax.income.credits.ctc.amount", ...],
+  "rationale": "Variable ri_ctc was added to policyengine-us master on 2026-06-12 but the deployed API is at release 1.715.2 which does not yet include it. Live microsim cannot run until the next release.",
+  "fallback": "process-test mode using the anchor as the predicted result",
+  "next_action": "Either wait for next PE-US release, or set --skip-microsim and continue in process-test mode."
+}
+```
+
+### Step 3c: Date-range coverage check (required when reforming a parameter family)
+
+Parameter families often have multiple files (`amount.yaml`, `age_limit.yaml`, `phase_out/rate.yaml`, etc.) with **independent effective-date histories**. Setting one parameter's value at an effective date where the others aren't yet defined NaN-chains the formula at runtime.
+
+Example trap from the RI CTC case: `amount.yaml` has values `2026-01-01: 0, 2027-01-01: 330`. The formula also reads `age_limit.yaml`, `phase_out/rate.yaml`, `phase_out/threshold.yaml`, `phase_out/increment.yaml` — but these are ONLY defined from 2027-01-01. A reform that sets `amount` to $250 starting 2026-01-01 NaN-propagates because the phase-out parameters return NaN for 2026.
+
+**Required check:** for every parameter family touched, enumerate every YAML the formula reads and confirm each has a value at the reform's start date. If not, include a value-extension in the reform-dict OR shift the reform's start date to the earliest fully-covered date.
+
+```json
+{
+  "date_coverage_warning": {
+    "reform_start": "2026-01-01",
+    "uncovered_parameters": ["gov.states.ri.tax.income.credits.ctc.age_limit", "gov.states.ri.tax.income.credits.ctc.phase_out.rate"],
+    "fix": "extend the reform-dict to set these to their 2027 values starting 2026-01-01",
+    "auto_extension": {
+      "gov.states.ri.tax.income.credits.ctc.age_limit": {"2026-01-01.2035-12-31": 18},
+      "gov.states.ri.tax.income.credits.ctc.phase_out.rate": {"2026-01-01.2035-12-31": 0.05}
+    }
+  }
+}
+```
+
 ### Step 4: Emit the reform snippet
 
 **Scalar parameter** (single value):

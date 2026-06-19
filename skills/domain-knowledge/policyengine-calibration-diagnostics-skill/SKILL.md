@@ -33,11 +33,14 @@ A mismatch is almost always rooted in layer 2 or 3, not layer 1 (layer 1 mismatc
 
 | Calibration input | Direction of effect | Notes |
 |---|---|---|
-| Childless-adult takeup rate | Higher → more cost, more poverty reduction in deciles 1-3 | Historically ~65% childless vs ~80% with-kids. If model uses uniform takeup, expansions over-state. |
+| Childless-adult takeup rate | Higher → more cost, more poverty reduction in deciles 1-3 | Historically ~65% childless vs ~80% with-kids. If model uses uniform takeup, expansions over-state. Verify against `policyengine_us/parameters/gov/irs/credits/eitc/takeup.yaml` if present. |
 | Earnings distribution in $5K-$15K band | More density → more phase-in/plateau region beneficiaries | PUF→CPS imputation is sparse for childless filers here. |
 | Tax-unit definition for cohabiting adults | More split units → more eligible filers | Look at `tax_unit_count` calibration vs SOI Table 1.1. |
-| Age cohort 19-24 and 65+ workers | Newly eligible under ARPA-style age expansion | Not separately calibrated. |
+| Age cohort 19-24 workers (newly eligible) | Newly eligible under ARPA-style age expansion | Not separately calibrated in ECPS; the marginal population shows up under generic young-adult bucket. |
+| Age cohort 65+ workers (newly eligible) | Eligible under ARPA age-cap removal | **Note: this drives meaningful senior poverty reduction (e.g., -5% in live EITC test). The SKILL previously didn't surface this.** Senior workers with earnings in the EITC phase-in range are NOT in the typical childless-EITC analytical lens — but they are in the ARPA reform's lens. Calibration: 65+ earners with $5-15K earned income are not a separately calibrated population; expect higher variance. |
 | Known issue | `github.com/PolicyEngine/policyengine-us/issues/4276` — total EITC over-estimate ~9% vs CBO |
+
+**EITC SKILL coverage note:** This row is thinner than the CTC and SALT rows. The diagnostics agent should emit `coverage_note: "EITC SKILL row is partial; hypotheses below cover takeup and age-cohort but do NOT cover joint-filer marriage-penalty mechanics, investment-income limit interactions, or self-employment-income imputation. If your deviation signature touches any of these, widen the confidence band."`
 
 ### CTC
 

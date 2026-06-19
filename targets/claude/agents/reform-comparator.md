@@ -141,7 +141,22 @@ The `methodology_carried_forward` block threads through to the `reform-describer
 - **Gini Δ:** ±0.5 absolute pp.
 - **Top-decile share of benefit:** ±10 absolute pp.
 
-For known-noisy cases (small states, narrow populations), widen to ±35% / ±10pp.
+### Auto-widening triggers (REQUIRED — do not leave for analyst to set manually)
+
+Apply the wider band **automatically** when any of these conditions hold. Each widening multiplies the default tolerance by the factor shown; apply the largest factor that triggers.
+
+| Trigger | Detection | Band multiplier |
+|---|---|---|
+| Small state (CPS sample <10k person-records) | jurisdiction.state ∈ {RI, VT, WY, AK, ND, SD, DE, MT, NH, ME, HI, ID, NM, NE, WV, UT} | ×1.5 |
+| Narrow-population reform (<5% of households affected) | reform_dict touches a parameter family that screens to <5% of filers (childless-EITC narrow ages, top-1% only, etc.) | ×1.3 |
+| Baseline-schedule mismatch | `baseline_alignment.alignment_caveat` is non-empty | ×1.5 |
+| Naive 10-year extrapolation across a regime shift | extrapolation method uses `year1 × N` and a sunset/snap-back falls in the window | ×1.4 |
+| Anchor is from a different dataset version | `methodology.dataset` differs from our run's dataset by a major version | ×1.2 |
+| Stage-6 SKILL coverage thin for this program | `policyengine-calibration-diagnostics` SKILL row has <3 sensitivities | ×1.3 |
+
+If two triggers fire (e.g., small state + thin SKILL coverage), multiply both factors (RI CTC would be ×1.5 × ×1.3 = ×1.95 — effectively doubling the band).
+
+Always log the applied widening in `normalization_notes` so the report reader knows which guardrails were relaxed.
 
 ## Hand-off
 
