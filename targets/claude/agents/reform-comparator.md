@@ -137,7 +137,8 @@ The `methodology_carried_forward` block threads through to the `reform-describer
 ## Tolerance defaults
 
 - **Budgetary cost:** ±25% of normalized prior.
-- **Poverty Δ (overall, child, deep):** ±5 absolute percentage points OR ±20% relative, whichever is wider.
+- **Poverty Δ (overall, child, deep, adult, senior):** ±5 absolute percentage points OR ±20% relative, whichever is wider.
+  - For age-targeted reforms (EITC age-cap changes, child-credit reforms), require BOTH the targeted bucket (child or senior) and the overall metric to land within tolerance. If the targeted bucket lands but overall doesn't, that's a `PASS-WITH-NOTES` flagging "primary effect is in subgroup X — overall metric is dominated by the larger non-targeted population".
 - **Gini Δ:** ±0.5 absolute pp.
 - **Top-decile share of benefit:** ±10 absolute pp.
 
@@ -148,11 +149,27 @@ Apply the wider band **automatically** when any of these conditions hold. Each w
 | Trigger | Detection | Band multiplier |
 |---|---|---|
 | Small state (CPS sample <10k person-records) | jurisdiction.state ∈ {RI, VT, WY, AK, ND, SD, DE, MT, NH, ME, HI, ID, NM, NE, WV, UT} | ×1.5 |
-| Narrow-population reform (<5% of households affected) | reform_dict touches a parameter family that screens to <5% of filers (childless-EITC narrow ages, top-1% only, etc.) | ×1.3 |
-| Baseline-schedule mismatch | `baseline_alignment.alignment_caveat` is non-empty | ×1.5 |
+| Narrow-population reform | see threshold guidance below — eligibility-narrow not just "less than 5% of households" | ×1.3 |
+| Baseline-schedule mismatch | `baseline_alignment.alignment_caveat` is non-empty OR the only available anchor is from a different jurisdiction (structural analog) | ×1.5 |
 | Naive 10-year extrapolation across a regime shift | extrapolation method uses `year1 × N` and a sunset/snap-back falls in the window | ×1.4 |
 | Anchor is from a different dataset version | `methodology.dataset` differs from our run's dataset by a major version | ×1.2 |
 | Stage-6 SKILL coverage thin for this program | `policyengine-calibration-diagnostics` SKILL row has <3 sensitivities | ×1.3 |
+| Reform is structurally self-offsetting | some recipients gain and others lose under the same reform (e.g., raising a match rate that cuts off bracket below the prior rate) | ×1.3 |
+
+**Narrow-population threshold guidance** (the VT live test showed the original <5%-of-households rule was both too tight and too loose):
+
+- **Triggers narrow-population widening:** reform affects a population that is BOTH (a) <10% of households AND (b) further narrowed by a non-population eligibility cut. Examples:
+  - SALT cap repeal: itemizers ~10% × top-decile concentration → triggers (effective population is a small subset).
+  - ARPA childless EITC: childless tax filers × age 19-24 or 65+ → triggers (newly-eligible cohort is small).
+  - Top-1%-only reforms: triggers.
+- **Does NOT trigger:** broad-eligibility reforms even if total cost is small. Examples:
+  - State EITC match-rate change: ~15% of state filers — too broad.
+  - General CTC reform: ~30% of households — too broad.
+  - SNAP eligibility change: ~13% of households — too broad.
+
+The test is "is the *marginal-effect population* small AND narrowly defined?", not "is the total cost small?".
+
+**Structural self-offset.** If the reform raises benefits for one sub-population and cuts them for another (e.g., the VT EITC test where 38% match rate became 50% — childless adults previously received 100% of federal EITC under the enhanced structure but only 50% under the reform), the headline cost reflects NET impact. Surface this in `normalization_notes` so the comparator's verdict isn't a surprise when the cost lands lower than naive scaling suggests.
 
 If two triggers fire (e.g., small state + thin SKILL coverage), multiply both factors (RI CTC would be ×1.5 × ×1.3 = ×1.95 — effectively doubling the band).
 

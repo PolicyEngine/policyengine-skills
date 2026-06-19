@@ -99,8 +99,12 @@ The API returns **raw baseline and reform LEVELS**, not deltas. The agent must c
 
 **Compute deltas:**
 - `child_poverty_pct_change = (reform - baseline) / baseline * 100`
+- `adult_poverty_pct_change = (reform - baseline) / baseline * 100` — required since some reforms move adult-only poverty (childless EITC, SALT)
+- `senior_poverty_pct_change = (reform - baseline) / baseline * 100` — **required** since reforms that touch age-eligibility (ARPA EITC age-cap removal) move senior poverty more than child or overall; the EITC live test showed senior -5.4% while child was 0.0%
 - `gini_pct_change = (reform_gini - baseline_gini) / baseline_gini * 100`
 - `annual_cost_billion = -budgetary_impact / 1e9` (sign convention: negative budgetary_impact means revenue loss / spending → positive cost)
+
+**Surface unusual-bucket signals.** If `senior_poverty_pct_change` is more than 2× `overall_poverty_pct_change` (or vice versa for child), include a `headline_metric_note` in the output flagging which sub-bucket is driving the result. This catches age-targeted reforms whose effect would otherwise be invisible in the "overall poverty" headline.
 
 ### Step 3: For multi-year scoring
 
@@ -148,6 +152,8 @@ The agent normalizes the raw API response into this canonical shape. **Always in
     "poverty": {
       "overall_baseline": 0.124, "overall_reform": 0.118, "overall_pct_change": -4.8,
       "child_baseline": 0.143, "child_reform": 0.094, "child_pct_change": -34.3,
+      "adult_baseline": 0.108, "adult_reform": 0.105, "adult_pct_change": -2.8,
+      "senior_baseline": 0.092, "senior_reform": 0.087, "senior_pct_change": -5.4,
       "deep_child_baseline": ..., "deep_child_reform": ..., "deep_child_pct_change": ...
     },
     "distribution": {

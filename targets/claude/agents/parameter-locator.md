@@ -100,6 +100,84 @@ Example trap from the RI CTC case: `amount.yaml` has values `2026-01-01: 0, 2027
 
 **Required check:** for every parameter family touched, enumerate every YAML the formula reads and confirm each has a value at the reform's start date. If not, include a value-extension in the reform-dict OR shift the reform's start date to the earliest fully-covered date.
 
+**Concrete enumeration procedure** (this is the step that the RI test would have caught early if specified):
+
+1. **Open the formula file** — the Python file that implements the variable. For RI CTC: `policyengine_us/variables/gov/states/ri/tax/income/credits/ctc/ri_ctc.py`. Find it via `https://api.github.com/repos/PolicyEngine/policyengine-us/contents/policyengine_us/variables/gov/states/ri/tax/income/credits/ctc/`.
+
+2. **Grep the formula function for `parameters(` calls.** Every `parameters(period).gov...` chain in the function body reads a parameter at runtime. Example pattern from a typical PE formula:
+   ```python
+   def formula(tax_unit, period, parameters):
+       p = parameters(period).gov.states.ri.tax.income.credits.ctc
+       amount = p.amount                # reads amount.yaml
+       limit = p.age_limit              # reads age_limit.yaml
+       po = p.phase_out                 # reads phase_out/ family
+       rate = po.rate                   # reads phase_out/rate.yaml
+       threshold = po.threshold[filing_status]  # reads phase_out/threshold.yaml
+       increment = po.increment[filing_status]  # reads phase_out/increment.yaml
+   ```
+   Each `p.X` or `parameters(period).Y` access maps to a YAML.
+
+3. **For each YAML, fetch and check the value at the reform's start date.** Use:
+   ```bash
+   curl -sS https://raw.githubusercontent.com/PolicyEngine/policyengine-us/master/policyengine_us/parameters/<path>.yaml
+   ```
+   If the YAML's earliest `values:` row is later than the reform's start date, that parameter is uncovered → emit `date_coverage_warning` and either extend it in the reform-dict or shift the reform's start date.
+
+4. **Don't trust the parameter directory structure alone.** A `phase_out/` directory may contain `rate.yaml`, `threshold.yaml`, `increment.yaml`, `start.yaml` — all of which the formula may read. Listing the directory via the GitHub Contents API and reading each YAML is the only reliable check.
+
+5. **Cite the formula file's line numbers** in the locator output (`evidence_urls` should include the formula file URL with a `#L23-L40` anchor showing which lines read which parameters).
+
+### Step 3d: Formula liveness check (the `where()`-deadens-leaf trap)
+
+**A parameter being read by the formula at the right date is NOT the same as that parameter being LIVE at the reform's start date.** PE formulas frequently use `where()`, `select()`, or `if-else` constructs that route around a parameter based on another switch — making the parameter dead code at runtime even though the file is loaded.
+
+Example trap from the VT EITC case:
+
+```python
+# Simplified — actual formula structure
+def formula(tax_unit, period, parameters):
+    p = parameters(period).gov.states.vt.tax.income.credits.eitc
+    enhanced_on = p.enhanced_structure.in_effect      # default true since 2025
+    federal_eitc = tax_unit("eitc", period)
+
+    return where(
+        enhanced_on,
+        enhanced_structure_calculation(...),    # ENHANCED branch — does NOT use p.match
+        federal_eitc * p.match                  # LEGACY branch — uses p.match
+    )
+```
+
+A reform setting `p.match` from 0.38 → 0.50 has **zero effect** because `enhanced_on=true` routes around `p.match`. The API will accept the reform and return identical results to baseline.
+
+**Required check:** for every parameter touched by the reform, trace through any `where()` / `select()` / `if-elif` constructs in the formula and identify which branch the parameter is in. If a different branch is selected at the reform's start date, the parameter is **dead** and the reform-dict must additionally flip the routing switch.
+
+```json
+{
+  "formula_liveness_warning": {
+    "dead_parameter": "gov.states.vt.tax.income.credits.eitc.match",
+    "routing_switch": "gov.states.vt.tax.income.credits.eitc.enhanced_structure.in_effect",
+    "routing_switch_current_value_at_reform_start": true,
+    "routing_switch_value_for_parameter_to_be_live": false,
+    "fix": "Add to reform-dict: gov.states.vt.tax.income.credits.eitc.enhanced_structure.in_effect = false",
+    "alternative_fix": "Edit the enhanced-structure parameters instead of legacy match"
+  }
+}
+```
+
+This is distinct from Step 3c's date-coverage check (which is about WHEN a value exists) and from the original "reform-family toggles" section (which is about parameter-family-level `in_effect` gates). The liveness check is about CONTROL FLOW within a single formula.
+
+### Pre-flight check order
+
+When verifying a reform-dict before submission, run the checks in this order. Earlier checks are cheaper and catch the most common errors first:
+
+1. **Master existence** — does the parameter path exist in `policyengine-{country}/master`? (cheap — GitHub fetch)
+2. **Deployed existence** — does the deployed API have it? (`/{country}/metadata`) Catches the deployed-model-lag case.
+3. **Date coverage** — are all parameters the formula reads defined at the reform's start date?
+4. **Formula liveness** — is each touched parameter actually reached by the formula at the reform's start date, or is it dead code due to a routing switch?
+5. **Reform-family toggles** — does the reform need to flip any `in_effect`-style gate to take effect?
+
+Steps 4 and 5 are related but distinct: #5 is "is this whole parameter family disabled?", #4 is "is this specific parameter within the family routed-around?". Both must pass.
+
 ```json
 {
   "date_coverage_warning": {
