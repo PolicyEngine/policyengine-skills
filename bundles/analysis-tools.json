@@ -48,6 +48,7 @@
     "./agents/microsim-runner.md",
     "./agents/reform-classifier.md",
     "./agents/reform-comparator.md",
-    "./agents/calibration-diagnostics.md"
+    "./agents/calibration-diagnostics.md",
+    "./agents/report-logger.md"
   ]
 }

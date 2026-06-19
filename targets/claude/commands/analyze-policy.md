@@ -18,6 +18,9 @@ Flags:
 - `--skip-microsim` (process-test mode — stops at Stage 5, predicts from prior anchor)
 - `--auto-investigate` (if Stage 5 returns INVESTIGATE, auto-run top calibration hypothesis)
 - `--write-report PATH` (default `/tmp/analyze-policy-{policy_id}.md`)
+- `--log-to <dest>[,<dest>...]` (override auto-routing; see Phase 8). Examples: `--log-to archive`, `--log-to "archive,issue:policyengine-us-data"`, `--log-to draft:policyengine-analysis/posts/arpa-ctc.md`
+- `--no-log` (skip Phase 8 entirely — write the `/tmp` report only)
+- `--auto-confirm` (skip confirmation prompts before opening GitHub issues; only honor in non-interactive contexts)
 
 ## Workflow
 
@@ -169,6 +172,47 @@ Returns ranked hypothesis list + recommended next test.
 
 If `--auto-investigate` is set, automatically run the top hypothesis (e.g., perturb takeup rate, rerun microsim, recompute comparison). Otherwise just append to the report.
 
+## Phase 8 — Log the report (NEW)
+
+After Phase 7 has assembled the report at `--write-report PATH`, invoke `report-logger`:
+
+```
+report-logger
+  report_path=<write-report path>
+  frontmatter=<structured metadata from prior stages>
+  log_to=<--log-to value, or empty for auto-routing>
+  no_log=<--no-log flag>
+  command_args=<original $ARGUMENTS>
+```
+
+**Auto-routing default** (when no `--log-to` and no `--no-log`):
+
+| Verdict | Destinations |
+|---|---|
+| `PASS` | archive |
+| `PASS-WITH-NOTES` | archive |
+| `INVESTIGATE` | archive + issue:policyengine-us-data (with diagnostic hypothesis as the action item) |
+| `structural` | archive + issue:policyengine-{country} (with model-change estimate) |
+| `not-possible` | archive (rationale only; no issue) |
+| `deployed-model-lag` | archive (note to re-run after next release; no issue unless --log-to issue:* is set) |
+
+**Archive path resolution** (matters for plugin installations):
+1. Explicit `--log-to archive:<path>` wins
+2. Else `$PWD/analyses/` if it exists
+3. Else `$POLICYENGINE_ANALYSES_DIR` env var
+4. Else `~/.policyengine/analyses/` (auto-created)
+
+**Issue creation** opens a GitHub issue via `gh issue create` with a verdict-shaped body. Confirms before opening unless `--auto-confirm`. Issue numbers are appended to the archive's `issues_opened` frontmatter so the analysis archive is the source of truth for "what action items did this produce."
+
+The Phase 8 step also prints the destination summary to the user as the final output:
+
+```
+[/analyze-policy] Run complete.
+  Archive: ~/.policyengine/analyses/2026-06-19-us-arpa-ctc-restoration.md
+  Issues opened: (none — verdict was PASS-WITH-NOTES)
+  Run-id: 97759
+```
+
 ## Phase 7 — Write report
 
 Invoke `reform-describer` for the mechanical provisions write-up. Assemble the final report at `--write-report` PATH:
@@ -248,3 +292,4 @@ This command loads (with their plugin paths for clarity):
 6. `reform-comparator`
 7. `calibration-diagnostics` (only if Stage 5 INVESTIGATE)
 8. `reform-describer`
+9. `report-logger` (unless `--no-log`)
