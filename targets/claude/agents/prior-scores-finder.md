@@ -87,7 +87,12 @@ Extract magnitudes — these are external validation, not primary anchors.
         "overall_poverty_pct_change": -9.0,
         "gini_pct_change": -1.9
       },
-      "methodology_notes": "Static, ECPS dataset, 2023 baseline"
+      "methodology": {
+        "dataset": "Enhanced CPS 2023",
+        "static_or_dynamic": "static",
+        "time_window": "single-year-2023",
+        "behavioral_assumptions": "no labor-supply response"
+      }
     }
   ],
   "official_scores": [...],
@@ -96,6 +101,8 @@ Extract magnitudes — these are external validation, not primary anchors.
   "anchor_notes": "PE 'Restoration' analysis matches reform parameters line-for-line. Single-year score must be extrapolated to 10-year window using +10-12% uprating."
 }
 ```
+
+The `methodology` object is structured so the `reform-comparator` can carry it forward into its `methodology_carried_forward` field and the final report's Methodology section gets a consistent shape.
 
 If **no PE prior exists**, surface that explicitly — that's a signal the reform is novel for PE and the comparator should weight official/think-tank scores more heavily.
 

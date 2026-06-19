@@ -54,36 +54,54 @@ Cross-reference the signature with the sensitivity table. Examples:
 
 ### Step 3: Generate the diagnostic checklist
 
+**Required citations.** Every hypothesis MUST cite a specific file and (where possible) a specific line/function/parameter path. "loss.py" alone is not enough — quote the actual target name or line range. Use `gh api repos/PolicyEngine/policyengine-us-data/contents/{path}` if you need to open the file before writing the hypothesis.
+
+**Expertise tagging.** Mark each hypothesis with `expertise_required`: `non-expert` (can be tested by reading docs), `analyst` (needs PolicyEngine workflow familiarity), or `pe-internal` (needs core-team knowledge of the calibration pipeline). The SKILL claims "non-expert users can at least understand candidate causes" — that's only credible if we mark the bar honestly.
+
 ```json
 {
   "ranked_hypotheses": [
     {
       "rank": 1,
       "calibration_input": "ctc_non_filer_takeup",
-      "location": "policyengine-us-data/utils/loss.py + takeup parameter",
+      "file_citation": "policyengine-us/policyengine_us/parameters/gov/irs/credits/ctc/takeup.yaml (if exists) OR policyengine-us-data/policyengine_us_data/utils/loss.py: line referencing `ctc_takeup` target",
+      "current_value_quoted": "0.75 (assumed uniform — verify by opening the file)",
       "expected_direction_of_effect": "raising takeup increases poverty reduction proportionally",
-      "test_to_run": "Set ctc takeup to 0.95 and rerun reform; if poverty impact closes 80%+ of the gap, this is the cause.",
-      "related_issues": ["github.com/PolicyEngine/policyengine-us/issues/4276 (EITC takeup)"]
+      "test_to_run": "Set gov.irs.credits.ctc.takeup to 0.95 in the reform-dict alongside the existing reform; rerun; if child poverty impact closes 80%+ of the gap toward the anchor (-37%), this is the cause.",
+      "expertise_required": "non-expert",
+      "related_issues": ["https://github.com/PolicyEngine/policyengine-us/issues/4276 (EITC takeup, related case)"]
     },
     {
       "rank": 2,
       "calibration_input": "imputed_child_age_distribution",
-      "location": "policyengine-us-data — imputation step",
-      "expected_direction_of_effect": "more 0-5 children → higher cost (the $3,600 tier)",
-      "test_to_run": "Compare ECPS age-0-5 share to ACS published 2023; if off by >5%, recalibrate.",
+      "file_citation": "policyengine-us-data/policyengine_us_data/datasets/cps/enhanced_cps.py — imputation step for child_age",
+      "current_value_quoted": "Read from the file — quote the target distribution by single year of age",
+      "expected_direction_of_effect": "more 0-5 children → higher cost via $3,600 tier",
+      "test_to_run": "Compare ECPS age-0-5 share to ACS B01001 published 2023; if off by >5%, the imputation needs recalibration.",
+      "expertise_required": "analyst",
       "related_issues": []
     },
-    ...
+    {
+      "rank": 3,
+      "calibration_input": "spm_unit_aggregation",
+      "file_citation": "policyengine-us/policyengine_us/variables/household/demographic/spm_unit.py",
+      "current_value_quoted": "n/a — structural",
+      "expected_direction_of_effect": "splitting cohabiting beneficiaries across SPM units halves per-unit benefit → fewer cross-threshold lifts",
+      "test_to_run": "Audit 50 households where the reform produced CTC but no poverty change; check if their SPM unit assignment splits the family.",
+      "expertise_required": "pe-internal",
+      "related_issues": []
+    }
   ],
-  "next_action": "Run hypothesis #1 first (cheapest, highest-likelihood).",
+  "next_action": "Run hypothesis #1 first — non-expert-friendly, single reform-dict edit, cheapest to falsify.",
   "calibration_dashboard_panels": [
+    "(illustrative — replace with actual panel URLs once calibration-diagnostics repo deployment is known)",
     "https://policyengine.github.io/calibration-diagnostics/ctc-takeup",
     "https://policyengine.github.io/calibration-diagnostics/child-age-distribution"
   ]
 }
 ```
 
-(Dashboard URLs are illustrative — point at actual `calibration-diagnostics` repo deployment when known.)
+**Honest scope note.** The agent's hypotheses are only as strong as the sensitivity rows in the `policyengine-calibration-diagnostics` SKILL. The CTC and SALT rows are well-developed; EITC and small-state rows are shorter. If the deviation signature falls in a thinly-covered program, surface that explicitly in the output: `"coverage_note": "policyengine-calibration-diagnostics SKILL has limited rows for this program family; hypotheses below are derived from analogous programs and should be weighted lower."`
 
 ### Step 4: Sources to consult
 

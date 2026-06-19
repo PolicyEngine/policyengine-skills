@@ -66,9 +66,11 @@ For each headline metric:
 
 ### Step 3: Verdict
 
-- **`PASS`** — all headline metrics within tolerance. Proceed to write-up.
-- **`PASS-WITH-NOTES`** — metrics within tolerance but at edge of band. Flag the metric, proceed.
-- **`INVESTIGATE`** — at least one headline metric outside tolerance. Trigger `calibration-diagnostics` with the specific deviation signature.
+- **`PASS`** — all headline metrics within 0–80% of the tolerance band. Proceed to write-up.
+- **`PASS-WITH-NOTES`** — at least one metric within 80–100% of the band (i.e., not breached, but close enough to warrant a flag). Proceed, but list the close-call metrics in the write-up so the reader knows where to look if the result is republished against a refined anchor.
+- **`INVESTIGATE`** — at least one headline metric outside the tolerance band. Trigger `calibration-diagnostics` with the deviation signature.
+
+Example: tolerance is ±25% on cost. Δ within 0–20% → PASS. Δ within 20–25% → PASS-WITH-NOTES. Δ > 25% → INVESTIGATE.
 
 ### Step 4: Build the deviation signature (for INVESTIGATE)
 
@@ -78,18 +80,24 @@ When triggering `calibration-diagnostics`, pass a precise signature so the diagn
 {
   "verdict": "INVESTIGATE",
   "deviation_signature": {
-    "metric": "child_poverty_pct_change",
+    "primary_metric": "child_poverty_pct_change",
     "our_value": -17.0,
     "anchor_value": -34.0,
     "magnitude_off_by": "half",
     "direction": "under-states-impact",
-    "related_metrics_okay": ["10yr_cost"]
+    "related_metrics_okay": ["10yr_cost"],
+    "related_metrics_also_off": [
+      {"metric": "gini_pct_change", "our_value": -0.9, "anchor_value": -1.9, "direction": "under-states-impact"}
+    ],
+    "parallel_deviation_note": "child_poverty and gini both off by ~half in the same direction while cost is roughly correct — suggests a SINGLE upstream driver (one calibration target affecting both distributional and poverty outputs simultaneously) rather than two independent problems."
   },
   "hypothesis_seeds": [
-    "Cost is roughly correct but poverty impact understates — suggests dollars are flowing to the right households but the SPM threshold or denominator is off, OR the refundability switch is not firing correctly for non-filers."
+    "Cost is roughly correct but poverty + Gini both understate by half — dollars flow to the right households but their per-unit benefit is too small to lift them across thresholds. Likely: refundability switch not firing for non-filers, OR SPM unit aggregation is splitting beneficiaries across units."
   ]
 }
 ```
+
+**Parallel deviations are diagnostic.** When two related metrics are off in the same direction by similar magnitudes, that's strong evidence of one upstream cause. Always populate `related_metrics_also_off` for any metric outside tolerance, and write the `parallel_deviation_note` if a pattern emerges. The diagnostics agent uses this to rank hypotheses (single-driver hypotheses score higher when the pattern is parallel).
 
 ## Output
 
@@ -99,9 +107,18 @@ When triggering `calibration-diagnostics`, pass a precise signature so the diagn
   "comparison_table": [...],
   "normalization_notes": "Anchor 2023 single-year cost uprated 1.10x for 2026; extrapolated to 10-year by *10.8.",
   "deviation_signature": null | {...},
+  "methodology_carried_forward": {
+    "anchor_dataset": "Enhanced CPS 2023",
+    "anchor_static_or_dynamic": "static",
+    "anchor_url": "https://policyengine.org/us/research/...",
+    "our_run_dataset": "Enhanced CPS 2026",
+    "our_run_mode": "api"
+  },
   "next_stage": "write-report" | "diagnose-calibration"
 }
 ```
+
+The `methodology_carried_forward` block threads through to the `reform-describer` and the final report's Methodology section. Always populate it — if a value is unknown (e.g., process-test mode), set it to `"unknown"` rather than omitting.
 
 ## Tolerance defaults
 

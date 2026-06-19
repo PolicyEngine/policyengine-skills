@@ -43,7 +43,45 @@ Fall back to WebSearch: `"{state} {bill_number} {year} text"`.
 
 **Canada:** `parl.ca` for federal bills; provincial legislature sites for provincial.
 
-**Natural-language reforms:** skip text fetch; produce a normalized description directly.
+**Natural-language reforms:** skip the text fetch. Produce a normalized provisions object directly from the input description. Use the current year as `effective_date` if not specified. Worked example:
+
+Input: `"ARPA-style federal CTC expansion: $3,000 ages 6-17, $3,600 ages 0-5, fully refundable"`
+
+Output:
+
+```json
+{
+  "policy_id": "us-arpa-style-ctc-2026",
+  "policy_type": "natural-language-reform",
+  "jurisdiction": {"country": "us"},
+  "title": "ARPA-style federal CTC expansion",
+  "sponsor": null,
+  "status": "hypothetical",
+  "effective_date": "2026-01-01",
+  "provisions": [
+    {
+      "label": "Age-bifurcated CTC amount",
+      "program": "federal-ctc",
+      "baseline_value": {"ages_0_5": 2000, "ages_6_17": 2000, "unit": "USD"},
+      "baseline_description": "Flat $2,000/child under age 17 (TCJA)",
+      "reform_value": {"ages_0_5": 3600, "ages_6_17": 3000, "unit": "USD"},
+      "reform_description": "$3,600 for ages 0-5, $3,000 for ages 6-17",
+      "explanation": "Restores ARPA-era CTC amount schedule; matches policyengine-us amount/arpa.yaml structure (brackets[0] = ages 0-5, brackets[1] = ages 6-17)."
+    },
+    {
+      "label": "Full refundability",
+      "program": "federal-ctc",
+      "baseline_value": false,
+      "baseline_description": "Refundability capped at $1,700/child (2025); 15% phase-in above $2,500 earnings",
+      "reform_value": true,
+      "reform_description": "Fully refundable, no earnings floor",
+      "explanation": "Disables refundability cap and earnings phase-in; equivalent to flipping fully_refundable.yaml to true."
+    }
+  ],
+  "raw_text_path": null,
+  "source_url": null
+}
+```
 
 ### Step 2: Extract bill text
 
@@ -74,9 +112,11 @@ For each provision, identify the program(s) touched:
     {
       "label": "Refundable state CTC of $330/child",
       "program": "state-ctc",
-      "baseline": "no state CTC",
-      "reform": "$330 per qualifying child, refundable",
-      "explanation": "Section 4 of Article 6 creates a refundable CTC for RI residents at $330/child under age 19, fully refundable, no phase-out."
+      "baseline_value": 0,
+      "baseline_description": "No state CTC",
+      "reform_value": 330,
+      "reform_description": "$330 per qualifying child under age 19, refundable, no phase-out",
+      "explanation": "Section 4 of Article 6 creates a refundable RI CTC at $330/child."
     }
   ],
   "raw_text_path": "/tmp/ri-h7127.txt",
