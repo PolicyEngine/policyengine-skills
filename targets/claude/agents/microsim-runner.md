@@ -37,20 +37,79 @@ policy_id = response.json()["result"]["policy_id"]
 
 ### Step 2: Request economy-wide impacts
 
+**Critical:** the URL is `/economy/{reform_policy_id}/over/{baseline_policy_id}`, NOT `/over/1`. The `over/{N}` segment is the **baseline policy ID** to diff against, not a year count. Common baseline IDs:
+
+| Country | Current-law baseline policy_id |
+|---|---|
+| US | `2` |
+| UK | (verify per-environment; typically `1` or `2`) |
+
+Calling `/over/1` against an arbitrary reform usually returns a misleading parse error or computes against a stale baseline. Always use the documented current-law baseline.
+
 ```python
 region = state.lower() if state else "us"
-response = requests.get(
-    f"https://api.policyengine.org/us/economy/{policy_id}/over/1",
-    params={"region": region, "time_period": str(year)},
-)
-result = response.json()["result"]
+baseline_id = 2  # US current law — verify
+url = f"https://api.policyengine.org/us/economy/{policy_id}/over/{baseline_id}"
+response = requests.get(url, params={
+    "region": region,
+    "time_period": str(year),
+    "dataset": "enhanced_cps_2024",  # explicit dataset improves reliability
+})
 ```
 
-The API returns `budget`, `poverty`, `decile`, `intra_decile`, `inequality`, `labor_supply_response`, etc.
+**Polling:** the response often starts with `status: "computing"` (or similar). Wait 30s and retry. Real-world wall-clock for a US economy-wide reform is **5-10 minutes**, not 1-3 minutes as some older docs suggest. Retry up to ~20 minutes before giving up.
+
+### Step 2b: Real response shape
+
+The API returns **raw baseline and reform LEVELS**, not deltas. The agent must compute deltas itself. Top-level keys (representative):
+
+```json
+{
+  "status": "ok",
+  "result": {
+    "budget": {
+      "budgetary_impact": ...,
+      "tax_revenue_impact": ...,
+      "state_tax_revenue_impact": ...,
+      "benefit_spending_impact": ...,
+      "households": ...,
+      "baseline_net_income": ...,
+      "reform_net_income": ...
+    },
+    "poverty": {
+      "poverty": {
+        "all": {"baseline": 0.124, "reform": 0.118},
+        "adult": {...},
+        "child": {"baseline": 0.143, "reform": 0.094},
+        "senior": {...}
+      },
+      "deep_poverty": {...}
+    },
+    "inequality": {
+      "gini": {"baseline": 0.4123, "reform": 0.4042},
+      "top_1_pct_share": {"baseline": ..., "reform": ...},
+      "top_10_pct_share": {"baseline": ..., "reform": ...}
+    },
+    "decile": {...},
+    "intra_decile": {...},
+    "labor_supply_response": null
+  }
+}
+```
+
+**Compute deltas:**
+- `child_poverty_pct_change = (reform - baseline) / baseline * 100`
+- `gini_pct_change = (reform_gini - baseline_gini) / baseline_gini * 100`
+- `annual_cost_billion = -budgetary_impact / 1e9` (sign convention: negative budgetary_impact means revenue loss / spending → positive cost)
 
 ### Step 3: For multi-year scoring
 
-Loop over `year` in the 10-year window (or use `/over/{year_count}` if available). Sum budgetary impacts; report poverty/distributional at year-1, year-5, year-10.
+There is **no native 10-year endpoint** as of 2026-06. Options:
+1. Loop the call for each year `2026..2035`, summing budgetary impacts. Costly: each call is 5-10 minutes.
+2. Single-year × naive growth factor (~×10.5-11.5 over 10 years). Cheap but fragile around regime breaks (e.g., the 2030 OBBBA SALT snap-back distorts naive extrapolation).
+3. Use the most relevant single year as the anchor and document the extrapolation method explicitly.
+
+For a baseline-shift reform (TCJA-style sunsets, OBBBA-style phase-outs), warn the user that single-year extrapolation may overstate or understate magnitudes vs published 10-year scores.
 
 ## Process — Local path
 
@@ -69,27 +128,31 @@ For state-only impacts, subset by `state_code_str`. For district-level, load the
 
 ## Output
 
+The agent normalizes the raw API response into this canonical shape. **Always include the raw response path** so downstream agents can re-check the source levels.
+
 ```json
 {
-  "policy_id": "policyengine-api-policy-id-or-local-hash",
+  "policy_id": "97748",
+  "baseline_policy_id": "2",
   "jurisdiction": {"country": "us", "state": null},
   "year": 2026,
   "execution_mode": "api",
+  "wall_clock_seconds": 480,
   "results": {
     "budget": {
-      "ten_year_cost_billion": 1450.2,
-      "annual_cost_billion_year1": 118.4,
-      "annual_cost_billion_year10": 161.3
+      "annual_cost_billion_year1": 86.6,
+      "ten_year_cost_billion": null,
+      "ten_year_cost_billion_estimate": 980.0,
+      "ten_year_extrapolation_method": "year1 * 11.3 (naive growth), warning: 2030 baseline shift not accounted for"
     },
     "poverty": {
-      "overall_pct_change": -6.2,
-      "child_pct_change": -34.1,
-      "deep_child_pct_change": -28.5
+      "overall_baseline": 0.124, "overall_reform": 0.118, "overall_pct_change": -4.8,
+      "child_baseline": 0.143, "child_reform": 0.094, "child_pct_change": -34.3,
+      "deep_child_baseline": ..., "deep_child_reform": ..., "deep_child_pct_change": ...
     },
     "distribution": {
-      "gini_pct_change": -2.0,
-      "decile_winners_share": {"1": 0.72, "2": 0.85, "...": "..."},
-      "top_1pct_share_pct_change": -1.4
+      "gini_baseline": 0.4123, "gini_reform": 0.4042, "gini_pct_change_relative": -2.0, "gini_pp_change_absolute": -0.81,
+      "top_1pct_share_baseline": ..., "top_1pct_share_reform": ..., "top_1pct_share_change_absolute": -0.5
     },
     "labor_supply": null
   },
@@ -97,11 +160,22 @@ For state-only impacts, subset by `state_code_str`. For district-level, load the
 }
 ```
 
-## Failure modes
+**Sign conventions:**
+- `annual_cost_billion`: positive = revenue/spending COST to government (reform makes the gov spend more or collect less). For a cap repeal like SALT, this is a positive number (revenue loss to gov).
+- `gini_pct_change_relative` (e.g., -2.0%): change relative to baseline Gini. Use this for comparison to published PE scores, which typically report relative change.
+- `gini_pp_change_absolute` (e.g., -0.81pp): absolute percentage-point change. Use for tolerance bands.
 
-- **API timeout:** retry with backoff. Cache `policy_id` to avoid recompute.
+The comparator agent expects BOTH absolute and relative values for Gini — published priors don't always specify which they report.
+
+## Failure modes & known gotchas
+
+- **API timeout:** retry with backoff. Cache `policy_id` to avoid recompute. Real wall-clock is 5-10 minutes for full US economy; don't time out under 20 minutes.
 - **Unsupported jurisdiction:** if `country=ca`, surface that Canada has no microdata — only household calculations are supported.
 - **Reform-dict syntax error:** PE API returns 400; surface the error so `parameter-locator` can fix the snippet.
+- **Silently-wrong reforms:** the API may accept a half-baked reform-dict (e.g., setting CTC bracket amounts without enabling `phase_out.arpa.in_effect`) and return numbers that look plausible but are wrong. ALWAYS sanity-check the result against the prior anchor before continuing. If cost is off by >30%, suspect a missing toggle/switch and re-read the country-model formula file.
+- **`Infinity` literal rejected:** the policy DB stores reform-dicts as JSON in a MySQL JSON column, which rejects bare `Infinity`. Use either the string `".inf"` or a large numeric like `1e15`. Both work; prefer `.inf` for clarity.
+- **Wrong baseline ID:** calling `/over/1` against an arbitrary reform returns a parse error or a stale baseline. Always use `/over/{baseline_policy_id}` — see Step 2.
+- **Multi-year discontinuities:** TCJA / OBBBA / similar regime-shift parameters cause naive `year1 × 11` extrapolation to be wrong by 10-30%. When the reform touches a parameter that sunsets, run the actual end-year (e.g., 2030) and compare to year-1 before extrapolating.
 
 ## Hand-off
 

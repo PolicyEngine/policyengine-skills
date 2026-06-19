@@ -53,6 +53,20 @@ Most prior PE scores are reported as either single-year cost or 10-year cost, on
    - Combined uprating factor: anchor_2023 × (1 + 0.035)^(2026-2023) ≈ × 1.10 for 2026 single-year.
 2. **Single-year → 10-year extrapolation.** If anchor is single-year and our run is 10-year, multiply by ~10.5-11.5 (accounting for growth over the window). Or, if anchor is a 5-year score and ours is 10-year, double.
 3. **Dataset version note.** If the anchor used the older CPS dataset and our run uses Enhanced CPS, flag a known direction-of-difference (Enhanced CPS typically yields ~5-10% higher refundable-credit costs).
+4. **CRITICAL — baseline-schedule alignment.** Most published anchors are scored against a specific current-law baseline at the time of writing. If the law has changed since (e.g., SALT cap raised to $40K by OBBBA in 2025, then snapping back to $10K in 2030), comparing our 2026 run (against the OBBBA $40K baseline) to a 2023 prior (against the TCJA $10K baseline) overstates the reform's incremental impact. The 2030 snap-back also means single-year extrapolation across 2030 is biased.
+
+   **Required:** populate a `baseline_alignment` block in the output:
+   ```json
+   "baseline_alignment": {
+     "anchor_baseline_law_year": 2023,
+     "anchor_baseline_description": "TCJA $10K SALT cap",
+     "our_baseline_law_year": 2026,
+     "our_baseline_description": "OBBBA $40K cap (2025-2029), reverts $10K (2030+)",
+     "alignment_caveat": "Our 2026 run measures repeal vs $40K; anchor measured repeal vs $10K. Incremental cost should be SMALLER in our run by roughly the value of the $40K-$10K headroom, ~30% of the anchor magnitude. Adjust expected band accordingly: expected_range × 0.7 not × 1.0."
+   }
+   ```
+
+   If the anchor and our run use different baselines, **widen the tolerance band by 50%** (e.g., ±25% becomes ±37.5%) before applying the PASS/INVESTIGATE rule. Note this widening in `normalization_notes`.
 
 ### Step 2: Compute the comparison
 

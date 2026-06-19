@@ -117,6 +117,24 @@ PolicyEngine's API addresses bracket parameters by their **bracket index**, not 
 
 The `[N]` index always corresponds to the YAML's `brackets:` list order. **Verify by reading the YAML** — bracket order is meaningful and not always sorted.
 
+**CRITICAL — reform-family toggles.** Many PE parameter families have an `in_effect` switch that gates ALL the child parameters. Setting the bracket amounts WITHOUT flipping the switch produces a reform-dict the API silently accepts but returns wrong numbers for. The CTC ARPA family is a known example:
+
+```json
+{
+  "reform_snippet": {
+    "gov.irs.credits.ctc.amount.arpa[0].amount": {"2026-01-01.2035-12-31": 3600},
+    "gov.irs.credits.ctc.amount.arpa[1].amount": {"2026-01-01.2035-12-31": 3000},
+    "gov.irs.credits.ctc.refundable.fully_refundable": {"2026-01-01.2035-12-31": true},
+    "gov.irs.credits.ctc.phase_out.arpa.in_effect": {"2026-01-01.2035-12-31": true},
+    "gov.irs.credits.ctc.refundable.individual_max": {"2026-01-01.2035-12-31": 99999}
+  }
+}
+```
+
+Without the `phase_out.arpa.in_effect` switch, the formula reads `base.yaml` amounts even though the reform changed `arpa.yaml`. Without `fully_refundable: true`, the standard refundability cap and earnings phase-in still apply. **Always check the formula file** (`policyengine_us/variables/gov/irs/credits/ctc/ctc.py` or equivalent) to find which switches gate the parameter family. The locator's output must include every switch the formula reads, or the microsim returns plausible-but-wrong numbers.
+
+**Verification step:** before declaring the reform-snippet complete, do a sanity check — search the formula file for any `in_effect`, `if_year`, or similar conditional that controls whether the parametric value is read. Cite the switch path and which line of the formula reads it.
+
 **Co-existing parametric paths** (e.g., CTC has both `amount/base.yaml` and `amount/arpa.yaml`): document which one the reform should edit and why. For ARPA-style restoration, edit `arpa.yaml` (re-enables the ARPA values that already exist in the parameter). For a different reform shape, edit `base.yaml`. Cite the formula file that consumes them (`policyengine_us/variables/gov/irs/credits/ctc/ctc.py`) to confirm which path the model reads.
 
 ### Discovering the parameter tree
