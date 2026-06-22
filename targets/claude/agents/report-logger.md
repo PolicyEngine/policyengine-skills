@@ -72,6 +72,19 @@ Always print the resolved path to the agent's output so the user can find the fi
    anchor_normalized_cost_billion: 110.0
    our_cost_billion: 86.6
    our_child_poverty_pct_change_relative: -34.8
+   benchmark_sources:
+     - source: CBPP
+       url: https://www.cbpp.org/...
+       their_estimate_10yr_billion: 950
+       delta_pct: -2.1
+       within_25pct: true
+     - source: TPC
+       url: https://www.taxpolicycenter.org/...
+       their_estimate_child_poverty_pct: -36.0
+       delta_pp: -1.2
+       within_band: true
+   external_sources_in_agreement: 2
+   external_sources_in_disagreement: 0
    tags:
      - ctc
      - federal

@@ -5,6 +5,7 @@ import FinderPage from "./pages/Finder";
 import CatalogPage from "./pages/Catalog";
 import DuplicatesPage from "./pages/Duplicates";
 import WorkflowsPage from "./pages/Workflows";
+import GuidesPage from "./pages/Guides";
 import ReposPage from "./pages/Repos";
 import GapsPage from "./pages/Gaps";
 import CleanupPage from "./pages/Cleanup";
@@ -41,6 +42,11 @@ function Sidebar() {
           <span className="nav-icon">⌥</span>
           <span>Workflows</span>
           <span className="nav-count">{manifest.counts.command}</span>
+        </NavLink>
+        <NavLink to="/guides">
+          <span className="nav-icon">📖</span>
+          <span>Guides</span>
+          <span className="nav-count">1</span>
         </NavLink>
         <NavLink to="/repos">
           <span className="nav-icon">▢</span>
@@ -91,6 +97,7 @@ export default function App() {
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/duplicates" element={<DuplicatesPage />} />
           <Route path="/workflows" element={<WorkflowsPage />} />
+          <Route path="/guides" element={<GuidesPage />} />
           <Route path="/repos" element={<ReposPage />} />
           <Route path="/gaps" element={<GapsPage />} />
           <Route path="/cleanup" element={<CleanupPage />} />

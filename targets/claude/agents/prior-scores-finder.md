@@ -16,6 +16,10 @@ Returns a ranked list of analog reforms with **specific magnitudes** (10-year co
 
 ## Process
 
+**ALL THREE TIERS ARE REQUIRED.** A prior PE hit (Tier 1) does NOT excuse skipping Tier 2 or Tier 3 — those are *external benchmarks*, not redundant priors. The pipeline's PASS verdict requires external-source agreement (see `reform-comparator`); skipping the external tiers is a silent quality regression.
+
+For each tier, you MUST produce a structured report. If a tier returns nothing, emit `{"tier": N, "searched": [...], "results": [], "note": "searched X+Y+Z; nothing relevant"}` — silence is not an acceptable output. The downstream comparator distinguishes "no external source exists" from "we didn't look".
+
 ### Tier 1: PolicyEngine prior scores (highest priority)
 
 The closest comparison is PolicyEngine's own previously-published score of an analogous reform.
@@ -36,7 +40,17 @@ Extract for each PE prior:
 - Poverty impact (overall + child)
 - Methodology notes (static / dynamic, dataset version)
 
-### Tier 2: Official fiscal notes
+### Tier 2: Official fiscal scores (REQUIRED)
+
+For federal reforms, **always** search for JCT/CBO scores:
+
+```
+"{reform_keywords}" site:jct.gov
+"{reform_keywords}" site:cbo.gov
+"{reform_keywords}" JCX score
+```
+
+JCT publishes per-section revenue tables for tax bills (e.g., `jct.gov/publications/2024/jcx-XX-24`); CBO publishes baseline and reform scoring (`cbo.gov/publication/...`). Capture the magnitude and methodology (static vs dynamic, 10-year window).
 
 For state bills, find the legislative fiscal office note:
 
@@ -58,7 +72,9 @@ For state bills, find the legislative fiscal office note:
 
 For federal: JCT scores at `jct.gov/publications`, CBO at `cbo.gov`.
 
-### Tier 3: Think-tank analyses
+### Tier 3: Think-tank analyses (REQUIRED — minimum 2 sources searched)
+
+You must search at least 2 of these and report the results structured:
 
 ```
 "{reform_keywords}" site:taxfoundation.org
@@ -66,9 +82,25 @@ For federal: JCT scores at `jct.gov/publications`, CBO at `cbo.gov`.
 "{reform_keywords}" site:cbpp.org
 "{reform_keywords}" site:taxpolicycenter.org
 "{reform_keywords}" site:crfb.org
+"{reform_keywords}" site:budget.house.gov
+"{reform_keywords}" site:budget.senate.gov
 ```
 
-Extract magnitudes — these are external validation, not primary anchors.
+Extract magnitudes with **methodology notes** — these are external benchmarks for the comparator. For each finding capture:
+
+```json
+{
+  "source": "CRFB",
+  "title": "Cost of Various SALT Cap Modifications",
+  "url": "https://www.crfb.org/...",
+  "magnitude": {"ten_year_cost_billion": 400, "annual_cost_billion": 40},
+  "methodology": "Static, JCT-baseline aligned",
+  "year_published": 2024,
+  "reform_described": "SALT cap raised to $60K, no phase-out, vs current law"
+}
+```
+
+If no think-tank has analyzed your exact reform, find the closest analog and document the distance (e.g., "$30K cap with phase-down" is structurally different from "$60K flat cap" — note the structural difference).
 
 ### Output
 
@@ -105,6 +137,22 @@ Extract magnitudes — these are external validation, not primary anchors.
 The `methodology` object is structured so the `reform-comparator` can carry it forward into its `methodology_carried_forward` field and the final report's Methodology section gets a consistent shape.
 
 If **no PE prior exists**, surface that explicitly — that's a signal the reform is novel for PE and the comparator should weight official/think-tank scores more heavily.
+
+### Completeness requirement
+
+The output MUST include a `tier_coverage` block:
+
+```json
+{
+  "tier_coverage": {
+    "tier_1_pe_priors": {"searched": true, "hits": 2, "note": "..."},
+    "tier_2_official": {"searched": true, "hits": 1, "note": "JCX-50-24 for OBBBA SALT provisions"},
+    "tier_3_thinktank": {"searched": true, "hits_per_source": {"crfb.org": 1, "taxfoundation.org": 1, "taxpolicycenter.org": 0}, "note": "TPC has no recent $60K-cap analysis"}
+  }
+}
+```
+
+If a tier was not searched, this fails downstream — the comparator will refuse to issue PASS without external benchmark coverage.
 
 ## Hand-off
 

@@ -78,11 +78,46 @@ For each headline metric:
 | Child poverty Δ | -34.1% | -30-40% | within range | — | YES |
 | Gini Δ | -2.0% | -1.9% | -0.1pp | -5% | YES |
 
+### Step 2b: External-benchmark agreement check (REQUIRED for PASS)
+
+Before issuing a PASS verdict, evaluate agreement with **at least 2 external sources** from `prior-scores-finder`'s `official_scores` (Tier 2) and `thinktank_scores` (Tier 3). External-source agreement is what distinguishes a PE-internal consistency check from an actual benchmark.
+
+For each external score, compute the percent difference between our run and the external estimate (using same year and same broad reform shape — note structural differences explicitly).
+
+| Condition | Verdict effect |
+|---|---|
+| ≥2 external sources agree within ±25% | PASS-eligible |
+| 1 external source agrees within ±25%, others diverge | PASS-WITH-NOTES — flag the divergent sources |
+| All external sources diverge >±25% from ours | INVESTIGATE — exterior consensus disagrees with PE |
+| `tier_coverage.tier_2_official.searched: false` OR `tier_3_thinktank.searched: false` | **BLOCKED — cannot issue PASS. Surface "benchmark coverage incomplete; re-run prior-scores-finder with full Tier 2 + Tier 3."** |
+| Tiers searched but no external sources found | PASS-eligible *with explicit caveat in report*: "novel reform; no external benchmarks available" |
+
+Build a `benchmark_agreement` block in the output:
+
+```json
+{
+  "benchmark_agreement": {
+    "pe_internal": {"source": "PE W&M $30K cap", "our_normalized": 18.4, "anchor_normalized": 21.0, "delta_pct": -12.4, "within_25pct": true},
+    "external": [
+      {"source": "CRFB", "url": "...", "their_estimate_billion": 22.0, "year": 2026, "delta_pct": -16.4, "within_25pct": true},
+      {"source": "Tax Foundation", "url": "...", "their_estimate_billion": 19.5, "year": 2026, "delta_pct": -5.6, "within_25pct": true},
+      {"source": "JCT JCX-50-24", "url": "...", "their_estimate_billion": null, "note": "JCT scored OBBBA SALT but not this $60K variant; structural distance noted"}
+    ],
+    "external_sources_in_agreement": 2,
+    "external_sources_in_disagreement": 0,
+    "benchmark_verdict": "PASS-eligible"
+  }
+}
+```
+
 ### Step 3: Verdict
 
-- **`PASS`** — all headline metrics within 0–80% of the tolerance band. Proceed to write-up.
+The verdict combines the per-metric tolerance check (Step 2) AND the external-benchmark agreement (Step 2b). Both must align:
+
+- **`PASS`** — all headline metrics within 0–80% of the tolerance band **AND** Step 2b returns PASS-eligible. Proceed to write-up.
 - **`PASS-WITH-NOTES`** — at least one metric within 80–100% of the band (i.e., not breached, but close enough to warrant a flag). Proceed, but list the close-call metrics in the write-up so the reader knows where to look if the result is republished against a refined anchor.
-- **`INVESTIGATE`** — at least one headline metric outside the tolerance band. Trigger `calibration-diagnostics` with the deviation signature.
+- **`INVESTIGATE`** — at least one headline metric outside the tolerance band OR external benchmarks consensus-disagree with our run. Trigger `calibration-diagnostics` with the deviation signature.
+- **`BLOCKED`** — benchmark coverage is incomplete (Tier 2 or Tier 3 not searched). Pipeline must re-run `prior-scores-finder` with full tier coverage before any PASS-family verdict can issue.
 
 Example: tolerance is ±25% on cost. Δ within 0–20% → PASS. Δ within 20–25% → PASS-WITH-NOTES. Δ > 25% → INVESTIGATE.
 
