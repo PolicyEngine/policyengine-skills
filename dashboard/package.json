@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "manifest": "cd .. && python3 scripts/build_manifest.py",
+    "manifest:safe": "test -f ../scripts/build_manifest.py && (cd .. && python3 scripts/build_manifest.py) || echo 'using committed manifest.json (parent repo not visible to build)'",
     "predev": "npm run manifest",
-    "prebuild": "npm run manifest",
+    "prebuild": "npm run manifest:safe",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview"
