@@ -1,8 +1,12 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { manifest, getArtifact, kindLabel } from "../data";
 import type { Artifact, ArtifactKind } from "../types";
 import { ArtifactDrawer } from "../components/Drawer";
 import { RepoChip } from "../components/RepoChip";
+
+// Commands with a Guide tab entry. Add ids here as guides are written.
+const COMMANDS_WITH_GUIDES = new Set(["analyze-policy"]);
 
 // ---------------------------------------------------------------------------
 // Topic areas — what work this ecosystem actually does. Each area lists the
@@ -196,6 +200,23 @@ function WorkflowStrip({
           <RepoChip key={r} repo={r} size="sm" />
         ))}
         <span className="spacer" />
+        {COMMANDS_WITH_GUIDES.has(command.id) && (
+          <Link
+            to="/guides"
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "var(--accent-700, #285E61)",
+              textDecoration: "none",
+              padding: "3px 8px",
+              border: "1px solid var(--accent-700, #285E61)",
+              borderRadius: 4,
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            Open guide →
+          </Link>
+        )}
         <span
           style={{ fontSize: 11, color: "var(--fg-muted)", fontFamily: "var(--font-mono)" }}
         >
@@ -306,6 +327,15 @@ function WorkflowStrip({
   );
 }
 
+function KpiCell({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="kpi-cell">
+      <div className="kpi-value">{value}</div>
+      <div className="kpi-label">{label}</div>
+    </div>
+  );
+}
+
 function KnowledgeSkills({
   roles,
   onSelect,
@@ -389,11 +419,21 @@ export default function WorkflowsPage() {
       <div className="page-header">
         <h1 className="page-title">Workflows</h1>
         <p className="page-subtitle">
-          The work the ecosystem supports, organized by topic area. Each workflow card
-          shows the entry point command, the agent chain it orchestrates, and the
-          reference skills it pulls in. Skills you can load manually appear at the
-          bottom of each area.
+          What the ecosystem can do, organized by topic. Each card shows the
+          command, its agent chain, and the reference skills it pulls in. Click
+          <strong> Open guide</strong> on any command that has a writeup.
         </p>
+      </div>
+
+      <div className="kpi-strip">
+        <KpiCell label="Skills" value={manifest.counts.skill} />
+        <KpiCell label="Agents" value={manifest.counts.agent} />
+        <KpiCell label="Commands" value={manifest.counts.command} />
+        <KpiCell label="Bundles" value={manifest.counts.bundle} />
+        <div className="kpi-meta">
+          Last refreshed{" "}
+          {new Date(manifest.generated_at).toLocaleDateString()}
+        </div>
       </div>
 
       <div className="toolbar" style={{ marginBottom: 20 }}>
