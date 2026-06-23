@@ -1048,3 +1048,108 @@ table.data tbody tr:hover td {
     overflow-x: auto;
   }
 }
+
+/* ============ KPI strip on Workflows landing ============ */
+
+.kpi-strip {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 16px 20px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 28px;
+}
+
+.kpi-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--fg-default);
+  line-height: 1;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  font-weight: 600;
+}
+
+.kpi-meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+/* ============ Health page tabs ============ */
+
+.health-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.health-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 18px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.health-tab:hover {
+  color: var(--fg-default);
+}
+
+.health-tab.active {
+  color: var(--accent-700);
+  border-bottom-color: var(--accent-700);
+}
+
+.health-tab-count {
+  background: var(--bg-canvas);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-muted);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.health-tab.active .health-tab-count {
+  background: var(--accent-50);
+  border-color: var(--accent-700);
+  color: var(--accent-700);
+}
+
+.health-content {
+  /* Sub-pages render their own .page wrappers — pull padding back */
+}
+
+.health-content > .page {
+  padding: 0;
+}
+
+.health-content > .page > .page-header {
+  display: none;
+}
