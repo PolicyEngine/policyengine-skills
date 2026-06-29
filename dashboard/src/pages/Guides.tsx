@@ -161,7 +161,7 @@ function AnalyzePolicyGuide() {
         </table>
       </Section>
 
-      <Section title="What it does — 8 stages">
+      <Section title="What it does — 9 stages">
         <ol className="guide-stages">
           <li>
             <strong>Policy text → provisions.</strong> Reads bill text or natural-language
@@ -190,6 +190,14 @@ function AnalyzePolicyGuide() {
             noisy cases — small state, baseline mismatch, regime shift, thin SKILL
             coverage), AND external-benchmark agreement (PASS requires ≥2 external
             sources within ±25%).
+          </li>
+          <li>
+            <strong>(if no direct comparator) Model corroboration.</strong> When external
+            benchmarks don't directly anchor the reform shape, run external sources' EXACT
+            reform shapes through our model (mirror-shape runs). If the model reproduces 2+
+            published external scores within ±25%, the parameter family is independently
+            validated and the verdict is upgraded to{" "}
+            <code>PASS-WITH-CORROBORATION</code>. If mirrors drift, escalate to INVESTIGATE.
           </li>
           <li>
             <strong>(if INVESTIGATE) Calibration diagnosis.</strong> Ranks hypotheses with
@@ -229,6 +237,16 @@ function AnalyzePolicyGuide() {
               </td>
               <td>Edge-of-band metrics OR exactly-at-threshold benchmark agreement</td>
               <td>Use, but read the notes. Footnote, no redo.</td>
+            </tr>
+            <tr>
+              <td>
+                <span className="verdict verdict-pass">PASS-WITH-CORROBORATION</span>
+              </td>
+              <td>
+                No direct external comparator, but mirror-shape runs of 2+ external
+                sources reproduce within ±25%
+              </td>
+              <td>Use the numbers. Cite the corroboration evidence.</td>
             </tr>
             <tr>
               <td>
@@ -322,33 +340,65 @@ function AnalyzePolicyGuide() {
         </p>
       </Section>
 
-      <Section title="Auto-routing by verdict">
+      <Section title="Destination routing — runtime prompt, context-aware">
+        <p>
+          The pipeline detects the current repo and verdict, surfaces a shortlist
+          tailored to the context, and asks the analyst to pick. Pre-selected defaults:
+        </p>
         <table className="guide-table">
           <thead>
             <tr>
               <th>Verdict</th>
-              <th>Destinations (when --log-to not set)</th>
+              <th>Pre-selected</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>PASS / PASS-WITH-NOTES</td>
-              <td>Archive only</td>
+              <td>PASS / PASS-WITH-NOTES / PASS-WITH-CORROBORATION</td>
+              <td>Local archive only</td>
             </tr>
             <tr>
               <td>INVESTIGATE</td>
-              <td>Archive + GitHub issue in policyengine-us-data</td>
+              <td>
+                Local archive + GH issue in policyengine-&#123;country&#125;-data
+                (calibration hypothesis as action item)
+              </td>
             </tr>
             <tr>
               <td>structural</td>
-              <td>Archive + GitHub issue in policyengine-&#123;country&#125;</td>
+              <td>
+                Local archive + GH issue in policyengine-&#123;country&#125; (model-change
+                estimate as action item)
+              </td>
             </tr>
             <tr>
               <td>not-possible / deployed-model-lag</td>
-              <td>Archive only (rationale documented)</td>
+              <td>Local archive only (rationale documented)</td>
             </tr>
           </tbody>
         </table>
+        <p>
+          Context-specific additions in the prompt:
+        </p>
+        <ul>
+          <li>
+            Inside <code>policyengine-app</code> → "Save as draft research post:{" "}
+            <code>src/posts/articles/&#123;slug&#125;.md</code> + update{" "}
+            <code>posts.json</code>"
+          </li>
+          <li>
+            Inside any PE repo → corresponding <code>gh issue</code> option
+          </li>
+          <li>
+            Always → "Custom path / repo — type a destination spec"
+          </li>
+        </ul>
+        <p>
+          All non-local destinations show a body preview (Y/N/edit) before submission.
+          Skip the prompt with <code>--auto-confirm</code>, override the routing entirely
+          with <code>--log-to &lt;dest&gt;,&lt;dest&gt;</code>, or suppress all logging
+          with <code>--no-log</code>.
+        </p>
       </Section>
 
       <Section title="Constraints — what to know before relying on it">
