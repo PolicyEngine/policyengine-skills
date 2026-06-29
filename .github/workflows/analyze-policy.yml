@@ -1,0 +1,58 @@
+name: Analyze policy
+
+# Triggered by the CRM Research agent (workflow_dispatch) once a human approves a
+# discovered reform. Runs the /analyze-policy command headless with Claude Code;
+# the command's report-logger stage opens the resulting issue / draft PR.
+on:
+  workflow_dispatch:
+    inputs:
+      reform:
+        description: 'Reform to analyze — a bill id (e.g. "US HR9296") or a natural-language reform'
+        required: true
+        type: string
+      country:
+        description: 'us | uk | ca'
+        required: false
+        default: 'us'
+        type: string
+      year:
+        description: 'Tax/benefit year'
+        required: false
+        default: '2026'
+        type: string
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Install the policyengine-claude plugin
+        # This repo IS the skills source; install it as a local plugin/marketplace
+        # so /analyze-policy and its sub-agents are available headless.
+        run: |
+          claude plugin marketplace add "$GITHUB_WORKSPACE" || true
+          claude plugin install policyengine-claude@policyengine-skills || true
+
+      - name: Run /analyze-policy
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # PAT with `repo` scope so report-logger can open issues/PRs in the
+          # target repos (analysis-notebooks, policyengine-us-data, ...).
+          GH_TOKEN: ${{ secrets.ANALYSIS_GH_TOKEN }}
+        run: |
+          claude -p "/analyze-policy \"${{ inputs.reform }}\" --country ${{ inputs.country }} --year ${{ inputs.year }} --auto-confirm" \
+            --permission-mode acceptEdits \
+            --allowedTools "Bash,Read,Write,Edit,WebFetch,WebSearch"
