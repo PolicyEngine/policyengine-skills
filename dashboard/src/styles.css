@@ -1153,3 +1153,40 @@ table.data tbody tr:hover td {
 .health-content > .page > .page-header {
   display: none;
 }
+
+/* Analyses page */
+.analyses-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  align-items: center;
+  margin: 1rem 0 1.5rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-alt, #f6f7f9);
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+.analyses-filters label {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  color: var(--color-muted, #555);
+}
+.analyses-filters select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  background: white;
+  font-size: 0.875rem;
+}
+.analyses-count {
+  margin-left: auto;
+  color: var(--color-muted, #666);
+  font-size: 0.813rem;
+}
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-muted, #666);
+  font-style: italic;
+}

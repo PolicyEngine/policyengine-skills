@@ -34,6 +34,7 @@ SKILLS_DIR = ROOT / "skills"
 AGENTS_DIR = ROOT / "targets" / "claude" / "agents"
 COMMANDS_DIR = ROOT / "targets" / "claude" / "commands"
 BUNDLES_DIR = ROOT / "bundles"
+ANALYSES_DIR = ROOT / "analyses"
 FUNCTIONAL_TAGS_PATH = ROOT / "scripts" / "functional_tags.json"
 ORG_REPOS_PATH = ROOT / "scripts" / "policyengine_repos.json"
 OUTPUT_PATH = ROOT / "dashboard" / "src" / "data" / "manifest.json"
@@ -1153,11 +1154,61 @@ def compute_functional_overlaps(
     return pairs
 
 
+def load_analyses() -> list[dict]:
+    """Load /analyze-policy archived analyses with parsed frontmatter.
+
+    Returns a list of dicts with the fields the dashboard's Analyses tab
+    needs: file, policy_id, date, title, jurisdiction, verdict, tags,
+    horizon, headline numbers, and stage_5_5_corroboration status.
+    """
+    if not ANALYSES_DIR.exists():
+        return []
+    out: list[dict] = []
+    for path in sorted(ANALYSES_DIR.glob("*.md")):
+        if path.name.lower() == "readme.md":
+            continue
+        meta, _body = parse_frontmatter(path.read_text())
+        if not meta:
+            continue
+        jurisdiction = meta.get("jurisdiction") or {}
+        if isinstance(jurisdiction, str):
+            jurisdiction = {"country": jurisdiction, "state": None}
+        corroboration = meta.get("stage_5_5_corroboration") or {}
+        if isinstance(corroboration, str):
+            corroboration = {}
+        out.append({
+            "file": path.name,
+            "policy_id": meta.get("policy_id"),
+            "date": str(meta.get("date")) if meta.get("date") else None,
+            "title": meta.get("title") or path.stem,
+            "jurisdiction": {
+                "country": jurisdiction.get("country"),
+                "state": jurisdiction.get("state"),
+            },
+            "verdict": meta.get("verdict"),
+            "tags": list(meta.get("tags") or []),
+            "horizon": meta.get("horizon"),
+            "cost_billion_year1": meta.get("our_cost_billion_year1"),
+            "cost_billion_10yr_actual": meta.get("our_cost_billion_10yr_actual_federal")
+                or meta.get("our_cost_billion_10yr_actual_combined"),
+            "gini_pct_change": meta.get("our_gini_pct_change_relative"),
+            "top1_pp_change": meta.get("our_top1_share_pp_change"),
+            "child_poverty_pct_change": meta.get("our_child_poverty_pct_change_relative"),
+            "model_version": meta.get("model_version_at_run"),
+            "data_version": meta.get("data_version_at_run"),
+            "corroboration_verdict": corroboration.get("overall_verdict"),
+            "issues_opened": list(meta.get("issues_opened") or []),
+            "anchor_url": meta.get("anchor_url"),
+        })
+    return out
+
+
 def main() -> None:
     skills = load_skills()
     agents = load_agents()
     commands = load_commands()
     bundles = load_bundles()
+    analyses = load_analyses()
     raw_bundles = [json.loads(p.read_text()) for p in sorted(BUNDLES_DIR.glob("*.json"))]
 
     artifacts_by_kind = {
@@ -1216,7 +1267,11 @@ def main() -> None:
 
     manifest = {
         "generated_at": __import__("datetime").datetime.utcnow().isoformat() + "Z",
-        "counts": {kind: len(arts) for kind, arts in artifacts_by_kind.items()},
+        "counts": {
+            **{kind: len(arts) for kind, arts in artifacts_by_kind.items()},
+            "analysis": len(analyses),
+        },
+        "analyses": analyses,
         "artifacts": [artifact_to_dict(a) for a in flat],
         "edges": edges,
         "overlaps": overlaps,
@@ -1242,8 +1297,8 @@ def main() -> None:
     print(f"Wrote {OUTPUT_PATH.relative_to(ROOT)}")
     print(
         f"  skills={len(skills)} agents={len(agents)} commands={len(commands)} "
-        f"bundles={len(bundles)} edges={len(edges)} overlaps={len(overlaps)} "
-        f"functional_overlaps={len(functional_overlaps)}"
+        f"bundles={len(bundles)} analyses={len(analyses)} edges={len(edges)} "
+        f"overlaps={len(overlaps)} functional_overlaps={len(functional_overlaps)}"
     )
     from collections import Counter as _C
     by_cat = _C(p["category"] for p in functional_overlaps)

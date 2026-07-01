@@ -69,9 +69,31 @@ export interface Gaps {
   missing_triggers: Array<{ id: string; path: string }>;
 }
 
+export interface AnalysisEntry {
+  file: string;
+  policy_id: number | null;
+  date: string | null;
+  title: string;
+  jurisdiction: { country: string | null; state: string | null };
+  verdict: string | null;
+  tags: string[];
+  horizon: number | string | null;
+  cost_billion_year1: number | null;
+  cost_billion_10yr_actual: number | null;
+  gini_pct_change: number | null;
+  top1_pp_change: number | null;
+  child_poverty_pct_change: number | null;
+  model_version: string | null;
+  data_version: string | null;
+  corroboration_verdict: string | null;
+  issues_opened: Array<Record<string, unknown>>;
+  anchor_url: string | null;
+}
+
 export interface Manifest {
   generated_at: string;
-  counts: Record<ArtifactKind, number>;
+  counts: Record<ArtifactKind, number> & { analysis?: number };
+  analyses: AnalysisEntry[];
   artifacts: Artifact[];
   edges: Edge[];
   overlaps: OverlapPair[];
