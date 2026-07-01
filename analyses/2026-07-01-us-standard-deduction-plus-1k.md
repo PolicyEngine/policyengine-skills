@@ -1,5 +1,7 @@
 ---
-policy_id: 97852
+policy_id: 97853
+policy_id_original_single_year: 97852
+policy_id_note: 'The first run used a single-row reform-dict (`2026-01-01.2035-12-31: 33200`) which only overrode the 2026 baseline row. Since std ded has per-year inflation-indexed baseline rows, 2027-2035 fell back to unmodified baseline (impact=0). Corrected with policy 97853 which submits per-year values (2026: baseline+$1K, 2027: baseline+$1K, ...).'
 date: 2026-07-01
 jurisdiction:
   country: us
@@ -7,9 +9,11 @@ jurisdiction:
 title: Federal standard deduction raised by $1,000 for all filing statuses (2026-2035)
 verdict: PASS-WITH-NOTES
 our_cost_billion_year1: 17.86
-our_cost_billion_state_revenue: 0.353
-horizon: 1
-horizon_note: 'Single-year run only. No 10-year cost reported — the pipeline no longer computes yr1×10 as a proxy because the baseline evolves over the window (inflation-indexed std ded, tax bracket schedules). To get a 10-year cost, re-run with --horizon 10.'
+our_cost_billion_10yr_actual_federal: 196.10
+our_cost_billion_10yr_actual_state: 2.36
+our_cost_billion_10yr_actual_combined: 198.46
+horizon: 10
+horizon_note: 'Real 10-year cost computed by summing 10 individual API calls (one per year, 2026-2035). NOT a yr1×10 extrapolation. The naive extrapolation from the first single-year run ($17.86B × 10 = $178.6B) UNDERSTATED the true 10yr federal cost by $17.5B (~10%) because per-year cost grows from $17.86B (2026) to $21.35B (2035) as nominal incomes rise and the fixed +$1K bump captures more filers at the margin.'
 our_child_poverty_pct_change_relative: 0.0
 our_adult_poverty_pct_change_relative: -0.0375
 our_senior_poverty_pct_change_relative: -0.0133
@@ -69,7 +73,28 @@ Increase the federal standard deduction by $1,000 across all five filing statuse
 |---|---|
 | 2026 budgetary impact | **−$17.86B** (federal revenue loss) |
 | 2026 state tax revenue | **−$353M** (states with federal-linked std ded) |
-| 10yr cost | **not computed** — single-year run; see note below |
+| **10yr federal cost (actual)** | **−$196.10B** (10 real API runs, not extrapolation) |
+| 10yr state cost (actual) | **−$2.36B** |
+| 10yr combined | **−$198.46B** |
+
+### Per-year cost table (real 10-year run, policy 97853)
+
+| Year | Federal ($B) | State ($B) | Gini Δ % | Top-1% share Δ pp | Poverty Δ % |
+|---|---|---|---|---|---|
+| 2026 | −17.86 | −0.35 | −0.026 | −0.012 | −0.025 |
+| 2027 | −17.86 | −0.31 | −0.027 | −0.011 | −0.102 |
+| 2028 | −18.27 | −0.31 | −0.028 | −0.011 | −0.131 |
+| 2029 | −18.63 | −0.23 | −0.029 | −0.011 | −0.241 |
+| 2030 | −19.80 | −0.15 | −0.026 | −0.012 | −0.201 |
+| 2031 | −20.08 | −0.26 | −0.026 | −0.012 | −0.001 |
+| 2032 | −20.47 | −0.20 | −0.026 | −0.011 | −0.135 |
+| 2033 | −20.68 | −0.20 | −0.026 | −0.011 | −0.170 |
+| 2034 | −21.10 | −0.18 | −0.026 | −0.011 | −0.118 |
+| 2035 | −21.35 | −0.17 | −0.026 | −0.011 | −0.079 |
+| **10yr** | **−196.10** | **−2.36** | | | |
+
+Per-year growth: federal cost rises 19.6% from $17.86B (2026) to $21.35B (2035) — captures both nominal-income growth and the fact that the fixed $1K bump increases the marginal population of filers switching from itemizing to std-ded-electing as incomes rise. **This is exactly why yr1×10 = $178.6B extrapolation was misleading**; it would have understated the true cost by $17.5B / 10%.
+
 | Child poverty change | 0.00% |
 | Adult poverty change | −0.038% |
 | Senior poverty change | −0.013% |
@@ -118,5 +143,6 @@ Two adjacent-shape mirrors that would corroborate the +$1K estimate if executed:
 ## Notes for future runs
 
 1. **Populace has evolved again.** Third distinct data vintage in three days: SALT runs used Enhanced CPS (pre-populace), CDCC used `populace-us-2024-f0af251`, this run uses `populace-us-2024-cd-concept-budget-...20260627T022640Z`. Cross-run absolute magnitudes are not directly comparable across vintages.
-2. **State revenue impact** of −$353M is meaningful. States with std ded tied to federal (or with itemization-conditional credits) see revenue loss.
+2. **State revenue impact** of −$353M/yr is meaningful. States with std ded tied to federal (or with itemization-conditional credits) see revenue loss.
 3. **Non-refundability limit.** Decile 1 gets $0 — same clip pattern as CDCC. Any std ded / non-refundable-credit reform's distributional profile depends on tax-liability calibration in populace.
+4. **Per-year-indexed baseline gotcha (new pipeline finding).** The original policy 97852 used a single reform-dict row (`2026-01-01.2035-12-31: 33200`) — this ONLY overrode the 2026 baseline row and 2027-2035 fell back to inflation-indexed baseline values. The corrected policy 97853 submits per-year values (2026 baseline + $1K, 2027 baseline + $1K, ...). **Applies to any reform whose baseline parameter has per-year rows** (std ded, inflation-indexed thresholds). The microsim-runner should validate reform-dict coverage against the baseline's row count before submitting, or explicitly warn if a single reform-dict row covers a date range with multiple baseline rows.

@@ -3,6 +3,7 @@ import { manifest } from "./data";
 import WorkflowsPage from "./pages/Workflows";
 import CatalogPage from "./pages/Catalog";
 import GuidesPage from "./pages/Guides";
+import AnalysesPage from "./pages/Analyses";
 import HealthPage from "./pages/Health";
 
 const generated = new Date(manifest.generated_at);
@@ -37,6 +38,11 @@ function Sidebar() {
           <span>Guides</span>
           <span className="nav-count">1</span>
         </NavLink>
+        <NavLink to="/analyses">
+          <span className="nav-icon">◉</span>
+          <span>Analyses</span>
+          <span className="nav-count">{manifest.analyses?.length ?? 0}</span>
+        </NavLink>
         <NavLink to="/health">
           <span className="nav-icon">♥</span>
           <span>Health</span>
@@ -62,6 +68,7 @@ export default function App() {
           <Route path="/workflows" element={<WorkflowsPage />} />
           <Route path="/catalog" element={<CatalogPage />} />
           <Route path="/guides" element={<GuidesPage />} />
+          <Route path="/analyses" element={<AnalysesPage />} />
           <Route path="/health" element={<HealthPage />} />
           {/* Legacy routes kept as redirects so bookmarked links don't 404 */}
           <Route path="/overview" element={<Navigate to="/workflows" replace />} />

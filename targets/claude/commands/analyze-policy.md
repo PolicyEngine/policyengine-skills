@@ -23,7 +23,7 @@ Flags:
 - `--skip-microsim` (process-test mode — stops at Stage 5, predicts from prior anchor)
 - `--auto-investigate` (if Stage 5 returns INVESTIGATE, auto-run top calibration hypothesis)
 - `--write-report PATH` (default `/tmp/analyze-policy-{policy_id}.md`)
-- `--log-to <dest>[,<dest>...]` (override auto-routing; see Phase 8). Examples: `--log-to archive`, `--log-to "archive,issue:policyengine-us-data"`, `--log-to draft:policyengine-analysis/posts/arpa-ctc.md`
+- `--log-to <dest>[,<dest>...]` (override auto-routing; see Phase 8). Examples: `--log-to archive`, `--log-to "archive,issue:policyengine-{country}-data"` (country auto-substituted from `--country`), `--log-to draft:policyengine-app/src/posts/articles/arpa-ctc.md`
 - `--no-log` (skip Phase 8 entirely — write the `/tmp` report only)
 - `--auto-confirm` (skip confirmation prompts before opening GitHub issues; only honor in non-interactive contexts)
 
@@ -88,7 +88,7 @@ With `--horizon 10` (or a custom multi-year list), the microsim-runner submits a
        │ result            (or skip if --skip-microsim, predict from anchor)
        ▼
 ┌──────────────────┐         Stage 5: Compare
-│ reform-          │  ───►   PASS | PASS-WITH-NOTES | INVESTIGATE
+│ reform-          │  ───►   PASS | PASS-WITH-NOTES | PASS-WITH-CORROBORATION | INVESTIGATE | BLOCKED
 │ comparator       │
 └──────────────────┘
        │
@@ -247,31 +247,7 @@ report-logger
   command_args=<original $ARGUMENTS>
 ```
 
-**Destination routing — runtime prompt, context-aware** (when no `--log-to` and no `--no-log` and no `--auto-confirm`):
-
-The logger detects the current repo, surfaces a shortlist tailored to the context, and asks the analyst to pick. Pre-selected defaults by verdict:
-
-| Verdict | Pre-selected |
-|---|---|
-| `PASS` / `PASS-WITH-NOTES` / `PASS-WITH-CORROBORATION` | local archive only |
-| `INVESTIGATE` | local archive + GH issue in `policyengine-{country}-data` |
-| `structural` | local archive + GH issue in `policyengine-{country}` |
-| `not-possible` / `deployed-model-lag` | local archive only |
-
-Context-specific additions surfaced in the prompt:
-- Inside `policyengine-app` repo → "Save as draft research post: `src/posts/articles/{slug}.md` + update `posts.json`"
-- Inside any PE repo → corresponding `gh issue` option
-- Always available → "Custom path / repo — type a destination spec"
-
-All non-local destinations get a body preview before submission (skip with `--auto-confirm`).
-
-**Archive path resolution** (matters for plugin installations):
-1. Explicit `--log-to archive:<path>` wins
-2. Else `$PWD/analyses/` if it exists
-3. Else `$POLICYENGINE_ANALYSES_DIR` env var
-4. Else `~/.policyengine/analyses/` (auto-created)
-
-**Issue creation** opens a GitHub issue via `gh issue create` with a verdict-shaped body. Confirms before opening unless `--auto-confirm`. Issue numbers are appended to the archive's `issues_opened` frontmatter so the analysis archive is the source of truth for "what action items did this produce."
+**Destination routing.** `report-logger` owns the runtime prompt, the pre-selected defaults by verdict, the context-aware shortlist (which options to surface based on which repo the analyst is in), the body preview flow, and archive path resolution. See `report-logger.md` sections "Routing — runtime prompt, context-aware" and "Path resolution" for the source of truth. This document only summarizes the outputs the analyst sees:
 
 The Phase 8 step also prints the destination summary to the user as the final output:
 
