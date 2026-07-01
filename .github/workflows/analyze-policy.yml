@@ -7,24 +7,53 @@ on:
   workflow_dispatch:
     inputs:
       reform:
-        description: 'Reform to analyze — a bill id (e.g. "US HR9296") or a natural-language reform'
+        description: 'Reform to analyze — a bill id (e.g. "US HR9296"), preset (e.g. "preset:arpa-ctc-restoration"), or natural-language reform'
         required: true
         type: string
       country:
         description: 'us | uk | ca'
         required: false
         default: 'us'
-        type: string
+        type: choice
+        options: [us, uk, ca]
       year:
-        description: 'Tax/benefit year'
+        description: 'Tax/benefit year (only used with horizon=1)'
         required: false
         default: '2026'
         type: string
+      horizon:
+        description: 'Time horizon: 1 (single-year, ~7 min) or 10 (full 10-year via /budget-window, ~15-25 min)'
+        required: false
+        default: '1'
+        type: choice
+        options: ['1', '10']
+      log_to:
+        description: 'Override destination routing. Blank = auto-routing by verdict (INVESTIGATE → policyengine-{country}-data, structural → policyengine-{country}). Example: "archive,issue:policyengine-us-data"'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Run the pipeline through Stage 7 (write-up) but skip Phase 8 destination writes. Useful for previewing what would be filed.'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  analyze:
+  # Fast regression check before spending time on the full pipeline. Catches
+  # scorekeepers registry breakage, frontmatter drift, dataset-name typos.
+  regression-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - name: Run pipeline regression tests
+        run: uv run pytest tests/pipeline/ -v
+
+  analyze:
+    needs: regression-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45  # extended from 30 to accommodate --horizon 10 (~15-25 min microsim + benchmark search + write-up)
     permissions:
       contents: read
       issues: write
@@ -46,13 +75,45 @@ jobs:
           claude plugin marketplace add "$GITHUB_WORKSPACE" || true
           claude plugin install policyengine-claude@policyengine-skills || true
 
+      - name: Build the /analyze-policy command line
+        id: cmdline
+        # Compose the command from the workflow inputs. --auto-confirm skips
+        # interactive prompts; downstream stages use pre-selected verdict
+        # defaults (destination shortlist, horizon single-year fallback).
+        run: |
+          CMD="/analyze-policy \"${{ inputs.reform }}\" --country ${{ inputs.country }} --horizon ${{ inputs.horizon }} --auto-confirm"
+          if [ "${{ inputs.horizon }}" = "1" ]; then
+            CMD="$CMD --year ${{ inputs.year }}"
+          fi
+          if [ -n "${{ inputs.log_to }}" ]; then
+            CMD="$CMD --log-to \"${{ inputs.log_to }}\""
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            CMD="$CMD --no-log"
+          fi
+          echo "cmd=$CMD" >> "$GITHUB_OUTPUT"
+          echo "Command line: $CMD"
+
       - name: Run /analyze-policy
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # PAT with `repo` scope so report-logger can open issues/PRs in the
-          # target repos (analysis-notebooks, policyengine-us-data, ...).
+          # target repos (policyengine-{country}-data, policyengine-{country},
+          # policyengine-app for blog draft PRs, etc.).
           GH_TOKEN: ${{ secrets.ANALYSIS_GH_TOKEN }}
         run: |
-          claude -p "/analyze-policy \"${{ inputs.reform }}\" --country ${{ inputs.country }} --year ${{ inputs.year }} --auto-confirm" \
+          claude -p "${{ steps.cmdline.outputs.cmd }}" \
             --permission-mode acceptEdits \
             --allowedTools "Bash,Read,Write,Edit,WebFetch,WebSearch"
+
+      - name: Upload archived analysis
+        # Always upload the archive even if downstream destination writes failed.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-archive
+          path: |
+            analyses/*.md
+            /tmp/analyze-policy-*.md
+          if-no-files-found: warn
+          retention-days: 30
