@@ -14,10 +14,10 @@ The structured analogue of `/encode-policy-v2` for the analyst persona: less abo
 Flags:
 - `--country {us|uk|ca}` (default `us`)
 - `--horizon <spec>` — time horizon for the microsim. When omitted, the pipeline prompts the analyst at the start of Phase 4. Accepts:
-  - `1` — single-year (default entry: current year), fastest, ~6-10 min
-  - `10` — full 10-year (year 2026-2035 for US, submitted in parallel to the API, ~10-15 min wall clock)
-  - `custom:YYYY[,YYYY...]` — specific years (e.g. `custom:2026,2029,2030,2035`)
-  - `custom:YYYY-YYYY` — year range (e.g. `custom:2026-2028`)
+  - `1` — single-year (default entry: current year), fastest, ~6-10 min. Uses `/economy/{policy}/over/{baseline}?time_period=YYYY`.
+  - `10` — full 10-year (year 2026-2035 for US), ~15-25 min wall clock. Uses the native `/economy/{policy}/over/{baseline}/budget-window?start_year=YYYY&window_size=N` endpoint.
+  - `custom:YYYY[,YYYY...]` — specific years (e.g. `custom:2026,2029,2030,2035`) — submitted as N single-year calls.
+  - `custom:YYYY-YYYY` — year range (e.g. `custom:2026-2028`) — mapped to `budget-window` with `start_year`+`window_size`.
 - `--year YYYY` (only used with `--horizon 1`; default current year)
 - `--mode {api|local}` (default `api` for microsim execution)
 - `--skip-microsim` (process-test mode — stops at Stage 5, predicts from prior anchor)
@@ -35,7 +35,7 @@ Before Phase 4 (microsim), if the analyst didn't pass `--horizon`, prompt:
 How many years should the microsim cover?
 
 [x] Single year — fastest, one API call (~6-10 min), yields yr-1 cost only.
-[ ] Full 10 years — submits all 10 years in parallel (~10-15 min wall clock), yields real 10yr cost.
+[ ] Full 10 years — native budget-window endpoint, server-side queued (~15-25 min wall clock), yields real 10yr cost.
 [ ] Custom — comma-separated years or a range (e.g. "2026,2029,2030,2035" or "2026-2028").
 
 Choice (default = single year):

@@ -124,23 +124,53 @@ If `dataset_honored: false` (the API returned raw CPS when we asked for enhanced
 
 **Applies to any inflation-indexed parameter family**: standard deduction, tax brackets, EITC amounts, CTC amounts, phase-out thresholds. Does NOT apply to parameters with only 1-2 baseline rows in the reform window (like SALT cap under OBBBA, which has 2026 + 2030 rows only — a single reform-dict row `"2026-01-01.2035-12-31": 60000` correctly overrides both).
 
-### Multi-year runs (horizon > 1)
+### Multi-year runs (horizon > 1) — use the budget-window endpoint
 
-The API is single-year per call. Multi-year horizons submit N parallel calls to `/economy/{policy_id}/over/{baseline_id}?time_period={year}` (one per year) and poll each until complete. Wall-clock is the max of the individual runs, not the sum — a full 10-year submit finishes in ~10-15 min if all 10 run in parallel.
+The API provides a native multi-year endpoint that queues all years server-side with progress tracking. **Prefer it over N parallel single-year calls** — it's simpler to poll, gives a unified response shape, and doesn't rely on client-side parallel orchestration.
 
-```python
-def run_horizon(policy_id, baseline_id, years):
-    """Submit all years in parallel, poll to completion, return per-year results."""
-    urls = {
-        year: f"https://api.policyengine.org/us/economy/{policy_id}/over/{baseline_id}?region=us&time_period={year}&dataset=enhanced_cps"
-        for year in years
-    }
-    # Kick off in parallel; each API call independently retries the polling loop
-    results = parallel_poll(urls)  # dict {year: result}
-    return results
+```
+GET /{country}/economy/{policy_id}/over/{baseline_id}/budget-window
+    ?region={region}
+    &start_year=YYYY
+    &window_size=N
+    &dataset={dataset}
 ```
 
-**Do NOT compute a naive `yr1 × N` extrapolation.** If the horizon is `1`, report yr-1 cost only in the archive. If the horizon is `10` (or a custom multi-year list), report the actual per-year cost table AND the summed multi-year cost. Never multiply single-year cost by 10 to fabricate a 10-year number — this is misleading whenever the baseline changes over the window (2030 OBBBA snap-backs, inflation-indexed thresholds, phase-out schedules).
+Response while computing:
+
+```json
+{
+  "status": "computing",
+  "progress": 0.3,
+  "message": "Queued 2029 (3 of 10 complete)...",
+  "completed_years": ["2026", "2027", "2028"],
+  "computing_years": ["2029"],
+  "queued_years": ["2030", "2031", "2032", "2033", "2034", "2035"],
+  "result": null,
+  "error": null
+}
+```
+
+When `status: "ok"`, `result` contains per-year budgetary data plus (typically) the summed multi-year total. Read `data_version` and `model_version` from `result` as usual.
+
+**Polling cadence:** the endpoint returns quickly; poll every 30-60s while `status == "computing"`. Wall-clock for a full 10-year US run is typically 15-25 min (depends on API queue).
+
+**Fallback:** if the budget-window endpoint returns an error (older PE-{country} releases without it), fall back to N parallel calls to the single-year endpoint. Log the fallback so the analyst knows the runner degraded gracefully.
+
+```python
+def run_horizon(country, policy_id, baseline_id, start_year, window_size):
+    url = (
+        f"https://api.policyengine.org/{country}/economy/{policy_id}/over/{baseline_id}/budget-window"
+        f"?region={country}&start_year={start_year}&window_size={window_size}&dataset=enhanced_cps"
+    )
+    while True:
+        r = requests.get(url).json()
+        if r["status"] != "computing":
+            return r["result"]
+        time.sleep(60)
+```
+
+**Do NOT compute a naive `yr1 × N` extrapolation.** If the horizon is `1`, report yr-1 cost only in the archive. If the horizon is `10` (or a custom multi-year list), use the budget-window endpoint and report the actual per-year cost table AND the summed multi-year cost.
 
 ### Step 2b: Real response shape
 
