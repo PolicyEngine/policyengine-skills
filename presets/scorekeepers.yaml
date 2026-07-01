@@ -1,0 +1,325 @@
+# Scorekeepers registry — official fiscal offices (Tier 2) and think-tanks (Tier 3)
+# consulted by prior-scores-finder for external-benchmark evidence.
+#
+# The pipeline requires at least 2 external sources within ±25% for a PASS verdict.
+# This registry ensures those searches cast a wide-enough net without hardcoding
+# a US-only, tax-only bias into the agents.
+#
+# Add a scorekeeper by appending a block below with the fields shown. Prior-scores-finder
+# will start consulting it on the next run. No code change required.
+#
+# Fields:
+#   name         (required) — canonical short name used in benchmark_sources[].source
+#   full_name    (required) — full institutional name
+#   tier         (required) — 2 (official fiscal office) or 3 (think-tank / advocacy)
+#   jurisdictions (required) — list of country codes this scorekeeper covers (us, uk, ca, or ["global"])
+#   domains      (required) — list of policy areas they score (tax, benefits, budget, healthcare, etc.)
+#   url          (required) — homepage
+#   search_hints (optional) — extra query hints for WebSearch (e.g., "site:crfb.org")
+#   caveats      (optional) — known biases, publication cadence, dataset differences
+#
+# Tier 2 vs Tier 3 rule: Tier 2 sources have official standing (produce estimates
+# used in legislation or budget documents). Tier 3 sources are independent analysts
+# whose estimates are widely cited but not officially binding. When in doubt, use Tier 3.
+
+scorekeepers:
+  # ============================================================================
+  # UNITED STATES
+  # ============================================================================
+
+  # Tier 2 — Official fiscal offices (US)
+  - name: JCT
+    full_name: Joint Committee on Taxation
+    tier: 2
+    jurisdictions: [us]
+    domains: [tax, revenue]
+    url: https://www.jct.gov/
+    search_hints: ["site:jct.gov", "JCT JCX", "Joint Committee on Taxation"]
+    caveats: "Official tax-legislation scores. Publishes JCX-N-YY documents. Static microsim; no behavioral response for revenue scoring."
+
+  - name: CBO
+    full_name: Congressional Budget Office
+    tier: 2
+    jurisdictions: [us]
+    domains: [tax, spending, budget, healthcare, benefits]
+    url: https://www.cbo.gov/
+    search_hints: ["site:cbo.gov", "Congressional Budget Office"]
+    caveats: "Official spending + revenue scores. Publishes Budget Options and cost estimates. 10-year windows."
+
+  - name: OTA
+    full_name: Office of Tax Analysis (Treasury)
+    tier: 2
+    jurisdictions: [us]
+    domains: [tax, revenue]
+    url: https://home.treasury.gov/policy-issues/tax-policy/office-of-tax-analysis
+    search_hints: ["site:treasury.gov", "Office of Tax Analysis"]
+
+  - name: SSA-OCACT
+    full_name: Social Security Administration Office of the Chief Actuary
+    tier: 2
+    jurisdictions: [us]
+    domains: [social-security, disability, oasi]
+    url: https://www.ssa.gov/OACT/
+    search_hints: ["site:ssa.gov/OACT"]
+
+  # Tier 3 — Think-tanks (US)
+  - name: CRFB
+    full_name: Committee for a Responsible Federal Budget
+    tier: 3
+    jurisdictions: [us]
+    domains: [budget, deficit, tax, spending]
+    url: https://www.crfb.org/
+    search_hints: ["site:crfb.org"]
+
+  - name: TPC
+    full_name: Tax Policy Center
+    tier: 3
+    jurisdictions: [us]
+    domains: [tax, distributional]
+    url: https://taxpolicycenter.org/
+    search_hints: ["site:taxpolicycenter.org", "Tax Policy Center"]
+    caveats: "Joint Urban Institute + Brookings project. Deep distributional microsim; some scores behind paywall or only in blog form."
+
+  - name: Tax Foundation
+    full_name: Tax Foundation
+    tier: 3
+    jurisdictions: [us]
+    domains: [tax, economic-growth]
+    url: https://taxfoundation.org/
+    search_hints: ["site:taxfoundation.org"]
+    caveats: "Uses General Equilibrium Model for dynamic scoring; conventional revenue often reported alongside."
+
+  - name: CBPP
+    full_name: Center on Budget and Policy Priorities
+    tier: 3
+    jurisdictions: [us]
+    domains: [benefits, low-income, snap, medicaid, ctc, eitc, housing]
+    url: https://www.cbpp.org/
+    search_hints: ["site:cbpp.org"]
+
+  - name: ITEP
+    full_name: Institute on Taxation and Economic Policy
+    tier: 3
+    jurisdictions: [us]
+    domains: [tax, distributional, state-tax]
+    url: https://itep.org/
+    search_hints: ["site:itep.org"]
+    caveats: "Distributional focus with 6-tier income breakdown; state-level tax analysis is a strength."
+
+  - name: Penn Wharton Budget Model
+    full_name: Penn Wharton Budget Model
+    tier: 3
+    jurisdictions: [us]
+    domains: [tax, budget, macroeconomic]
+    url: https://budgetmodel.wharton.upenn.edu/
+    search_hints: ["site:budgetmodel.wharton.upenn.edu", "Penn Wharton Budget Model"]
+    caveats: "Publishes both conventional and dynamic (macro-response) scores."
+
+  - name: Yale Budget Lab
+    full_name: Budget Lab at Yale
+    tier: 3
+    jurisdictions: [us]
+    domains: [tax, spending, budget]
+    url: https://budgetlab.yale.edu/
+    search_hints: ["site:budgetlab.yale.edu", "Yale Budget Lab"]
+
+  - name: Peterson Foundation
+    full_name: Peter G. Peterson Foundation
+    tier: 3
+    jurisdictions: [us]
+    domains: [deficit, debt, budget]
+    url: https://www.pgpf.org/
+    search_hints: ["site:pgpf.org"]
+
+  - name: AEI
+    full_name: American Enterprise Institute
+    tier: 3
+    jurisdictions: [us]
+    domains: [tax, spending, healthcare, benefits]
+    url: https://www.aei.org/
+    search_hints: ["site:aei.org"]
+
+  - name: Brookings
+    full_name: Brookings Institution
+    tier: 3
+    jurisdictions: [us]
+    domains: [tax, distributional, benefits, healthcare]
+    url: https://www.brookings.edu/
+    search_hints: ["site:brookings.edu"]
+
+  - name: BPC
+    full_name: Bipartisan Policy Center
+    tier: 3
+    jurisdictions: [us]
+    domains: [tax, healthcare, retirement, immigration]
+    url: https://bipartisanpolicy.org/
+    search_hints: ["site:bipartisanpolicy.org"]
+
+  - name: EPI
+    full_name: Economic Policy Institute
+    tier: 3
+    jurisdictions: [us]
+    domains: [labor, wages, benefits, distributional]
+    url: https://www.epi.org/
+    search_hints: ["site:epi.org"]
+
+  - name: NBER
+    full_name: National Bureau of Economic Research
+    tier: 3
+    jurisdictions: [us]
+    domains: [tax, benefits, labor, healthcare, education]
+    url: https://www.nber.org/
+    search_hints: ["site:nber.org", "NBER working paper"]
+    caveats: "Academic working papers; often the deepest methodological source but slower publication cadence."
+
+  # ============================================================================
+  # UNITED KINGDOM
+  # ============================================================================
+
+  # Tier 2 — Official fiscal offices (UK)
+  - name: OBR
+    full_name: Office for Budget Responsibility
+    tier: 2
+    jurisdictions: [uk]
+    domains: [tax, spending, budget, macroeconomic]
+    url: https://obr.uk/
+    search_hints: ["site:obr.uk", "Office for Budget Responsibility"]
+    caveats: "Official UK fiscal forecaster; publishes Economic and Fiscal Outlook twice yearly."
+
+  - name: HMT
+    full_name: HM Treasury
+    tier: 2
+    jurisdictions: [uk]
+    domains: [tax, spending, budget]
+    url: https://www.gov.uk/government/organisations/hm-treasury
+    search_hints: ["site:gov.uk/government/organisations/hm-treasury"]
+
+  - name: HMRC
+    full_name: HM Revenue and Customs
+    tier: 2
+    jurisdictions: [uk]
+    domains: [tax, revenue, compliance]
+    url: https://www.gov.uk/government/organisations/hm-revenue-customs
+    search_hints: ["site:gov.uk/government/organisations/hm-revenue-customs"]
+
+  # Tier 3 — Think-tanks (UK)
+  - name: IFS
+    full_name: Institute for Fiscal Studies
+    tier: 3
+    jurisdictions: [uk]
+    domains: [tax, benefits, distributional, budget]
+    url: https://ifs.org.uk/
+    search_hints: ["site:ifs.org.uk"]
+    caveats: "Deepest independent UK fiscal microsim (TAXBEN). Green Budget publication is a canonical annual reference."
+
+  - name: IPPR
+    full_name: Institute for Public Policy Research
+    tier: 3
+    jurisdictions: [uk]
+    domains: [tax, benefits, labor, distributional]
+    url: https://ippr.org/
+    search_hints: ["site:ippr.org"]
+
+  - name: Resolution Foundation
+    full_name: Resolution Foundation
+    tier: 3
+    jurisdictions: [uk]
+    domains: [wages, benefits, distributional, cost-of-living]
+    url: https://www.resolutionfoundation.org/
+    search_hints: ["site:resolutionfoundation.org"]
+
+  - name: NIESR
+    full_name: National Institute of Economic and Social Research
+    tier: 3
+    jurisdictions: [uk]
+    domains: [macroeconomic, labor, budget]
+    url: https://www.niesr.ac.uk/
+    search_hints: ["site:niesr.ac.uk"]
+
+  - name: Fabian Society
+    full_name: Fabian Society
+    tier: 3
+    jurisdictions: [uk]
+    domains: [tax, benefits, labor]
+    url: https://fabians.org.uk/
+
+  - name: TaxWatch
+    full_name: TaxWatch
+    tier: 3
+    jurisdictions: [uk]
+    domains: [tax, tax-avoidance]
+    url: https://taxwatchuk.org/
+
+  # ============================================================================
+  # CANADA
+  # ============================================================================
+
+  # Tier 2 — Official fiscal offices (Canada)
+  - name: PBO
+    full_name: Office of the Parliamentary Budget Officer
+    tier: 2
+    jurisdictions: [ca]
+    domains: [tax, spending, budget]
+    url: https://www.pbo-dpb.ca/
+    search_hints: ["site:pbo-dpb.ca", "Parliamentary Budget Officer"]
+
+  - name: DoF-Canada
+    full_name: Department of Finance Canada
+    tier: 2
+    jurisdictions: [ca]
+    domains: [tax, spending, budget]
+    url: https://www.canada.ca/en/department-finance.html
+    search_hints: ["site:canada.ca/en/department-finance"]
+
+  # Tier 3 — Think-tanks (Canada)
+  - name: CD Howe
+    full_name: C.D. Howe Institute
+    tier: 3
+    jurisdictions: [ca]
+    domains: [tax, spending, macroeconomic]
+    url: https://www.cdhowe.org/
+    search_hints: ["site:cdhowe.org"]
+
+  - name: IRPP
+    full_name: Institute for Research on Public Policy
+    tier: 3
+    jurisdictions: [ca]
+    domains: [tax, benefits, distributional]
+    url: https://irpp.org/
+    search_hints: ["site:irpp.org"]
+
+  - name: Fraser Institute
+    full_name: Fraser Institute
+    tier: 3
+    jurisdictions: [ca]
+    domains: [tax, spending, provincial]
+    url: https://www.fraserinstitute.org/
+    search_hints: ["site:fraserinstitute.org"]
+
+  - name: Canadian Centre for Policy Alternatives
+    full_name: Canadian Centre for Policy Alternatives
+    tier: 3
+    jurisdictions: [ca]
+    domains: [tax, benefits, labor, distributional]
+    url: https://www.policyalternatives.ca/
+    search_hints: ["site:policyalternatives.ca"]
+
+  # ============================================================================
+  # GLOBAL / MULTI-JURISDICTION
+  # ============================================================================
+  - name: OECD
+    full_name: Organisation for Economic Co-operation and Development
+    tier: 3
+    jurisdictions: [global]
+    domains: [tax, spending, comparative]
+    url: https://www.oecd.org/
+    search_hints: ["site:oecd.org"]
+    caveats: "Useful for cross-country comparisons. Publishes country-specific reviews and comparative tax/benefit databases."
+
+  - name: IMF
+    full_name: International Monetary Fund
+    tier: 3
+    jurisdictions: [global]
+    domains: [tax, budget, macroeconomic]
+    url: https://www.imf.org/
+    search_hints: ["site:imf.org"]
