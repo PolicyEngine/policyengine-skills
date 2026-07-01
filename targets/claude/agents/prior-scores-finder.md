@@ -16,9 +16,38 @@ Returns a ranked list of analog reforms with **specific magnitudes** (10-year co
 
 ## Process
 
-**ALL THREE TIERS ARE REQUIRED.** A prior PE hit (Tier 1) does NOT excuse skipping Tier 2 or Tier 3 — those are *external benchmarks*, not redundant priors. The pipeline's PASS verdict requires external-source agreement (see `reform-comparator`); skipping the external tiers is a silent quality regression.
+**ALL THREE TIERS ARE REQUIRED**, plus a Tier-0 knowledge-base check before them. A prior PE hit (Tier 1) does NOT excuse skipping Tier 2 or Tier 3 — those are *external benchmarks*, not redundant priors. The pipeline's PASS verdict requires external-source agreement (see `reform-comparator`); skipping the external tiers is a silent quality regression.
 
 For each tier, you MUST produce a structured report. If a tier returns nothing, emit `{"tier": N, "searched": [...], "results": [], "note": "searched X+Y+Z; nothing relevant"}` — silence is not an acceptable output. The downstream comparator distinguishes "no external source exists" from "we didn't look".
+
+### Tier 0: Local archive knowledge base (do this first)
+
+Before hitting any external source, grep the local analyses archive for prior runs of the same (or a similar) reform. This is the fastest way to detect duplicate work AND to seed anchors with real PE microsim numbers rather than starting from a web search.
+
+```bash
+# Same jurisdiction + parameter family search (returns matching archived analyses)
+python3 scripts/analyses_kb.py search --country us --family salt
+
+# Find analyses similar to the reform-to-be-scored (by tags + jurisdiction)
+python3 scripts/analyses_kb.py similar --file <candidate-archive-path>
+
+# Cross-run duplicate detection (which analyses in the archive already overlap?)
+python3 scripts/analyses_kb.py duplicates
+```
+
+Programmatic:
+
+```python
+from scripts.analyses_kb import search_analyses, find_similar
+hits = search_analyses(country="us", parameter_families=["ctc", "refundability"])
+```
+
+**How to use Tier 0 hits:**
+
+- If a prior archived analysis matches the SAME reform (identical parameter family + verdict + jurisdiction), surface a "duplicate-run detection" note to the analyst. Options: (a) return the archived result verbatim, (b) re-run for fresh numbers (dataset/model may have evolved — populace vintages change), (c) both.
+- If a prior archived analysis matches a SIMILAR reform in the same family, cite it as a Tier-1-adjacent anchor. Its `benchmark_sources` block may already have the right Tier-3 externals; borrow them rather than re-searching.
+
+Do NOT skip Tiers 1-3 based on Tier-0 hits. The archive is a shortcut for prior PE work; Tier 2 (JCT/CBO) and Tier 3 (think-tanks) are still required for a PASS-eligible verdict.
 
 ### Tier 1: PolicyEngine prior scores (highest priority)
 

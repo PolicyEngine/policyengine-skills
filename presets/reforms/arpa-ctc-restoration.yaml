@@ -1,0 +1,32 @@
+name: arpa-ctc-restoration
+description: "Reinstate ARPA-era Child Tax Credit — $3,600 per child ages 0-5, $3,000 per child ages 6-17, fully refundable, no phase-in earnings requirement"
+country: us
+category: reform
+parameter_families: [ctc, refundability]
+published_scores:
+  - source: JCT
+    year_published: 2024
+    ten_year_billion: 1100
+    reform_shape_exact_match: true
+    note: "JCT scored the exact ARPA CTC extension in the 2024 reconciliation baseline"
+  - source: CBPP
+    year_published: 2024
+    ten_year_billion: 1050
+    url: "https://www.cbpp.org/research/family-income-support/expanded-child-tax-credit-lifted-3-7-million-out-of-poverty"
+    reform_shape_exact_match: true
+  - source: TPC
+    year_published: 2024
+    child_poverty_pct_change: -36.0
+    reform_shape_exact_match: true
+tags: [ctc, refundability, arpa, federal]
+reform_dict:
+  "gov.irs.credits.ctc.amount.arpa[0].amount":
+    "2026-01-01.2035-12-31": 3600
+  "gov.irs.credits.ctc.amount.arpa[1].amount":
+    "2026-01-01.2035-12-31": 3000
+  "gov.irs.credits.ctc.phase_out.arpa.in_effect":
+    "2026-01-01.2035-12-31": true
+  "gov.irs.credits.ctc.refundable.fully_refundable":
+    "2026-01-01.2035-12-31": true
+  "gov.irs.credits.ctc.refundable.individual_max":
+    "2026-01-01.2035-12-31": 99999

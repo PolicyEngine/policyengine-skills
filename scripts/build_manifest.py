@@ -48,11 +48,24 @@ FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
-    """Return ``(metadata, body)``. Metadata is empty dict if no frontmatter."""
+    """Return ``(metadata, body)``. Metadata is empty dict if no frontmatter.
+
+    Uses PyYAML when available (handles nested dicts, lists of dicts, all
+    valid YAML). Falls back to the zero-dep subset parser otherwise, which
+    covers the shape used by legacy Claude artifact frontmatter but does not
+    handle nested structures like `jurisdiction: {country, state}`.
+    """
     match = FRONTMATTER_RE.match(text)
     if not match:
         return {}, text
     raw_meta, body = match.group(1), match.group(2)
+    try:
+        import yaml
+        parsed = yaml.safe_load(raw_meta) or {}
+        if isinstance(parsed, dict):
+            return parsed, body
+    except (ImportError, Exception):
+        pass
     return parse_yaml_subset(raw_meta), body
 
 
