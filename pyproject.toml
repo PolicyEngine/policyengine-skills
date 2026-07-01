@@ -4,7 +4,9 @@ version = "3.22.3"
 description = "Portable PolicyEngine skills and Claude wrapper source"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "pyyaml>=6.0",  # frontmatter parsing (build_manifest.py), presets, scorekeepers registry
+]
 
 [dependency-groups]
 dev = [
