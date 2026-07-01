@@ -1,0 +1,33 @@
+name: tcja-extension
+description: "TCJA continued indefinitely — SALT $10K, standard deduction reverted to TCJA-continued values, AMT reverted, tax rates continued past 2025 sunset"
+country: us
+category: baseline
+parameter_families: [salt, standard-deduction, amt, tax-brackets]
+purpose: "Required as a baseline policy for mirroring external scores published in 2024-mid-2025 that used 'TCJA extension' as their reference point (CRFB, TPC, most Tax Foundation SALT/CTC scores before OBBBA enactment). PE's deployed current-law baseline (policy_id=2) includes OBBBA changes; mirror runs against that baseline would silently understate the reforms."
+notes:
+  - "The 2026-06-29 SALT $100K analysis's Stage 5.5 corroboration failed because we built a partial TCJA-extension baseline (SALT-only revert). A COMPLETE TCJA-extension baseline reverts standard deduction, AMT, and tax brackets alongside SALT."
+  - "STATUS: this preset is a stub. The full parameter revert list is TODO — see docs/todo/tcja-extension-baseline.md."
+tags: [baseline, tcja, benchmark-alignment]
+reform_dict:
+  # SALT — revert to TCJA
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.JOINT":
+    "2026-01-01.2035-12-31": 10000
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.SINGLE":
+    "2026-01-01.2035-12-31": 10000
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.HEAD_OF_HOUSEHOLD":
+    "2026-01-01.2035-12-31": 10000
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.SURVIVING_SPOUSE":
+    "2026-01-01.2035-12-31": 10000
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.SEPARATE":
+    "2026-01-01.2035-12-31": 5000
+  "gov.irs.deductions.itemized.salt_and_real_estate.phase_out.in_effect":
+    "2026-01-01.2035-12-31": false
+  "gov.irs.deductions.itemized.salt_and_real_estate.phase_out.floor.applies":
+    "2026-01-01.2035-12-31": false
+  # Standard deduction — TODO: revert to TCJA-continued values (not OBBBA-enhanced)
+  # AMT — TODO: revert to TCJA schedule
+  # Tax rates — TODO: 37% top rate continued past 2025 sunset
+todo_completions:
+  - "Standard deduction TCJA-continued values for all filing statuses 2026-2035"
+  - "AMT exemption + phase-out TCJA schedule"
+  - "Tax bracket thresholds + top rate continued past 2025 sunset"

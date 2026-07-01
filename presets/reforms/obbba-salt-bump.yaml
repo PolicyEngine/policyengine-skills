@@ -1,0 +1,37 @@
+name: obbba-salt-bump
+description: "OBBBA (P.L. 119-21) 2025 SALT cap raise — $40K joint cap 2025-2029 with 30% phase-out above $500K MAGI, reverting to $10K in 2030"
+country: us
+category: reform
+parameter_families: [salt, itemized-deductions]
+published_scores:
+  - source: JCT
+    year_published: 2025
+    ten_year_billion: null
+    document: "JCX-37-25"
+    url: "https://www.jct.gov/publications/2025/jcx-37-25/"
+    note: "JCT scored OBBBA as enacted; SALT provision is a line-item within the reconciliation package"
+    reform_shape_exact_match: true
+tags: [salt, itemized-deductions, obbba, federal]
+reform_dict:
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.JOINT":
+    "2025-01-01.2029-12-31": 40000
+    "2030-01-01.2035-12-31": 10000
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.SINGLE":
+    "2025-01-01.2029-12-31": 40000
+    "2030-01-01.2035-12-31": 10000
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.HEAD_OF_HOUSEHOLD":
+    "2025-01-01.2029-12-31": 40000
+    "2030-01-01.2035-12-31": 10000
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.SURVIVING_SPOUSE":
+    "2025-01-01.2029-12-31": 40000
+    "2030-01-01.2035-12-31": 10000
+  "gov.irs.deductions.itemized.salt_and_real_estate.cap.SEPARATE":
+    "2025-01-01.2029-12-31": 20000
+    "2030-01-01.2035-12-31": 5000
+  "gov.irs.deductions.itemized.salt_and_real_estate.phase_out.in_effect":
+    "2025-01-01.2029-12-31": true
+    "2030-01-01.2035-12-31": false
+  "gov.irs.deductions.itemized.salt_and_real_estate.phase_out.threshold.JOINT":
+    "2025-01-01.2029-12-31": 500000
+  "gov.irs.deductions.itemized.salt_and_real_estate.phase_out.rate":
+    "2025-01-01.2029-12-31": 0.30
