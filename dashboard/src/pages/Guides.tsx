@@ -161,6 +161,35 @@ function AnalyzePolicyGuide() {
         </table>
       </Section>
 
+      <Section title="Horizon prompt (before microsim)">
+        <p>
+          Before Stage 4 runs, the pipeline asks how many years of the reform
+          the microsim should cover. Options:
+        </p>
+        <ul>
+          <li>
+            <strong>Single year</strong> — fastest, one API call (~6-10 min),
+            yields yr-1 cost only. Default.
+          </li>
+          <li>
+            <strong>Full 10 years</strong> — submits all 10 years in parallel
+            (~10-15 min wall clock), yields real 10yr cost.
+          </li>
+          <li>
+            <strong>Custom</strong> — specify years or a range (e.g.{" "}
+            <code>2026,2029,2035</code> or <code>2026-2028</code>).
+          </li>
+        </ul>
+        <p>
+          <strong>No naive extrapolation.</strong> The pipeline does NOT compute
+          <code>yr1 × 10</code> as a 10-year cost — that is misleading whenever
+          the baseline changes over the window (2030 OBBBA snap-backs,
+          inflation-indexed thresholds, phase-out schedules). If the analyst
+          asked for one year, the archive reports one year. A 10-year cost is
+          only valid when the microsim actually ran all 10 years.
+        </p>
+      </Section>
+
       <Section title="What it does — 9 stages">
         <ol className="guide-stages">
           <li>
