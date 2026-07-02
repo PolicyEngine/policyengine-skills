@@ -69,30 +69,13 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Install the policyengine-claude plugin
-        # This repo IS the skills source; install it as a local plugin/marketplace
-        # so /analyze-policy and its sub-agents are available headless.
+        # The marketplace is the synced wrapper repo (sync-claude.yml publishes
+        # this repo's targets/claude there). /analyze-policy ships in its
+        # analysis-tools plugin. No `|| true`: if the install fails, the run
+        # must fail here, not silently no-op at the claude step.
         run: |
-          claude plugin marketplace add "$GITHUB_WORKSPACE" || true
-          claude plugin install policyengine-claude@policyengine-skills || true
-
-      - name: Build the /analyze-policy command line
-        id: cmdline
-        # Compose the command from the workflow inputs. --auto-confirm skips
-        # interactive prompts; downstream stages use pre-selected verdict
-        # defaults (destination shortlist, horizon single-year fallback).
-        run: |
-          CMD="/analyze-policy \"${{ inputs.reform }}\" --country ${{ inputs.country }} --horizon ${{ inputs.horizon }} --auto-confirm"
-          if [ "${{ inputs.horizon }}" = "1" ]; then
-            CMD="$CMD --year ${{ inputs.year }}"
-          fi
-          if [ -n "${{ inputs.log_to }}" ]; then
-            CMD="$CMD --log-to \"${{ inputs.log_to }}\""
-          fi
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            CMD="$CMD --no-log"
-          fi
-          echo "cmd=$CMD" >> "$GITHUB_OUTPUT"
-          echo "Command line: $CMD"
+          claude plugin marketplace add PolicyEngine/policyengine-claude
+          claude plugin install analysis-tools@policyengine-claude
 
       - name: Run /analyze-policy
         env:
@@ -101,10 +84,40 @@ jobs:
           # target repos (policyengine-{country}-data, policyengine-{country},
           # policyengine-app for blog draft PRs, etc.).
           GH_TOKEN: ${{ secrets.ANALYSIS_GH_TOKEN }}
+          # Inputs come in via env (NOT inline ${{ }} interpolation into the
+          # shell line) so quotes in the reform text can't split the command.
+          REFORM: ${{ inputs.reform }}
+          COUNTRY: ${{ inputs.country }}
+          YEAR: ${{ inputs.year }}
+          HORIZON: ${{ inputs.horizon }}
+          LOG_TO: ${{ inputs.log_to }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          claude -p "${{ steps.cmdline.outputs.cmd }}" \
+          PROMPT="/analyze-policy \"$REFORM\" --country $COUNTRY --horizon $HORIZON --auto-confirm"
+          if [ "$HORIZON" = "1" ]; then
+            PROMPT="$PROMPT --year $YEAR"
+          fi
+          if [ -n "$LOG_TO" ]; then
+            PROMPT="$PROMPT --log-to \"$LOG_TO\""
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            PROMPT="$PROMPT --no-log"
+          fi
+          echo "Prompt: $PROMPT"
+          claude -p "$PROMPT" \
             --permission-mode acceptEdits \
-            --allowedTools "Bash,Read,Write,Edit,WebFetch,WebSearch"
+            --allowedTools "Bash,Read,Write,Edit,WebFetch,WebSearch" \
+            2>&1 | tee /tmp/claude-output.log
+
+      - name: Verify a report was produced
+        # `claude -p` exits 0 even when the slash command doesn't resolve or
+        # the pipeline bails early. The contract: a real run always writes
+        # /tmp/analyze-policy-*.md (Phase 7). No report → the run failed.
+        run: |
+          if ! ls /tmp/analyze-policy-*.md >/dev/null 2>&1; then
+            echo "::error::No analyze-policy report found — the command did not actually run. See claude-output.log in the artifact."
+            exit 1
+          fi
 
       - name: Upload archived analysis
         # Always upload the archive even if downstream destination writes failed.
@@ -115,5 +128,6 @@ jobs:
           path: |
             analyses/*.md
             /tmp/analyze-policy-*.md
+            /tmp/claude-output.log
           if-no-files-found: warn
           retention-days: 30
