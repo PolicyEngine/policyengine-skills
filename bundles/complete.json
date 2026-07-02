@@ -25,7 +25,6 @@
     "./skills/tools-and-apis/policyengine-core-skill",
     "./skills/tools-and-apis/policyengine-github-agent-skill",
     "./skills/tools-and-apis/policyengine-python-client-skill",
-    "./skills/tools-and-apis/policyengine-api-skill",
     "./skills/tools-and-apis/policyengine-api-v2-skill",
     "./skills/tools-and-apis/policyengine-app-skill",
     "./skills/tools-and-apis/policyengine-interactive-tools-skill",

@@ -22,7 +22,6 @@
     "./skills/tools-and-apis/policyengine-app-skill",
     "./skills/tools-and-apis/policyengine-interactive-tools-skill",
     "./skills/tools-and-apis/policyengine-vercel-deployment-skill",
-    "./skills/tools-and-apis/policyengine-api-skill",
     "./skills/domain-knowledge/policyengine-us-skill",
     "./skills/domain-knowledge/policyengine-uk-skill",
     "./skills/documentation/policyengine-design-skill",
