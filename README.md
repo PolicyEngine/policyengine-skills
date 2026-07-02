@@ -10,6 +10,8 @@ This repository is the canonical source of truth for:
 
 The public Claude marketplace repo stays at `PolicyEngine/policyengine-claude`, but it is generated from this repository.
 
+**Which command / skill do I reach for?** See [docs/when-to-use.md](docs/when-to-use.md) for the decision matrix + recipes for common workflows.
+
 ## Repository layout
 
 ```text
