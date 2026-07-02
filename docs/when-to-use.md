@@ -7,16 +7,20 @@ The PolicyEngine plugin ships 18 slash commands, 46 agents, and 53 skills. Most 
 | I want to... | Reach for | Then usually |
 |---|---|---|
 | Score a proposed reform (revenue, poverty, distribution) | `/analyze-policy` | Verdict routes to archive + optional issue/PR |
-| Implement a new state benefit program | `/encode-policy-v2` | `/review-program` → `/fix-pr` → `/create-pr` |
-| Add a new policy reform to an existing program | `/encode-reform` | `/review-program` → `/create-pr` |
+| Calculate benefits/taxes for a single household | `/household-calc` | Adjust household, run again |
+| Convert a bill / URL / description into a reform-dict | `/text-to-reform` | Submit to PE API or pass to `/analyze-policy` |
+| Check whether we already analyzed this reform | `/prior-analysis` | Read the archived analysis or run fresh |
+| Consult external scorekeepers (JCT/CBO/OBR/IFS/CRFB/TPC/etc.) | `/prior-scores` | Cite in your writeup |
+| Implement a NEW state benefit program | `/encode-policy-v2` | `/review-program` → `/fix-pr` → `/create-pr` |
+| Change parameters on an EXISTING program | `/encode-reform` | `/review-program` → `/create-pr` |
 | Backdate parameters to earlier years | `/backdate-program` | `/create-pr` |
 | Review a PR (code + PDF-cited values) | `/review-program` | `/fix-pr` if findings; else `/create-pr` |
 | Apply reviewer fixes to a PR | `/fix-pr` | `/create-pr` |
 | Turn a working branch into a PR | `/create-pr` | CI + review |
 | Verify state tax parameter values against official PDFs | `/audit-state-tax` | `/fix-pr` if drift found |
-| Create a policy dashboard (React tool) | `/create-dashboard` | `/deploy-dashboard` |
+| Create a multi-page policy analysis dashboard | `/create-dashboard` | `/deploy-dashboard` |
 | Deploy a completed dashboard | `/deploy-dashboard` | Live at Vercel |
-| Scaffold a new interactive tool | `/new-tool` | dev + `/deploy-dashboard` |
+| Scaffold a single-purpose interactive tool | `/new-tool` | dev + `/deploy-dashboard` |
 | Add a UI component to `@policyengine/ui-kit` | `/create-new-component` | `/create-pr` |
 | Audit an SEO story on a web property | `/audit-seo` | Fix + `/create-pr` |
 | Audit a multi-zone Next.js app | `/audit-multizone` | Fix + `/create-pr` |
@@ -34,7 +38,11 @@ The PolicyEngine plugin ships 18 slash commands, 46 agents, and 53 skills. Most 
 
 **Q2: Do you want to know the IMPACT of the change, or IMPLEMENT it in the model?**
 
-- **Impact** (revenue, poverty, distribution): `/analyze-policy`
+- **Impact — aggregate** (revenue, poverty, distribution across the population): `/analyze-policy`
+- **Impact — one household** (what does this specific family get?): `/household-calc`
+- **Just want the reform-dict, not the impact numbers**: `/text-to-reform`
+- **Check what OTHER organizations have scored** (JCT / CBO / IFS / CRFB): `/prior-scores`
+- **Check what PE has already analyzed**: `/prior-analysis`
 - **Implement** → Q3
 
 **Q3: Are you adding a NEW program or a REFORM to an existing program?**
@@ -162,35 +170,26 @@ These get pulled in automatically by their trigger keywords, but useful to know 
 | 10 | Analyst wants historical values for a program that only has 2024 data | `/backdate-program` | ✅ |
 | 11 | User wants to know how the tools relate | `/dashboard-overview` (listing) or read this guide | ✅ |
 | 12 | Dev wants to write pytest tests for a Python file | `/write-tests` | ✅ |
+| 13 | Analyst wants to check what a single family gets on SNAP | `/household-calc` | ✅ |
+| 14 | Researcher wants to translate HR 1234 into a reform-dict without scoring it yet | `/text-to-reform` | ✅ |
+| 15 | Analyst wonders "have we already analyzed the OBBBA SALT bump?" | `/prior-analysis` | ✅ |
+| 16 | Researcher writing UK income-tax reform post; wants IFS + OBR + Resolution Foundation views | `/prior-scores --country uk` | ✅ |
 
 ## Gaps identified while writing this guide
 
-**1. No entry point for "explore the model" or "run a household calculation."**
-Users who want to check "what would this specific household get under this reform" don't have a slash command. Today they'd have to load `policyengine-us` skill and write ad-hoc Python. Candidate follow-up: `/household-calc` command that wraps the household calculation flow.
+Most gaps identified in the initial pass were filled in a follow-up PR. Remaining:
 
-**2. `/encode-policy-v2` vs `/encode-reform` boundary is fuzzy.**
-Both orchestrate multi-agent workflows for adding parametric change. The distinction is "new program" vs "reform to existing program" — but the boundary is judgment. Candidate follow-up: `/encode-policy-v2` should detect and delegate to `/encode-reform` when the target program already exists, so users don't have to pick.
+**1. `/setup-verbs` doesn't fit the workflow model.** It's a one-time config tweak (installs themed spinner verbs), not a workflow. Kept as-is because moving it would break existing users.
 
-**3. `/create-dashboard` and `/new-tool` scope overlap.**
-Both build a React app. `/new-tool` is more of a scaffold (blank canvas + design tokens); `/create-dashboard` is a full multi-agent workflow with plan/scaffold/implement/validate phases. Users may pick the wrong one. Candidate follow-up: clarify in the descriptions that `/new-tool` is a bootstrapper for a specific interactive calculator, `/create-dashboard` is for multi-page dashboards.
+**2. `/audit-multizone` is niche.** Useful only when working on `policyengine-app-v2` (multi-zone Next.js app). Kept because it's cheap and the alternative would be inlining into `/audit-seo` which would confuse both.
 
-**4. No entry point for "translate this bill into a reform-dict."**
-The `policy-text-researcher` agent does this internally in `/analyze-policy`, but there's no standalone command. Users doing exploratory reform-dict building have to run `/analyze-policy --skip-microsim` as a workaround. Candidate follow-up: expose `/text-to-reform` as a standalone command that stops after Stage 2.
+**3. `/dashboard-overview` overlaps with this guide's role.** It lists the dashboard-builder toolkit; this guide covers the whole catalog. Both have distinct purposes — `/dashboard-overview` is a discovery listing, this guide is a decision matrix.
 
-**5. No command for "consult PE's prior research on this topic."**
-`prior-scores-finder` (an agent) already searches PE's research catalog + Tier 2/3 externals. It's only invoked inside `/analyze-policy`. Users who want to "just find prior work" have no direct entry. Candidate follow-up: `/prior-scores <topic>` command.
+### Filled by follow-up commits (this PR)
 
-**6. `/deploy-dashboard` is dashboard-specific; there's no generic `/deploy` for tools.**
-`/new-tool` bootstraps a Next.js tool, but deploying it requires manual Vercel steps. Candidate follow-up: extend `/deploy-dashboard` to auto-detect tool vs dashboard.
-
-**7. `/setup-verbs` is a one-time-per-session utility that doesn't fit the workflow model.**
-It's a config tweak (installs themed spinner verbs). Not really a workflow. Fine to keep but its home is unusual. Candidate follow-up: none — probably fine as-is.
-
-**8. No entry point for "consult the archive" or "did we already analyze this?"**
-`scripts/analyses_kb.py` exists and duplicate detection works from CLI, but there's no `/prior-analysis` slash command. Candidate follow-up: `/prior-analysis` that wraps `scripts/analyses_kb.py` search.
-
-**9. `/audit-multizone` is very specific (multi-zone Next.js apps).**
-Useful when working on `policyengine-app-v2` (which uses multi-zone), essentially never useful elsewhere. Not a gap, but flagging it's a niche entry point.
-
-**10. `/dashboard-overview` is a discovery/listing command — this guide is the general-purpose version of that.**
-Consider whether to build a `/overview` slash command that displays this file, or leave it as a doc.
+- `/household-calc` — single-household calculation entry point
+- `/text-to-reform` — Stage 1+2 of `/analyze-policy` as a standalone
+- `/prior-analysis` — wraps `scripts/analyses_kb.py` search
+- `/prior-scores` — wraps `prior-scores-finder` agent + scorekeepers registry
+- `/encode-policy-v2` vs `/encode-reform` boundary clarified with pre-flight check
+- `/create-dashboard` vs `/new-tool` boundary clarified in each command's description
