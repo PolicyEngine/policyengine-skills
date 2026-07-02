@@ -50,20 +50,16 @@
   ],
   "agents": [
     "./agents/country-models/ci-fixer.md",
-    "./agents/country-models/cross-program-validator.md",
     "./agents/country-models/document-collector.md",
     "./agents/country-models/documentation-enricher.md",
     "./agents/country-models/edge-case-generator.md",
     "./agents/country-models/implementation-validator.md",
     "./agents/country-models/integration-agent.md",
-    "./agents/country-models/isolation-enforcement.md",
-    "./agents/country-models/isolation-setup.md",
     "./agents/country-models/issue-manager.md",
     "./agents/country-models/performance-optimizer.md",
     "./agents/country-models/pr-pusher.md",
     "./agents/country-models/program-reviewer.md",
     "./agents/country-models/rules-engineer.md",
-    "./agents/country-models/test-creator.md",
-    "./agents/country-models/workflow.md"
+    "./agents/country-models/test-creator.md"
   ]
 }
