@@ -93,7 +93,7 @@ jobs:
           LOG_TO: ${{ inputs.log_to }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          PROMPT="/analyze-policy \"$REFORM\" --country $COUNTRY --horizon $HORIZON --auto-confirm"
+          PROMPT="/analysis-tools:analyze-policy \"$REFORM\" --country $COUNTRY --horizon $HORIZON --auto-confirm"
           if [ "$HORIZON" = "1" ]; then
             PROMPT="$PROMPT --year $YEAR"
           fi
