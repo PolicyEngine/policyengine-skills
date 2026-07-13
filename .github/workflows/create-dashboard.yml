@@ -123,5 +123,7 @@ jobs:
             /tmp/result.json
             /tmp/create-dashboard-result.json
             /tmp/claude-output.log
+            /tmp/dashboard-*-plan-summary.md
+            /tmp/dashboard-*-repo/plan.yaml
           if-no-files-found: warn
           retention-days: 30
