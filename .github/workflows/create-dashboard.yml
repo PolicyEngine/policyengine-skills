@@ -26,11 +26,16 @@ on:
         required: false
         default: false
         type: boolean
+      skip_validate:
+        description: 'Skip the Phase 5 validation loop (the slowest tail) — validate locally after the push instead.'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build-dashboard:
     runs-on: ubuntu-latest
-    timeout-minutes: 90  # plan + scaffold + parallel builders + validation loop
+    timeout-minutes: 150  # plan + scaffold + parallel builders (+ validation loop unless skip_validate)
     permissions:
       contents: read
     steps:
@@ -77,6 +82,7 @@ jobs:
           REPO_NAME: ${{ inputs.repo_name }}
           REFORM_JSON: ${{ inputs.reform_json }}
           DRY_RUN: ${{ inputs.dry_run }}
+          SKIP_VALIDATE: ${{ inputs.skip_validate }}
         run: |
           PROMPT="/analysis-tools:create-dashboard --repo $REPO_NAME --auto-confirm"
           if [ -n "$REFORM_JSON" ]; then
@@ -84,6 +90,9 @@ jobs:
           fi
           if [ "$DRY_RUN" = "true" ]; then
             PROMPT="$PROMPT --dry-run"
+          fi
+          if [ "$SKIP_VALIDATE" = "true" ]; then
+            PROMPT="$PROMPT --skip-validate"
           fi
           PROMPT="$PROMPT \"$BRIEF\""
           echo "Prompt: $PROMPT"
