@@ -1,0 +1,127 @@
+name: Create dashboard
+
+# Triggered by the CRM publication router (workflow_dispatch) once a human
+# approves publishing a scored reform as a full standalone dashboard. Runs
+# /create-dashboard headless with Claude Code: plans, scaffolds, builds, and
+# pushes a new PolicyEngine/{repo_name} dashboard repo. Deployment
+# (/deploy-dashboard) stays a separate human-run step.
+on:
+  workflow_dispatch:
+    inputs:
+      brief:
+        description: 'Natural-language dashboard brief (audience, key questions, which impacts to visualize)'
+        required: true
+        type: string
+      repo_name:
+        description: 'Kebab-case repo name to create under the PolicyEngine org (e.g. "ctc-restoration-dashboard")'
+        required: true
+        type: string
+      reform_json:
+        description: 'Validated reform_dict JSON (from the /analyze-policy run) — the canonical reform definition'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Plan only: no repo creation, no build, no push. Verifies the headless plumbing cheaply.'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90  # plan + scaffold + parallel builders + validation loop
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The dashboard toolchain (scaffold quality gates) runs on bun.
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Install the policyengine-claude plugin
+        # No `|| true`: if the install fails, the run must fail here, not
+        # silently no-op at the claude step.
+        run: |
+          claude plugin marketplace add PolicyEngine/policyengine-claude
+          claude plugin install analysis-tools@policyengine-claude
+
+      - name: Write reform_dict to disk
+        if: inputs.reform_json != ''
+        env:
+          REFORM_JSON: ${{ inputs.reform_json }}
+        run: printf '%s' "$REFORM_JSON" > /tmp/reform.json
+
+      - name: Run /create-dashboard
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # PAT with `repo` scope so the orchestrator can `gh repo create`
+          # under the PolicyEngine org and push the built dashboard.
+          GH_TOKEN: ${{ secrets.ANALYSIS_GH_TOKEN }}
+          # Inputs come in via env (NOT inline ${{ }} interpolation into the
+          # shell line) so quotes in the brief can't split the command.
+          BRIEF: ${{ inputs.brief }}
+          REPO_NAME: ${{ inputs.repo_name }}
+          REFORM_JSON: ${{ inputs.reform_json }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          PROMPT="/analysis-tools:create-dashboard --repo $REPO_NAME --auto-confirm"
+          if [ -n "$REFORM_JSON" ]; then
+            PROMPT="$PROMPT --reform-json /tmp/reform.json"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            PROMPT="$PROMPT --dry-run"
+          fi
+          PROMPT="$PROMPT \"$BRIEF\""
+          echo "Prompt: $PROMPT"
+          claude -p "$PROMPT" \
+            --permission-mode acceptEdits \
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep,WebFetch,WebSearch" \
+            2>&1 | tee /tmp/claude-output.log
+
+      - name: Verify the result file and build succeeded
+        # `claude -p` exits 0 even when the slash command doesn't resolve or
+        # the run bails early. The headless contract: /create-dashboard
+        # --auto-confirm ALWAYS writes /tmp/create-dashboard-result.json.
+        # No file → the command never really ran. status "failed" → fail.
+        run: |
+          if [ ! -f /tmp/create-dashboard-result.json ]; then
+            echo "::error::No create-dashboard result file found — the command did not actually run. See claude-output.log in the artifact."
+            exit 1
+          fi
+          cat /tmp/create-dashboard-result.json
+          STATUS=$(jq -r '.status' /tmp/create-dashboard-result.json)
+          if [ "$STATUS" = "failed" ]; then
+            echo "::error::create-dashboard reported failure: $(jq -r '.error' /tmp/create-dashboard-result.json)"
+            exit 1
+          fi
+
+      - name: Write publication result
+        # Normalized cross-repo contract consumed by the CRM publication
+        # tracker: publication-result artifact containing result.json.
+        if: always()
+        run: |
+          if [ -f /tmp/create-dashboard-result.json ]; then
+            jq '{repo_url: .repo_url, dashboard_url: null}' /tmp/create-dashboard-result.json > /tmp/result.json
+          else
+            echo '{}' > /tmp/result.json
+          fi
+
+      - name: Upload publication result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-result
+          path: |
+            /tmp/result.json
+            /tmp/create-dashboard-result.json
+            /tmp/claude-output.log
+          if-no-files-found: warn
+          retention-days: 30
