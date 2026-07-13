@@ -65,6 +65,12 @@ jobs:
           # PAT with `repo` scope so the orchestrator can `gh repo create`
           # under the PolicyEngine org and push the built dashboard.
           GH_TOKEN: ${{ secrets.ANALYSIS_GH_TOKEN }}
+          # Builder agents run as background tasks and can legitimately wait
+          # minutes on the PolicyEngine API's server-side compute. Without
+          # this, headless claude kills still-running background tasks after
+          # 600s (observed: run terminated mid-build). 0 = wait indefinitely;
+          # the job-level timeout-minutes still bounds the run.
+          CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: '0'
           # Inputs come in via env (NOT inline ${{ }} interpolation into the
           # shell line) so quotes in the brief can't split the command.
           BRIEF: ${{ inputs.brief }}
