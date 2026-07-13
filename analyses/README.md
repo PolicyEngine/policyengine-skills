@@ -37,6 +37,15 @@ jurisdiction:
   state: null                       # or "ri", "vt", "us-ny", etc.
 tags: [salt, federal, itemized-deductions, tcja, obbba]
 
+# Publication inputs — consumed downstream by the CRM publication router
+# (bill-tracker / dashboard chain). description is the reform-describer's
+# 1-paragraph neutral provisions summary. reform_dict is the EXACT validated
+# JSON from the Phase 2 classifier, minified on a single line inside a block
+# scalar. Omit reform_dict when the verdict is structural / not-possible.
+description: "Raises the federal SALT deduction cap by $100,000 per filing status with no income phase-out, effective 2026 through 2035."
+reform_dict: |
+  {"gov.irs.deductions.itemized.salt_and_real_estate.cap.JOINT": {"2026-01-01.2035-12-31": 110000}}
+
 # Verdict (one of):
 #   PASS | PASS-WITH-NOTES | PASS-WITH-CORROBORATION
 #   INVESTIGATE | structural | not-possible | deployed-model-lag | BLOCKED
