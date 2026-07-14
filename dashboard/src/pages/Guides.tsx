@@ -1,9 +1,9 @@
 import { useState } from "react";
 
-type GuideId = "analyze-policy";
+type GuideId = "reform-pipeline" | "analyze-policy";
 
 export default function GuidesPage() {
-  const [active, setActive] = useState<GuideId>("analyze-policy");
+  const [active, setActive] = useState<GuideId>("reform-pipeline");
 
   return (
     <div className="page">
@@ -17,6 +17,13 @@ export default function GuidesPage() {
       <div className="guides-layout">
         <nav className="guides-nav">
           <button
+            className={`guides-nav-item ${active === "reform-pipeline" ? "active" : ""}`}
+            onClick={() => setActive("reform-pipeline")}
+          >
+            <span className="guides-nav-slash">/</span>reform-pipeline
+            <span className="guides-nav-blurb">Discover → score → publish, end to end</span>
+          </button>
+          <button
             className={`guides-nav-item ${active === "analyze-policy" ? "active" : ""}`}
             onClick={() => setActive("analyze-policy")}
           >
@@ -26,10 +33,227 @@ export default function GuidesPage() {
         </nav>
 
         <div className="guides-content">
+          {active === "reform-pipeline" && <ReformPipelineGuide />}
           {active === "analyze-policy" && <AnalyzePolicyGuide />}
         </div>
       </div>
     </div>
+  );
+}
+
+function ReformPipelineGuide() {
+  return (
+    <article className="guide">
+      <header className="guide-header">
+        <h2 className="guide-title">/reform-pipeline — the reform scoring &amp; publication pipeline</h2>
+        <p className="guide-tagline">
+          One flow from "there's a reform in the news" to a published, verified artifact:
+          discover a concrete reform → score it with microsimulation → verify against
+          prior scores, external benchmarks, and data calibration → publish to the bill
+          tracker or a standalone dashboard. Every publication is approval-gated, and
+          unverified numbers never ship.
+        </p>
+      </header>
+
+      <Section title="The pipeline at a glance">
+        <ol className="guide-stages">
+          <li>
+            <strong>Discover.</strong> Find the single most prominent, concrete, MODELABLE
+            reform in a topic — a parametric change (rates, thresholds, credit amounts),
+            preferably with a bill id (<code>US HR904</code>, <code>UT SB60</code>).
+            Sources: web news (14-day window), congress.gov / state bill trackers, and
+            the CRM newsroom when reachable. Structural proposals (brand-new programs)
+            stop here — they need model work, not a scoring run.
+          </li>
+          <li>
+            <strong>Dedup.</strong> Two checks before spending a scoring run:{" "}
+            <code>/prior-analysis</code> (did /analyze-policy already score this?) and
+            the public bill tracker's <code>research</code> table.
+          </li>
+          <li>
+            <strong>Score &amp; verify.</strong> Runs <code>/analyze-policy</code> inline:
+            bill text → provisions → parameter mapping → prior anchors → microsim →
+            comparison against external benchmarks (JCT, CBO, CRFB, TPC, TF) → the
+            data-calibration check (is the populace release well-calibrated for this
+            reform's variables?). Yields a verdict — see the /analyze-policy guide.
+          </li>
+          <li>
+            <strong>Route.</strong> PASS-family verdicts route by the standard rules
+            (identical in this command and the CRM publication router): non-US, federal
+            US, missing reform_dict, |10yr| ≥ $50B, |yr1| ≥ $10B, or heavy news coverage
+            → <strong>dashboard</strong>; otherwise (routine state bill) →{" "}
+            <strong>bill tracker</strong>. INVESTIGATE stops the pipeline — the
+            calibration diagnosis and auto-filed data issue are the follow-up thread.
+          </li>
+          <li>
+            <strong>Publish (gated).</strong> Tracker route: dispatches{" "}
+            <code>publish-reform.yml</code> in state-legislative-tracker — a hidden{" "}
+            <code>in_review</code> entry plus a bill-review PR whose merge publishes.
+            Dashboard route: dispatches <code>create-dashboard.yml</code> here — a
+            four-page dashboard repo (policy explanation, validation, impacts,
+            household) is planned, built, and validated headlessly. Deploy stays a
+            human step (<code>/deploy-dashboard</code>).
+          </li>
+        </ol>
+      </Section>
+
+      <Section title="Two entry points, one pipeline">
+        <table className="guide-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>CRM Command Center (scheduled)</th>
+              <th>/reform-pipeline (on demand)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Discovery</td>
+              <td>Research manager scans the newsroom on a schedule</td>
+              <td>Analyst gives a topic ("healthcare", "UT SB60")</td>
+            </tr>
+            <tr>
+              <td>Approval gates</td>
+              <td>Command Center approve/reject buttons; audit trail in{" "}
+                <code>manager_actions</code></td>
+              <td>Inline AskUserQuestion gates (skippable with{" "}
+                <code>--auto-confirm</code>)</td>
+            </tr>
+            <tr>
+              <td>Scoring + publication</td>
+              <td colSpan={2}>
+                Identical: both dispatch the same GitHub Actions workflows with the same
+                routing rules and the same verification bar
+              </td>
+            </tr>
+            <tr>
+              <td>Use when</td>
+              <td>Steady-state coverage of the news cycle</td>
+              <td>You want a specific topic or bill scored now</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="guide-callout">
+          The CRM's Command Center remains the preferred entry for newsroom-discovered
+          reforms — its dedup and audit trail persist. This command is the
+          analyst-driven, on-demand version of the same chain.
+        </p>
+      </Section>
+
+      <Section title="How to call it">
+        <table className="guide-table">
+          <thead>
+            <tr>
+              <th>You want...</th>
+              <th>You type...</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Scan a topic and take it end to end</td>
+              <td><code>/reform-pipeline healthcare</code></td>
+            </tr>
+            <tr>
+              <td>Force the dashboard route with a 10-year horizon</td>
+              <td>
+                <code>/reform-pipeline "social security taxation" --publish dashboard --horizon 10</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Score a known bill, rehearse publication without writes</td>
+              <td><code>/reform-pipeline "UT SB60" --publish tracker --dry-run</code></td>
+            </tr>
+            <tr>
+              <td>Stop after the verified analysis</td>
+              <td><code>/reform-pipeline "NY CTC expansion" --publish none</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>Flags</h4>
+        <table className="guide-table">
+          <thead>
+            <tr>
+              <th>Flag</th>
+              <th>Effect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>--country us|uk|ca</code></td>
+              <td>Jurisdiction (default us)</td>
+            </tr>
+            <tr>
+              <td><code>--horizon 1|10</code></td>
+              <td>Impact horizon (default 1; 10 adds 15-25 min of API compute)</td>
+            </tr>
+            <tr>
+              <td><code>--publish auto|tracker|dashboard|none</code></td>
+              <td>Route override (default auto — the standard rules decide)</td>
+            </tr>
+            <tr>
+              <td><code>--auto-confirm</code></td>
+              <td>Skip the confirmation gates (headless / CI use)</td>
+            </tr>
+            <tr>
+              <td><code>--dry-run</code></td>
+              <td>
+                Publication workflows run with <code>dry_run=true</code> — compute +
+                validate, no Supabase writes, PRs, or pushes
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </Section>
+
+      <Section title="Safety properties">
+        <ul>
+          <li>
+            <strong>Verification is a hard gate.</strong> Only PASS / PASS-WITH-NOTES /
+            PASS-WITH-CORROBORATION verdicts reach publication. INVESTIGATE stops with a
+            ranked calibration diagnosis.
+          </li>
+          <li>
+            <strong>Every publication is confirmed.</strong> Gate 1 (the discovered
+            reform) and Gate 2 (the route + the literal workflow inputs + what "publish"
+            means for that route) — unless <code>--auto-confirm</code>.
+          </li>
+          <li>
+            <strong>Publishing is still not deploying.</strong> The tracker route ends in
+            a bill-review PR a human merges; the dashboard route ends in a built repo a
+            human deploys with <code>/deploy-dashboard</code>.
+          </li>
+          <li>
+            <strong>One reform per run</strong> — the highest-confidence candidate.
+            Re-run for more.
+          </li>
+        </ul>
+      </Section>
+
+      <Section title="What you receive">
+        <p>
+          A forwardable summary: the reform, the verdict with headline numbers, the
+          calibration-check note, what was published where (PR link / repo link), and
+          the remaining human step (merge the bill-review PR, or run{" "}
+          <code>/deploy-dashboard</code>).
+        </p>
+      </Section>
+
+      <footer className="guide-footer">
+        <p>
+          <strong>Source files:</strong>{" "}
+          <code>targets/claude/commands/reform-pipeline.md</code> (this command),{" "}
+          <code>targets/claude/commands/analyze-policy.md</code> (scoring),{" "}
+          <code>targets/claude/commands/create-dashboard.md</code> +{" "}
+          <code>targets/claude/agents/dashboard/</code> (dashboard build),{" "}
+          <code>.github/workflows/create-dashboard.yml</code> (headless dispatch).
+          The scheduled half lives in the CRM repo:{" "}
+          <code>packages/backend/src/services/managers/research/</code>{" "}
+          (reform-discovery, publication-router, publication-planning,
+          workflow-dispatch).
+        </p>
+      </footer>
+    </article>
   );
 }
 

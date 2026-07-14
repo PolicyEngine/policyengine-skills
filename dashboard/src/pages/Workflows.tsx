@@ -28,6 +28,26 @@ interface TopicArea {
 
 const TOPIC_AREAS: TopicArea[] = [
   {
+    id: "reform-scoring",
+    title: "Score & publish reforms",
+    blurb:
+      "The end-to-end reform-scoring pipeline: discover a concrete reform in the news, score and verify it against prior scores and external benchmarks (JCT/CBO/CRFB) with a data-calibration check, then publish — routine state bills to the bill tracker, federal or high-impact reforms to a standalone dashboard. Confirmation-gated; unverified numbers never publish. Runs scheduled from the CRM's Command Center or on demand via /reform-pipeline.",
+    icon: "◎",
+    accent: "#0d9488",
+    commandRoles: [
+      "workflow:reform-pipeline",
+      "workflow:analyze-policy",
+      "workflow:create-dashboard",
+      "workflow:deploy-dashboard",
+    ],
+    knowledgeRoles: [
+      "analysis:prior-scores",
+      "analysis:calibration-diagnostics",
+      "domain:microsim",
+      "workflow:dashboard-build",
+    ],
+  },
+  {
     id: "implement",
     title: "Implement programs & reforms",
     blurb:
