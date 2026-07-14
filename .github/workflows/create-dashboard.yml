@@ -31,6 +31,17 @@ on:
         required: false
         default: false
         type: boolean
+      horizon:
+        description: 'Impact horizon: 1 (single-year, default) or 10 (adds 10-year series via budget-window, ~15-25 min extra)'
+        required: false
+        default: '1'
+        type: choice
+        options: ['1', '10']
+      include_household:
+        description: 'Include the household example page (standard PE format)'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   build-dashboard:
@@ -83,6 +94,8 @@ jobs:
           REFORM_JSON: ${{ inputs.reform_json }}
           DRY_RUN: ${{ inputs.dry_run }}
           SKIP_VALIDATE: ${{ inputs.skip_validate }}
+          HORIZON: ${{ inputs.horizon }}
+          INCLUDE_HOUSEHOLD: ${{ inputs.include_household }}
         run: |
           PROMPT="/analysis-tools:create-dashboard --repo $REPO_NAME --auto-confirm"
           if [ -n "$REFORM_JSON" ]; then
@@ -93,6 +106,12 @@ jobs:
           fi
           if [ "$SKIP_VALIDATE" = "true" ]; then
             PROMPT="$PROMPT --skip-validate"
+          fi
+          if [ "$HORIZON" = "10" ]; then
+            PROMPT="$PROMPT --horizon 10"
+          fi
+          if [ "$INCLUDE_HOUSEHOLD" = "false" ]; then
+            PROMPT="$PROMPT --no-household"
           fi
           PROMPT="$PROMPT \"$BRIEF\""
           echo "Prompt: $PROMPT"
