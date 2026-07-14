@@ -1,11 +1,12 @@
 # When to use what
 
-The PolicyEngine plugin ships 18 slash commands, 46 agents, and 53 skills. Most days you'll only use 3-5 of them. This guide maps common work to the right entry point.
+The PolicyEngine plugin ships 19 slash commands, 46 agents, and 53 skills. Most days you'll only use 3-5 of them. This guide maps common work to the right entry point.
 
 ## Quick decision matrix
 
 | I want to... | Reach for | Then usually |
 |---|---|---|
+| Run the whole chain for a topic: find a reform in the news → score → verify → publish | `/reform-pipeline` | Merge the bill-review PR or `/deploy-dashboard` |
 | Score a proposed reform (revenue, poverty, distribution) | `/analyze-policy` | Verdict routes to archive + optional issue/PR |
 | Calculate benefits/taxes for a single household | `/household-calc` | Adjust household, run again |
 | Convert a bill / URL / description into a reform-dict | `/text-to-reform` | Submit to PE API or pass to `/analyze-policy` |
