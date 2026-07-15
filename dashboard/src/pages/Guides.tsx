@@ -97,6 +97,83 @@ function ReformPipelineGuide() {
         </ol>
       </Section>
 
+      <Section title="What gets called, exactly">
+        <p>
+          Every stage is an inspectable invocation — a slash command, a GitHub
+          Actions dispatch, or an HTTP call. Nothing happens through hidden
+          state:
+        </p>
+        <table className="guide-table">
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Invocation</th>
+              <th>Where it runs</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Clarify (Phase 0)</td>
+              <td>One <code>AskUserQuestion</code> round: sources, scope, publication intent</td>
+              <td>Your session</td>
+            </tr>
+            <tr>
+              <td>Discover</td>
+              <td>
+                <code>WebSearch</code> + congress.gov; optionally the CRM
+                newsroom API when <code>CRM_API_URL</code> +{" "}
+                <code>CRM_API_TOKEN</code> are set
+              </td>
+              <td>Your session</td>
+            </tr>
+            <tr>
+              <td>Dedup</td>
+              <td>
+                <code>/prior-analysis &lt;reform&gt;</code> (local analyses
+                archive) + read-only query of the tracker&apos;s{" "}
+                <code>research</code> table
+              </td>
+              <td>Your session</td>
+            </tr>
+            <tr>
+              <td>Score &amp; verify</td>
+              <td>
+                <code>/analysis-tools:analyze-policy "&lt;reform&gt;" --country
+                &lt;c&gt; --horizon &lt;h&gt; --auto-confirm</code>
+              </td>
+              <td>Inline (spawns the 9 agents below)</td>
+            </tr>
+            <tr>
+              <td>Publish</td>
+              <td><code>gh workflow run</code> (see the exact dispatches below)</td>
+              <td>GitHub Actions, headless</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>The two publication dispatches, verbatim</h4>
+        <pre className="guide-code">{`# tracker route — state-legislative-tracker publish-reform.yml
+gh workflow run publish-reform.yml --repo PolicyEngine/state-legislative-tracker \\
+  -f id=<slug> -f state=<state> -f label="<label>" -f reform_json='<reform_dict>' \\
+  -f title="<title>" -f description="<provisions summary>" -f tags="<tags>" \\
+  -f source_url="<primary source>" -f dry_run=<true|false>
+
+# dashboard route — policyengine-skills create-dashboard.yml
+gh workflow run create-dashboard.yml --repo PolicyEngine/policyengine-skills \\
+  -f brief="<brief + validation context + notable findings>" \\
+  -f repo_name=<slug>-dashboard -f reform_json='<reform_dict>' \\
+  -f horizon=<1|10> -f dry_run=<true|false>`}</pre>
+        <p>Then the run is watched to completion and its result downloaded:</p>
+        <pre className="guide-code">{`gh run watch --repo <repo> --exit-status
+gh run download <run-id> --name publication-result --dir /tmp/pub-result`}</pre>
+        <p className="guide-callout">
+          <code>--dry-run</code> passes <code>dry_run=true</code> into both
+          workflows: full compute + validation, but no Supabase writes, no
+          PRs, no pushes — the rehearsal is identical to the real run minus
+          the side effects.
+        </p>
+      </Section>
+
       <Section title="Two entry points, one pipeline">
         <table className="guide-table">
           <thead>
@@ -483,6 +560,125 @@ function AnalyzePolicyGuide() {
             issues by verdict.
           </li>
         </ol>
+      </Section>
+
+      <Section title="Who does what — the invocation map">
+        <p>
+          Each phase invokes a named agent (defined in{" "}
+          <code>targets/claude/agents/</code>) with explicit inputs. What each
+          one receives is also what it is <em>blind to</em> — the two
+          independence rules (blind prediction, pre-registered benchmarks)
+          are enforced by what is left out of the invocation:
+        </p>
+        <table className="guide-table">
+          <thead>
+            <tr>
+              <th>Phase</th>
+              <th>Agent</th>
+              <th>Receives</th>
+              <th>Returns</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><code>policy-text-researcher</code></td>
+              <td>Bill id / URL / description, country</td>
+              <td><code>provisions[]</code></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>
+                <code>parameter-locator</code> (per provision, parallel) →{" "}
+                <code>reform-classifier</code>
+              </td>
+              <td>Provisions + locator verdicts</td>
+              <td>
+                <code>parametric | structural | not-possible</code> +{" "}
+                <code>reform_dict</code>
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><code>prior-scores-finder</code></td>
+              <td>
+                Provisions + jurisdiction. <em>Never our result</em> — output
+                is the frozen benchmark registry (<code>registered_at</code>{" "}
+                stamped)
+              </td>
+              <td>Tier 0-3 anchors with magnitudes</td>
+            </tr>
+            <tr>
+              <td>3b</td>
+              <td><code>outcome-predictor</code> (<code>mode=predict</code>)</td>
+              <td>
+                Provisions ONLY — no anchors, no archive, no scores
+              </td>
+              <td>Predictions + red-flag conditions</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td><code>microsim-runner</code></td>
+              <td><code>reform_dict</code>, year, mode</td>
+              <td>
+                Result via <code>POST /policy</code> then poll{" "}
+                <code>/economy/{"{id}"}/over/2</code>
+              </td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td><code>reform-comparator</code></td>
+              <td>
+                Result + the frozen registry (may not add/drop/reinterpret
+                sources)
+              </td>
+              <td>Verdict + benchmark-agreement block</td>
+            </tr>
+            <tr>
+              <td>5.5</td>
+              <td><code>model-corroborator</code> (conditional)</td>
+              <td>Registry Tier 2/3 shapes only</td>
+              <td>Mirror-run corroboration verdict</td>
+            </tr>
+            <tr>
+              <td>5.6</td>
+              <td>
+                <code>GET calibration-diagnostics…/target-diagnostics?source=…</code>
+              </td>
+              <td>The reform&apos;s data sources (ssa, irs_soi, …)</td>
+              <td><code>calibration_check</code> block</td>
+            </tr>
+            <tr>
+              <td>5.7</td>
+              <td><code>outcome-predictor</code> (<code>mode=interrogate</code>)</td>
+              <td>Its own predictions + actual results + verdict</td>
+              <td>
+                <code>notable_findings</code> / <code>challenges</code> /
+                verdict recommendation
+              </td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td><code>calibration-diagnostics</code> (if INVESTIGATE)</td>
+              <td>Deviation signature</td>
+              <td>Ranked hypotheses with file:line + runnable tests</td>
+            </tr>
+            <tr>
+              <td>7-8</td>
+              <td>
+                <code>reform-describer</code> → <code>report-logger</code>
+              </td>
+              <td>Everything above</td>
+              <td>Report at <code>/tmp/analyze-policy-{"{id}"}.md</code> +
+                archive entry + verdict-routed GitHub issue</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          To see any agent&apos;s full instructions:{" "}
+          <code>targets/claude/agents/&lt;name&gt;.md</code> in
+          policyengine-skills — the Catalog tab links every one.
+        </p>
       </Section>
 
       <Section title="Verdicts — what you get, what you do">
