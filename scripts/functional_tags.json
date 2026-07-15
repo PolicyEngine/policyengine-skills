@@ -1008,6 +1008,14 @@
       "scope_repos": [
         "all"
       ]
+    },
+    {
+      "id": "outcome-predictor",
+      "role": "analysis:outcome-predictor",
+      "summary": "Independent reviewer: blind-predicts reform outcomes from provisions alone, then interrogates the microsim results - confirmed expectations, counterintuitive-but-correct notable findings (publication assets), and unexplained challenges (INVESTIGATE leads).",
+      "scope_repos": [
+        "all"
+      ]
     }
   ],
   "commands": [
@@ -1391,6 +1399,7 @@
         "parameter-locator",
         "reform-classifier",
         "prior-scores-finder",
+        "outcome-predictor",
         "microsim-runner",
         "reform-comparator",
         "calibration-diagnostics",

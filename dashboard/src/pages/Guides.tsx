@@ -414,7 +414,7 @@ function AnalyzePolicyGuide() {
         </p>
       </Section>
 
-      <Section title="What it does — 9 stages">
+      <Section title="What it does — 11 stages">
         <ol className="guide-stages">
           <li>
             <strong>Policy text → provisions.</strong> Reads bill text or natural-language
@@ -434,6 +434,12 @@ function AnalyzePolicyGuide() {
             result.
           </li>
           <li>
+            <strong>Blind outcome prediction (parallel).</strong> The independent reviewer
+            (outcome-predictor) reads ONLY the provisions and predicts budget, incidence,
+            poverty by subgroup, and "who does NOT benefit" — before any number exists.
+            Also registers red-flag conditions that would signal model error.
+          </li>
+          <li>
             <strong>Microsim.</strong> POST to api.policyengine.org, poll{" "}
             <code>/economy/&#123;policy_id&#125;/over/&#123;baseline_id&#125;</code>{" "}
             (US current law = 2). 5-10 min wall-clock per single-year US run.
@@ -451,6 +457,15 @@ function AnalyzePolicyGuide() {
             published external scores within ±25%, the parameter family is independently
             validated and the verdict is upgraded to{" "}
             <code>PASS-WITH-CORROBORATION</code>. If mirrors drift, escalate to INVESTIGATE.
+          </li>
+          <li>
+            <strong>Independent interrogation.</strong> The reviewer compares its blind
+            predictions against the actual results. Divergences it can explain from
+            statute become <em>notable findings</em> — counterintuitive-but-correct
+            publication assets (e.g. a senior tax cut that leaves senior poverty
+            unchanged because the taxation thresholds sit above poverty-level incomes).
+            Divergences it cannot explain become INVESTIGATE leads and can downgrade a
+            PASS to PASS-WITH-NOTES.
           </li>
           <li>
             <strong>(if INVESTIGATE) Calibration diagnosis.</strong> Ranks hypotheses with
