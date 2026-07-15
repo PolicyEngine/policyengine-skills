@@ -428,10 +428,13 @@ function AnalyzePolicyGuide() {
             <code>parametric</code>, <code>structural</code>, or <code>not-possible</code>.
           </li>
           <li>
-            <strong>Prior anchors (all 3 tiers REQUIRED).</strong> Tier 1 PE priors, Tier 2
-            official fiscal (JCT/CBO), Tier 3 think tanks (CRFB, TPC, Tax Foundation,
-            ITEP, CBPP). Silence is not acceptable output — each tier emits a structured
-            result.
+            <strong>Prior anchors (all 3 tiers REQUIRED, pre-registered).</strong> Tier 1
+            PE priors, Tier 2 official fiscal (JCT/CBO), Tier 3 think tanks (CRFB, TPC,
+            Tax Foundation, ITEP, CBPP). Silence is not acceptable output — each tier
+            emits a structured result. The benchmark set is <em>frozen with a timestamp
+            before the microsim runs</em>: comparisons are found first, then the score is
+            run — no agent may add, drop, or reinterpret sources after our number exists
+            (the only expansion path is a blind re-run of the finder).
           </li>
           <li>
             <strong>Blind outcome prediction (parallel).</strong> The independent reviewer
