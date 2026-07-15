@@ -112,10 +112,13 @@ jobs:
       - name: Verify a report was produced
         # `claude -p` exits 0 even when the slash command doesn't resolve or
         # the pipeline bails early. The contract: a real run always writes
-        # /tmp/analyze-policy-*.md (Phase 7). No report → the run failed.
+        # ONE of the Phase 2/7 outputs — the full report, a structural
+        # backlog, or a not-modelable rationale. Structural/not-possible are
+        # correct terminal outcomes (Phase 2 EXITs before the microsim),
+        # not failures (e.g. HI SB3125: model lacks a 13th-bracket slot).
         run: |
-          if ! ls /tmp/analyze-policy-*.md >/dev/null 2>&1; then
-            echo "::error::No analyze-policy report found — the command did not actually run. See claude-output.log in the artifact."
+          if ! ls /tmp/analyze-policy-*.md /tmp/*-structural-backlog.md /tmp/*-not-modelable.md >/dev/null 2>&1; then
+            echo "::error::No analyze-policy output found (report, structural backlog, or not-modelable rationale) — the command did not actually run. See claude-output.log in the artifact."
             exit 1
           fi
 
@@ -128,6 +131,8 @@ jobs:
           path: |
             analyses/*.md
             /tmp/analyze-policy-*.md
+            /tmp/*-structural-backlog.md
+            /tmp/*-not-modelable.md
             /tmp/claude-output.log
           if-no-files-found: warn
           retention-days: 30
