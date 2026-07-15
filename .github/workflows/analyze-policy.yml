@@ -53,7 +53,7 @@ jobs:
   analyze:
     needs: regression-tests
     runs-on: ubuntu-latest
-    timeout-minutes: 45  # extended from 30 to accommodate --horizon 10 (~15-25 min microsim + benchmark search + write-up)
+    timeout-minutes: 75  # horizon 10 (~15-25 min) AND non-2026 years: the API caches the current-year baseline only, so e.g. TY2027 runs baseline + reform economy computes fresh (a TY2027 run timed out at 45)
     permissions:
       contents: read
       issues: write
