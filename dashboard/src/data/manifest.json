@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-15T14:14:04.258747Z",
+  "generated_at": "2026-07-15T14:38:27.439041Z",
   "counts": {
     "skill": 53,
     "agent": 47,
@@ -3778,10 +3778,11 @@
           "frontend-builder"
         ],
         "skill": [
-          "policyengine-design"
+          "policyengine-design",
+          "policyengine-writing"
         ]
       },
-      "body_length": 7304
+      "body_length": 9185
     },
     {
       "id": "dashboard-integrator",
@@ -3945,7 +3946,6 @@
         "dashboard-builder"
       ],
       "target_repos": [
-        "south-carolina-2026-tax-changes",
         "calibration-diagnostics",
         "policyengine-api-v2",
         "policyengine-api",
@@ -3978,10 +3978,11 @@
           "policyengine-design",
           "policyengine-interactive-tools",
           "policyengine-uk",
-          "policyengine-us"
+          "policyengine-us",
+          "policyengine-writing"
         ]
       },
-      "body_length": 18179
+      "body_length": 20315
     },
     {
       "id": "dashboard-scaffold",
@@ -4101,7 +4102,7 @@
           "create-new-component"
         ]
       },
-      "body_length": 16164
+      "body_length": 16879
     },
     {
       "id": "microsim-runner",
@@ -6183,61 +6184,7 @@
       "source_kind": "command",
       "source": "analyze-policy",
       "target_kind": "agent",
-      "target": "rules-engineer"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "agent",
-      "target": "microsim-runner"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "agent",
-      "target": "prior-scores-finder"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "agent",
       "target": "outcome-predictor"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "agent",
-      "target": "reform-classifier"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "agent",
-      "target": "policy-text-researcher"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "agent",
-      "target": "report-logger"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "agent",
-      "target": "reform-describer"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "agent",
-      "target": "parameter-locator"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "agent",
-      "target": "model-corroborator"
     },
     {
       "source_kind": "command",
@@ -6255,7 +6202,61 @@
       "source_kind": "command",
       "source": "analyze-policy",
       "target_kind": "agent",
+      "target": "reform-describer"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "agent",
+      "target": "reform-classifier"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "agent",
+      "target": "model-corroborator"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "agent",
+      "target": "prior-scores-finder"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "agent",
+      "target": "policy-text-researcher"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "agent",
+      "target": "report-logger"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "agent",
       "target": "test-creator"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "agent",
+      "target": "microsim-runner"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "agent",
+      "target": "parameter-locator"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "agent",
+      "target": "rules-engineer"
     },
     {
       "source_kind": "command",
@@ -6268,12 +6269,6 @@
       "source": "analyze-policy",
       "target_kind": "skill",
       "target": "review-program"
-    },
-    {
-      "source_kind": "command",
-      "source": "analyze-policy",
-      "target_kind": "skill",
-      "target": "policyengine-calibration-diagnostics"
     },
     {
       "source_kind": "command",
@@ -6291,13 +6286,13 @@
       "source_kind": "command",
       "source": "analyze-policy",
       "target_kind": "skill",
-      "target": "policyengine-writing"
+      "target": "policyengine-app"
     },
     {
       "source_kind": "command",
       "source": "analyze-policy",
       "target_kind": "skill",
-      "target": "policyengine-app"
+      "target": "policyengine-writing"
     },
     {
       "source_kind": "command",
@@ -6308,8 +6303,8 @@
     {
       "source_kind": "command",
       "source": "analyze-policy",
-      "target_kind": "command",
-      "target": "encode-policy-v2"
+      "target_kind": "skill",
+      "target": "policyengine-calibration-diagnostics"
     },
     {
       "source_kind": "command",
@@ -6327,6 +6322,12 @@
       "source_kind": "command",
       "source": "analyze-policy",
       "target_kind": "command",
+      "target": "encode-policy-v2"
+    },
+    {
+      "source_kind": "command",
+      "source": "analyze-policy",
+      "target_kind": "command",
       "target": "analyze-policy"
     },
     {
@@ -6339,7 +6340,7 @@
       "source_kind": "command",
       "source": "audit-multizone",
       "target_kind": "skill",
-      "target": "policyengine-vercel-deployment"
+      "target": "policyengine-app"
     },
     {
       "source_kind": "command",
@@ -6351,13 +6352,7 @@
       "source_kind": "command",
       "source": "audit-multizone",
       "target_kind": "skill",
-      "target": "policyengine-app"
-    },
-    {
-      "source_kind": "command",
-      "source": "audit-multizone",
-      "target_kind": "command",
-      "target": "deploy-dashboard"
+      "target": "policyengine-vercel-deployment"
     },
     {
       "source_kind": "command",
@@ -6373,15 +6368,9 @@
     },
     {
       "source_kind": "command",
-      "source": "audit-seo",
-      "target_kind": "agent",
-      "target": "seo-meta-checker"
-    },
-    {
-      "source_kind": "command",
-      "source": "audit-seo",
-      "target_kind": "agent",
-      "target": "seo-crawlability-checker"
+      "source": "audit-multizone",
+      "target_kind": "command",
+      "target": "deploy-dashboard"
     },
     {
       "source_kind": "command",
@@ -6393,7 +6382,19 @@
       "source_kind": "command",
       "source": "audit-seo",
       "target_kind": "agent",
+      "target": "seo-meta-checker"
+    },
+    {
+      "source_kind": "command",
+      "source": "audit-seo",
+      "target_kind": "agent",
       "target": "seo-content-checker"
+    },
+    {
+      "source_kind": "command",
+      "source": "audit-seo",
+      "target_kind": "agent",
+      "target": "seo-crawlability-checker"
     },
     {
       "source_kind": "command",
@@ -6411,19 +6412,13 @@
       "source_kind": "command",
       "source": "backdate-program",
       "target_kind": "agent",
-      "target": "rules-engineer"
+      "target": "reference-validator"
     },
     {
       "source_kind": "command",
       "source": "backdate-program",
       "target_kind": "agent",
-      "target": "ci-fixer"
-    },
-    {
-      "source_kind": "command",
-      "source": "backdate-program",
-      "target_kind": "agent",
-      "target": "pr-pusher"
+      "target": "document-collector"
     },
     {
       "source_kind": "command",
@@ -6435,7 +6430,7 @@
       "source_kind": "command",
       "source": "backdate-program",
       "target_kind": "agent",
-      "target": "edge-case-generator"
+      "target": "implementation-validator"
     },
     {
       "source_kind": "command",
@@ -6447,13 +6442,7 @@
       "source_kind": "command",
       "source": "backdate-program",
       "target_kind": "agent",
-      "target": "implementation-validator"
-    },
-    {
-      "source_kind": "command",
-      "source": "backdate-program",
-      "target_kind": "agent",
-      "target": "reference-validator"
+      "target": "pr-pusher"
     },
     {
       "source_kind": "command",
@@ -6465,7 +6454,19 @@
       "source_kind": "command",
       "source": "backdate-program",
       "target_kind": "agent",
-      "target": "document-collector"
+      "target": "rules-engineer"
+    },
+    {
+      "source_kind": "command",
+      "source": "backdate-program",
+      "target_kind": "agent",
+      "target": "ci-fixer"
+    },
+    {
+      "source_kind": "command",
+      "source": "backdate-program",
+      "target_kind": "agent",
+      "target": "edge-case-generator"
     },
     {
       "source_kind": "command",
@@ -6477,7 +6478,7 @@
       "source_kind": "command",
       "source": "backdate-program",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
+      "target": "policyengine-code-style"
     },
     {
       "source_kind": "command",
@@ -6489,7 +6490,7 @@
       "source_kind": "command",
       "source": "backdate-program",
       "target_kind": "skill",
-      "target": "policyengine-code-style"
+      "target": "policyengine-variable-patterns"
     },
     {
       "source_kind": "command",
@@ -6513,55 +6514,13 @@
       "source_kind": "command",
       "source": "backdate-program",
       "target_kind": "command",
-      "target": "review-program"
+      "target": "backdate-program"
     },
     {
       "source_kind": "command",
       "source": "backdate-program",
       "target_kind": "command",
-      "target": "backdate-program"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-dashboard",
-      "target_kind": "agent",
-      "target": "dashboard-overview-updater"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-dashboard",
-      "target_kind": "agent",
-      "target": "dashboard-design-validator"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-dashboard",
-      "target_kind": "agent",
-      "target": "dashboard-planner"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-dashboard",
-      "target_kind": "agent",
-      "target": "frontend-builder"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-dashboard",
-      "target_kind": "agent",
-      "target": "dashboard-architecture-validator"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-dashboard",
-      "target_kind": "agent",
-      "target": "dashboard-scaffold"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-dashboard",
-      "target_kind": "agent",
-      "target": "dashboard-integrator"
+      "target": "review-program"
     },
     {
       "source_kind": "command",
@@ -6573,13 +6532,55 @@
       "source_kind": "command",
       "source": "create-dashboard",
       "target_kind": "agent",
+      "target": "dashboard-planner"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "agent",
+      "target": "dashboard-architecture-validator"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "agent",
       "target": "dashboard-plan-validator"
     },
     {
       "source_kind": "command",
       "source": "create-dashboard",
       "target_kind": "agent",
+      "target": "dashboard-overview-updater"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "agent",
+      "target": "frontend-builder"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "agent",
       "target": "dashboard-build-validator"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "agent",
+      "target": "dashboard-integrator"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "agent",
+      "target": "dashboard-scaffold"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "agent",
+      "target": "dashboard-design-validator"
     },
     {
       "source_kind": "command",
@@ -6591,19 +6592,13 @@
       "source_kind": "command",
       "source": "create-dashboard",
       "target_kind": "command",
-      "target": "new-tool"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-dashboard",
-      "target_kind": "command",
-      "target": "deploy-dashboard"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-dashboard",
-      "target_kind": "command",
       "target": "create-dashboard"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "command",
+      "target": "analyze-policy"
     },
     {
       "source_kind": "command",
@@ -6615,19 +6610,25 @@
       "source_kind": "command",
       "source": "create-dashboard",
       "target_kind": "command",
-      "target": "analyze-policy"
+      "target": "deploy-dashboard"
     },
     {
       "source_kind": "command",
-      "source": "create-new-component",
-      "target_kind": "agent",
-      "target": "design-token-validator"
+      "source": "create-dashboard",
+      "target_kind": "command",
+      "target": "new-tool"
     },
     {
       "source_kind": "command",
       "source": "create-new-component",
       "target_kind": "agent",
       "target": "component-test-writer"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-new-component",
+      "target_kind": "agent",
+      "target": "design-token-validator"
     },
     {
       "source_kind": "command",
@@ -6651,7 +6652,13 @@
       "source_kind": "command",
       "source": "create-pr",
       "target_kind": "skill",
-      "target": "policyengine-uk"
+      "target": "policyengine-us"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-pr",
+      "target_kind": "skill",
+      "target": "policyengine-app"
     },
     {
       "source_kind": "command",
@@ -6669,25 +6676,7 @@
       "source_kind": "command",
       "source": "create-pr",
       "target_kind": "skill",
-      "target": "policyengine-us"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-pr",
-      "target_kind": "skill",
-      "target": "policyengine-app"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-pr",
-      "target_kind": "command",
-      "target": "encode-policy-v2"
-    },
-    {
-      "source_kind": "command",
-      "source": "create-pr",
-      "target_kind": "command",
-      "target": "fix-pr"
+      "target": "policyengine-uk"
     },
     {
       "source_kind": "command",
@@ -6699,55 +6688,19 @@
       "source_kind": "command",
       "source": "create-pr",
       "target_kind": "command",
+      "target": "fix-pr"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-pr",
+      "target_kind": "command",
       "target": "review-program"
     },
     {
       "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "agent",
-      "target": "dashboard-overview-updater"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "agent",
-      "target": "dashboard-design-validator"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "agent",
-      "target": "dashboard-planner"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "agent",
-      "target": "frontend-builder"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "agent",
-      "target": "dashboard-architecture-validator"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "agent",
-      "target": "multizone-validator"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "agent",
-      "target": "dashboard-scaffold"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "agent",
-      "target": "dashboard-integrator"
+      "source": "create-pr",
+      "target_kind": "command",
+      "target": "encode-policy-v2"
     },
     {
       "source_kind": "command",
@@ -6759,13 +6712,43 @@
       "source_kind": "command",
       "source": "dashboard-overview",
       "target_kind": "agent",
+      "target": "policyengine-standards"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "agent",
+      "target": "dashboard-planner"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "agent",
+      "target": "dashboard-architecture-validator"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "agent",
       "target": "dashboard-plan-validator"
     },
     {
       "source_kind": "command",
       "source": "dashboard-overview",
       "target_kind": "agent",
-      "target": "policyengine-standards"
+      "target": "multizone-validator"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "agent",
+      "target": "dashboard-overview-updater"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "agent",
+      "target": "frontend-builder"
     },
     {
       "source_kind": "command",
@@ -6776,62 +6759,26 @@
     {
       "source_kind": "command",
       "source": "dashboard-overview",
-      "target_kind": "skill",
-      "target": "policyengine-uk"
+      "target_kind": "agent",
+      "target": "dashboard-integrator"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "agent",
+      "target": "dashboard-scaffold"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "agent",
+      "target": "dashboard-design-validator"
     },
     {
       "source_kind": "command",
       "source": "dashboard-overview",
       "target_kind": "skill",
-      "target": "policyengine-ui-kit-consumer"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "skill",
-      "target": "policyengine-recharts"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "skill",
-      "target": "policyengine-tailwind-shadcn"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "skill",
-      "target": "policyengine-dashboard-workflow"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "skill",
-      "target": "policyengine-frontend-builder-spec"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "skill",
-      "target": "policyengine-api-v2"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "skill",
-      "target": "policyengine-modal-deployment"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "skill",
-      "target": "policyengine-vercel-deployment"
-    },
-    {
-      "source_kind": "command",
-      "source": "dashboard-overview",
-      "target_kind": "skill",
-      "target": "policyengine-interactive-tools"
+      "target": "policyengine-standards"
     },
     {
       "source_kind": "command",
@@ -6843,13 +6790,13 @@
       "source_kind": "command",
       "source": "dashboard-overview",
       "target_kind": "skill",
-      "target": "policyengine-writing"
+      "target": "policyengine-tailwind-shadcn"
     },
     {
       "source_kind": "command",
       "source": "dashboard-overview",
       "target_kind": "skill",
-      "target": "policyengine-standards"
+      "target": "policyengine-modal-deployment"
     },
     {
       "source_kind": "command",
@@ -6861,13 +6808,61 @@
       "source_kind": "command",
       "source": "dashboard-overview",
       "target_kind": "skill",
-      "target": "policyengine-design"
+      "target": "policyengine-writing"
     },
     {
       "source_kind": "command",
       "source": "dashboard-overview",
-      "target_kind": "command",
-      "target": "deploy-dashboard"
+      "target_kind": "skill",
+      "target": "policyengine-ui-kit-consumer"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "skill",
+      "target": "policyengine-interactive-tools"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "skill",
+      "target": "policyengine-recharts"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "skill",
+      "target": "policyengine-api-v2"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "skill",
+      "target": "policyengine-frontend-builder-spec"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "skill",
+      "target": "policyengine-uk"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "skill",
+      "target": "policyengine-dashboard-workflow"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "skill",
+      "target": "policyengine-vercel-deployment"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "skill",
+      "target": "policyengine-design"
     },
     {
       "source_kind": "command",
@@ -6879,13 +6874,19 @@
       "source_kind": "command",
       "source": "dashboard-overview",
       "target_kind": "command",
+      "target": "audit-multizone"
+    },
+    {
+      "source_kind": "command",
+      "source": "dashboard-overview",
+      "target_kind": "command",
       "target": "dashboard-overview"
     },
     {
       "source_kind": "command",
       "source": "dashboard-overview",
       "target_kind": "command",
-      "target": "audit-multizone"
+      "target": "deploy-dashboard"
     },
     {
       "source_kind": "command",
@@ -6903,7 +6904,7 @@
       "source_kind": "command",
       "source": "deploy-dashboard",
       "target_kind": "skill",
-      "target": "policyengine-vercel-deployment"
+      "target": "policyengine-app"
     },
     {
       "source_kind": "command",
@@ -6915,13 +6916,43 @@
       "source_kind": "command",
       "source": "deploy-dashboard",
       "target_kind": "skill",
-      "target": "policyengine-app"
+      "target": "policyengine-vercel-deployment"
     },
     {
       "source_kind": "command",
       "source": "deploy-dashboard",
       "target_kind": "command",
       "target": "deploy-dashboard"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-policy-v2",
+      "target_kind": "agent",
+      "target": "document-collector"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-policy-v2",
+      "target_kind": "agent",
+      "target": "implementation-validator"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-policy-v2",
+      "target_kind": "agent",
+      "target": "issue-manager"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-policy-v2",
+      "target_kind": "agent",
+      "target": "pr-pusher"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-policy-v2",
+      "target_kind": "agent",
+      "target": "test-creator"
     },
     {
       "source_kind": "command",
@@ -6939,37 +6970,7 @@
       "source_kind": "command",
       "source": "encode-policy-v2",
       "target_kind": "agent",
-      "target": "pr-pusher"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-policy-v2",
-      "target_kind": "agent",
       "target": "edge-case-generator"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-policy-v2",
-      "target_kind": "agent",
-      "target": "issue-manager"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-policy-v2",
-      "target_kind": "agent",
-      "target": "implementation-validator"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-policy-v2",
-      "target_kind": "agent",
-      "target": "test-creator"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-policy-v2",
-      "target_kind": "agent",
-      "target": "document-collector"
     },
     {
       "source_kind": "command",
@@ -6987,13 +6988,7 @@
       "source_kind": "command",
       "source": "encode-policy-v2",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-policy-v2",
-      "target_kind": "skill",
-      "target": "policyengine-testing-patterns"
+      "target": "policyengine-code-organization"
     },
     {
       "source_kind": "command",
@@ -7005,19 +7000,31 @@
       "source_kind": "command",
       "source": "encode-policy-v2",
       "target_kind": "skill",
+      "target": "policyengine-us"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-policy-v2",
+      "target_kind": "skill",
+      "target": "policyengine-testing-patterns"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-policy-v2",
+      "target_kind": "skill",
+      "target": "policyengine-variable-patterns"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-policy-v2",
+      "target_kind": "skill",
       "target": "policyengine-parameter-patterns"
     },
     {
       "source_kind": "command",
       "source": "encode-policy-v2",
       "target_kind": "skill",
-      "target": "policyengine-core"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-policy-v2",
-      "target_kind": "skill",
-      "target": "policyengine-us"
+      "target": "policyengine-aggregation"
     },
     {
       "source_kind": "command",
@@ -7029,7 +7036,7 @@
       "source_kind": "command",
       "source": "encode-policy-v2",
       "target_kind": "skill",
-      "target": "policyengine-code-organization"
+      "target": "policyengine-core"
     },
     {
       "source_kind": "command",
@@ -7040,8 +7047,14 @@
     {
       "source_kind": "command",
       "source": "encode-policy-v2",
-      "target_kind": "skill",
-      "target": "policyengine-aggregation"
+      "target_kind": "command",
+      "target": "backdate-program"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-policy-v2",
+      "target_kind": "command",
+      "target": "review-program"
     },
     {
       "source_kind": "command",
@@ -7057,15 +7070,33 @@
     },
     {
       "source_kind": "command",
-      "source": "encode-policy-v2",
-      "target_kind": "command",
-      "target": "review-program"
+      "source": "encode-reform",
+      "target_kind": "agent",
+      "target": "document-collector"
     },
     {
       "source_kind": "command",
-      "source": "encode-policy-v2",
-      "target_kind": "command",
-      "target": "backdate-program"
+      "source": "encode-reform",
+      "target_kind": "agent",
+      "target": "implementation-validator"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-reform",
+      "target_kind": "agent",
+      "target": "issue-manager"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-reform",
+      "target_kind": "agent",
+      "target": "pr-pusher"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-reform",
+      "target_kind": "agent",
+      "target": "test-creator"
     },
     {
       "source_kind": "command",
@@ -7078,36 +7109,6 @@
       "source": "encode-reform",
       "target_kind": "agent",
       "target": "ci-fixer"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-reform",
-      "target_kind": "agent",
-      "target": "pr-pusher"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-reform",
-      "target_kind": "agent",
-      "target": "issue-manager"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-reform",
-      "target_kind": "agent",
-      "target": "implementation-validator"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-reform",
-      "target_kind": "agent",
-      "target": "test-creator"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-reform",
-      "target_kind": "agent",
-      "target": "document-collector"
     },
     {
       "source_kind": "command",
@@ -7125,7 +7126,19 @@
       "source_kind": "command",
       "source": "encode-reform",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
+      "target": "policyengine-code-organization"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-reform",
+      "target_kind": "skill",
+      "target": "policyengine-code-style"
+    },
+    {
+      "source_kind": "command",
+      "source": "encode-reform",
+      "target_kind": "skill",
+      "target": "policyengine-us"
     },
     {
       "source_kind": "command",
@@ -7137,7 +7150,7 @@
       "source_kind": "command",
       "source": "encode-reform",
       "target_kind": "skill",
-      "target": "policyengine-code-style"
+      "target": "policyengine-variable-patterns"
     },
     {
       "source_kind": "command",
@@ -7154,14 +7167,8 @@
     {
       "source_kind": "command",
       "source": "encode-reform",
-      "target_kind": "skill",
-      "target": "policyengine-us"
-    },
-    {
-      "source_kind": "command",
-      "source": "encode-reform",
-      "target_kind": "skill",
-      "target": "policyengine-code-organization"
+      "target_kind": "command",
+      "target": "review-program"
     },
     {
       "source_kind": "command",
@@ -7171,9 +7178,15 @@
     },
     {
       "source_kind": "command",
-      "source": "encode-reform",
-      "target_kind": "command",
-      "target": "review-program"
+      "source": "fix-pr",
+      "target_kind": "agent",
+      "target": "implementation-validator"
+    },
+    {
+      "source_kind": "command",
+      "source": "fix-pr",
+      "target_kind": "agent",
+      "target": "pr-pusher"
     },
     {
       "source_kind": "command",
@@ -7191,37 +7204,13 @@
       "source_kind": "command",
       "source": "fix-pr",
       "target_kind": "agent",
-      "target": "pr-pusher"
-    },
-    {
-      "source_kind": "command",
-      "source": "fix-pr",
-      "target_kind": "agent",
       "target": "edge-case-generator"
-    },
-    {
-      "source_kind": "command",
-      "source": "fix-pr",
-      "target_kind": "agent",
-      "target": "implementation-validator"
     },
     {
       "source_kind": "command",
       "source": "fix-pr",
       "target_kind": "skill",
       "target": "review-program"
-    },
-    {
-      "source_kind": "command",
-      "source": "fix-pr",
-      "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
-    },
-    {
-      "source_kind": "command",
-      "source": "fix-pr",
-      "target_kind": "skill",
-      "target": "policyengine-testing-patterns"
     },
     {
       "source_kind": "command",
@@ -7234,6 +7223,18 @@
       "source": "fix-pr",
       "target_kind": "skill",
       "target": "fix-pr"
+    },
+    {
+      "source_kind": "command",
+      "source": "fix-pr",
+      "target_kind": "skill",
+      "target": "policyengine-testing-patterns"
+    },
+    {
+      "source_kind": "command",
+      "source": "fix-pr",
+      "target_kind": "skill",
+      "target": "policyengine-variable-patterns"
     },
     {
       "source_kind": "command",
@@ -7293,12 +7294,6 @@
       "source_kind": "command",
       "source": "household-calc",
       "target_kind": "skill",
-      "target": "policyengine-uk"
-    },
-    {
-      "source_kind": "command",
-      "source": "household-calc",
-      "target_kind": "skill",
       "target": "policyengine-canada"
     },
     {
@@ -7306,6 +7301,12 @@
       "source": "household-calc",
       "target_kind": "skill",
       "target": "policyengine-us"
+    },
+    {
+      "source_kind": "command",
+      "source": "household-calc",
+      "target_kind": "skill",
+      "target": "policyengine-uk"
     },
     {
       "source_kind": "command",
@@ -7323,30 +7324,6 @@
       "source_kind": "command",
       "source": "new-tool",
       "target_kind": "skill",
-      "target": "policyengine-uk"
-    },
-    {
-      "source_kind": "command",
-      "source": "new-tool",
-      "target_kind": "skill",
-      "target": "policyengine-api-v2"
-    },
-    {
-      "source_kind": "command",
-      "source": "new-tool",
-      "target_kind": "skill",
-      "target": "policyengine-vercel-deployment"
-    },
-    {
-      "source_kind": "command",
-      "source": "new-tool",
-      "target_kind": "skill",
-      "target": "policyengine-interactive-tools"
-    },
-    {
-      "source_kind": "command",
-      "source": "new-tool",
-      "target_kind": "skill",
       "target": "policyengine-us"
     },
     {
@@ -7359,19 +7336,43 @@
       "source_kind": "command",
       "source": "new-tool",
       "target_kind": "skill",
+      "target": "policyengine-interactive-tools"
+    },
+    {
+      "source_kind": "command",
+      "source": "new-tool",
+      "target_kind": "skill",
+      "target": "policyengine-api-v2"
+    },
+    {
+      "source_kind": "command",
+      "source": "new-tool",
+      "target_kind": "skill",
+      "target": "policyengine-uk"
+    },
+    {
+      "source_kind": "command",
+      "source": "new-tool",
+      "target_kind": "skill",
+      "target": "policyengine-vercel-deployment"
+    },
+    {
+      "source_kind": "command",
+      "source": "new-tool",
+      "target_kind": "skill",
       "target": "policyengine-design"
     },
     {
       "source_kind": "command",
       "source": "new-tool",
       "target_kind": "command",
-      "target": "new-tool"
+      "target": "create-dashboard"
     },
     {
       "source_kind": "command",
       "source": "new-tool",
       "target_kind": "command",
-      "target": "create-dashboard"
+      "target": "new-tool"
     },
     {
       "source_kind": "command",
@@ -7407,6 +7408,12 @@
       "source_kind": "command",
       "source": "reform-pipeline",
       "target_kind": "command",
+      "target": "create-dashboard"
+    },
+    {
+      "source_kind": "command",
+      "source": "reform-pipeline",
+      "target_kind": "command",
       "target": "reform-pipeline"
     },
     {
@@ -7419,37 +7426,13 @@
       "source_kind": "command",
       "source": "reform-pipeline",
       "target_kind": "command",
-      "target": "deploy-dashboard"
-    },
-    {
-      "source_kind": "command",
-      "source": "reform-pipeline",
-      "target_kind": "command",
-      "target": "create-dashboard"
-    },
-    {
-      "source_kind": "command",
-      "source": "reform-pipeline",
-      "target_kind": "command",
       "target": "analyze-policy"
     },
     {
       "source_kind": "command",
-      "source": "review-program",
-      "target_kind": "agent",
-      "target": "program-reviewer"
-    },
-    {
-      "source_kind": "command",
-      "source": "review-program",
-      "target_kind": "agent",
-      "target": "edge-case-generator"
-    },
-    {
-      "source_kind": "command",
-      "source": "review-program",
-      "target_kind": "agent",
-      "target": "implementation-validator"
+      "source": "reform-pipeline",
+      "target_kind": "command",
+      "target": "deploy-dashboard"
     },
     {
       "source_kind": "command",
@@ -7462,6 +7445,24 @@
       "source": "review-program",
       "target_kind": "agent",
       "target": "document-collector"
+    },
+    {
+      "source_kind": "command",
+      "source": "review-program",
+      "target_kind": "agent",
+      "target": "program-reviewer"
+    },
+    {
+      "source_kind": "command",
+      "source": "review-program",
+      "target_kind": "agent",
+      "target": "implementation-validator"
+    },
+    {
+      "source_kind": "command",
+      "source": "review-program",
+      "target_kind": "agent",
+      "target": "edge-case-generator"
     },
     {
       "source_kind": "command",
@@ -7479,13 +7480,7 @@
       "source_kind": "command",
       "source": "review-program",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
-    },
-    {
-      "source_kind": "command",
-      "source": "review-program",
-      "target_kind": "skill",
-      "target": "policyengine-testing-patterns"
+      "target": "policyengine-code-organization"
     },
     {
       "source_kind": "command",
@@ -7497,25 +7492,31 @@
       "source_kind": "command",
       "source": "review-program",
       "target_kind": "skill",
+      "target": "policyengine-testing-patterns"
+    },
+    {
+      "source_kind": "command",
+      "source": "review-program",
+      "target_kind": "skill",
+      "target": "policyengine-variable-patterns"
+    },
+    {
+      "source_kind": "command",
+      "source": "review-program",
+      "target_kind": "skill",
       "target": "policyengine-parameter-patterns"
     },
     {
       "source_kind": "command",
       "source": "review-program",
       "target_kind": "skill",
-      "target": "policyengine-period-patterns"
-    },
-    {
-      "source_kind": "command",
-      "source": "review-program",
-      "target_kind": "skill",
-      "target": "policyengine-code-organization"
-    },
-    {
-      "source_kind": "command",
-      "source": "review-program",
-      "target_kind": "skill",
       "target": "policyengine-aggregation"
+    },
+    {
+      "source_kind": "command",
+      "source": "review-program",
+      "target_kind": "skill",
+      "target": "policyengine-period-patterns"
     },
     {
       "source_kind": "command",
@@ -7569,7 +7570,13 @@
       "source_kind": "command",
       "source": "write-tests",
       "target_kind": "skill",
-      "target": "policyengine-uk"
+      "target": "policyengine-test-writing"
+    },
+    {
+      "source_kind": "command",
+      "source": "write-tests",
+      "target_kind": "skill",
+      "target": "policyengine-us"
     },
     {
       "source_kind": "command",
@@ -7581,13 +7588,7 @@
       "source_kind": "command",
       "source": "write-tests",
       "target_kind": "skill",
-      "target": "policyengine-test-writing"
-    },
-    {
-      "source_kind": "command",
-      "source": "write-tests",
-      "target_kind": "skill",
-      "target": "policyengine-us"
+      "target": "policyengine-uk"
     },
     {
       "source_kind": "agent",
@@ -7612,18 +7613,18 @@
       "source": "app-reviewer",
       "target_kind": "skill",
       "target": "policyengine-standards"
-    },
-    {
-      "source_kind": "agent",
-      "source": "multizone-validator",
-      "target_kind": "skill",
-      "target": "policyengine-interactive-tools"
     },
     {
       "source_kind": "agent",
       "source": "multizone-validator",
       "target_kind": "skill",
       "target": "policyengine-app"
+    },
+    {
+      "source_kind": "agent",
+      "source": "multizone-validator",
+      "target_kind": "skill",
+      "target": "policyengine-interactive-tools"
     },
     {
       "source_kind": "agent",
@@ -7635,7 +7636,7 @@
       "source_kind": "agent",
       "source": "calibration-diagnostics",
       "target_kind": "skill",
-      "target": "policyengine-calibration-diagnostics"
+      "target": "policyengine-us"
     },
     {
       "source_kind": "agent",
@@ -7647,49 +7648,13 @@
       "source_kind": "agent",
       "source": "calibration-diagnostics",
       "target_kind": "skill",
-      "target": "policyengine-us"
+      "target": "policyengine-calibration-diagnostics"
     },
     {
       "source_kind": "agent",
       "source": "ci-fixer",
       "target_kind": "agent",
       "target": "rules-engineer"
-    },
-    {
-      "source_kind": "agent",
-      "source": "ci-fixer",
-      "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
-    },
-    {
-      "source_kind": "agent",
-      "source": "ci-fixer",
-      "target_kind": "skill",
-      "target": "policyengine-testing-patterns"
-    },
-    {
-      "source_kind": "agent",
-      "source": "ci-fixer",
-      "target_kind": "skill",
-      "target": "policyengine-code-style"
-    },
-    {
-      "source_kind": "agent",
-      "source": "ci-fixer",
-      "target_kind": "skill",
-      "target": "policyengine-parameter-patterns"
-    },
-    {
-      "source_kind": "agent",
-      "source": "ci-fixer",
-      "target_kind": "skill",
-      "target": "policyengine-core"
-    },
-    {
-      "source_kind": "agent",
-      "source": "ci-fixer",
-      "target_kind": "skill",
-      "target": "policyengine-period-patterns"
     },
     {
       "source_kind": "agent",
@@ -7701,7 +7666,25 @@
       "source_kind": "agent",
       "source": "ci-fixer",
       "target_kind": "skill",
-      "target": "policyengine-vectorization"
+      "target": "policyengine-code-style"
+    },
+    {
+      "source_kind": "agent",
+      "source": "ci-fixer",
+      "target_kind": "skill",
+      "target": "policyengine-testing-patterns"
+    },
+    {
+      "source_kind": "agent",
+      "source": "ci-fixer",
+      "target_kind": "skill",
+      "target": "policyengine-variable-patterns"
+    },
+    {
+      "source_kind": "agent",
+      "source": "ci-fixer",
+      "target_kind": "skill",
+      "target": "policyengine-parameter-patterns"
     },
     {
       "source_kind": "agent",
@@ -7711,15 +7694,21 @@
     },
     {
       "source_kind": "agent",
-      "source": "document-collector",
-      "target_kind": "agent",
-      "target": "rules-engineer"
+      "source": "ci-fixer",
+      "target_kind": "skill",
+      "target": "policyengine-period-patterns"
     },
     {
       "source_kind": "agent",
-      "source": "document-collector",
-      "target_kind": "agent",
-      "target": "ci-fixer"
+      "source": "ci-fixer",
+      "target_kind": "skill",
+      "target": "policyengine-core"
+    },
+    {
+      "source_kind": "agent",
+      "source": "ci-fixer",
+      "target_kind": "skill",
+      "target": "policyengine-vectorization"
     },
     {
       "source_kind": "agent",
@@ -7732,6 +7721,18 @@
       "source": "document-collector",
       "target_kind": "agent",
       "target": "test-creator"
+    },
+    {
+      "source_kind": "agent",
+      "source": "document-collector",
+      "target_kind": "agent",
+      "target": "rules-engineer"
+    },
+    {
+      "source_kind": "agent",
+      "source": "document-collector",
+      "target_kind": "agent",
+      "target": "ci-fixer"
     },
     {
       "source_kind": "agent",
@@ -7767,31 +7768,13 @@
       "source_kind": "agent",
       "source": "edge-case-generator",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
+      "target": "policyengine-testing-patterns"
     },
     {
       "source_kind": "agent",
       "source": "edge-case-generator",
       "target_kind": "skill",
-      "target": "policyengine-testing-patterns"
-    },
-    {
-      "source_kind": "agent",
-      "source": "implementation-validator",
-      "target_kind": "agent",
-      "target": "rules-engineer"
-    },
-    {
-      "source_kind": "agent",
-      "source": "implementation-validator",
-      "target_kind": "agent",
-      "target": "ci-fixer"
-    },
-    {
-      "source_kind": "agent",
-      "source": "implementation-validator",
-      "target_kind": "agent",
-      "target": "program-reviewer"
+      "target": "policyengine-variable-patterns"
     },
     {
       "source_kind": "agent",
@@ -7803,7 +7786,25 @@
       "source_kind": "agent",
       "source": "implementation-validator",
       "target_kind": "agent",
+      "target": "program-reviewer"
+    },
+    {
+      "source_kind": "agent",
+      "source": "implementation-validator",
+      "target_kind": "agent",
       "target": "test-creator"
+    },
+    {
+      "source_kind": "agent",
+      "source": "implementation-validator",
+      "target_kind": "agent",
+      "target": "rules-engineer"
+    },
+    {
+      "source_kind": "agent",
+      "source": "implementation-validator",
+      "target_kind": "agent",
+      "target": "ci-fixer"
     },
     {
       "source_kind": "agent",
@@ -7815,13 +7816,7 @@
       "source_kind": "agent",
       "source": "implementation-validator",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
-    },
-    {
-      "source_kind": "agent",
-      "source": "implementation-validator",
-      "target_kind": "skill",
-      "target": "encode-policy-v2"
+      "target": "policyengine-code-organization"
     },
     {
       "source_kind": "agent",
@@ -7833,13 +7828,25 @@
       "source_kind": "agent",
       "source": "implementation-validator",
       "target_kind": "skill",
+      "target": "encode-policy-v2"
+    },
+    {
+      "source_kind": "agent",
+      "source": "implementation-validator",
+      "target_kind": "skill",
+      "target": "policyengine-variable-patterns"
+    },
+    {
+      "source_kind": "agent",
+      "source": "implementation-validator",
+      "target_kind": "skill",
       "target": "policyengine-parameter-patterns"
     },
     {
       "source_kind": "agent",
       "source": "implementation-validator",
       "target_kind": "skill",
-      "target": "policyengine-core"
+      "target": "policyengine-aggregation"
     },
     {
       "source_kind": "agent",
@@ -7851,49 +7858,7 @@
       "source_kind": "agent",
       "source": "implementation-validator",
       "target_kind": "skill",
-      "target": "policyengine-code-organization"
-    },
-    {
-      "source_kind": "agent",
-      "source": "implementation-validator",
-      "target_kind": "skill",
-      "target": "policyengine-aggregation"
-    },
-    {
-      "source_kind": "agent",
-      "source": "integration-agent",
-      "target_kind": "agent",
-      "target": "rules-engineer"
-    },
-    {
-      "source_kind": "agent",
-      "source": "integration-agent",
-      "target_kind": "agent",
-      "target": "documentation-enricher"
-    },
-    {
-      "source_kind": "agent",
-      "source": "integration-agent",
-      "target_kind": "agent",
-      "target": "ci-fixer"
-    },
-    {
-      "source_kind": "agent",
-      "source": "integration-agent",
-      "target_kind": "agent",
-      "target": "performance-optimizer"
-    },
-    {
-      "source_kind": "agent",
-      "source": "integration-agent",
-      "target_kind": "agent",
-      "target": "edge-case-generator"
-    },
-    {
-      "source_kind": "agent",
-      "source": "integration-agent",
-      "target_kind": "agent",
-      "target": "issue-manager"
+      "target": "policyengine-core"
     },
     {
       "source_kind": "agent",
@@ -7905,7 +7870,43 @@
       "source_kind": "agent",
       "source": "integration-agent",
       "target_kind": "agent",
+      "target": "issue-manager"
+    },
+    {
+      "source_kind": "agent",
+      "source": "integration-agent",
+      "target_kind": "agent",
+      "target": "documentation-enricher"
+    },
+    {
+      "source_kind": "agent",
+      "source": "integration-agent",
+      "target_kind": "agent",
       "target": "test-creator"
+    },
+    {
+      "source_kind": "agent",
+      "source": "integration-agent",
+      "target_kind": "agent",
+      "target": "performance-optimizer"
+    },
+    {
+      "source_kind": "agent",
+      "source": "integration-agent",
+      "target_kind": "agent",
+      "target": "rules-engineer"
+    },
+    {
+      "source_kind": "agent",
+      "source": "integration-agent",
+      "target_kind": "agent",
+      "target": "ci-fixer"
+    },
+    {
+      "source_kind": "agent",
+      "source": "integration-agent",
+      "target_kind": "agent",
+      "target": "edge-case-generator"
     },
     {
       "source_kind": "agent",
@@ -7917,13 +7918,13 @@
       "source_kind": "agent",
       "source": "integration-agent",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
+      "target": "policyengine-testing-patterns"
     },
     {
       "source_kind": "agent",
       "source": "integration-agent",
       "target_kind": "skill",
-      "target": "policyengine-testing-patterns"
+      "target": "policyengine-variable-patterns"
     },
     {
       "source_kind": "agent",
@@ -7977,7 +7978,7 @@
       "source_kind": "agent",
       "source": "pr-pusher",
       "target_kind": "skill",
-      "target": "policyengine-core"
+      "target": "policyengine-standards"
     },
     {
       "source_kind": "agent",
@@ -7989,13 +7990,19 @@
       "source_kind": "agent",
       "source": "pr-pusher",
       "target_kind": "skill",
-      "target": "policyengine-standards"
+      "target": "policyengine-core"
     },
     {
       "source_kind": "agent",
       "source": "program-reviewer",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
+      "target": "policyengine-code-style"
+    },
+    {
+      "source_kind": "agent",
+      "source": "program-reviewer",
+      "target_kind": "skill",
+      "target": "policyengine-us"
     },
     {
       "source_kind": "agent",
@@ -8013,7 +8020,7 @@
       "source_kind": "agent",
       "source": "program-reviewer",
       "target_kind": "skill",
-      "target": "policyengine-code-style"
+      "target": "policyengine-variable-patterns"
     },
     {
       "source_kind": "agent",
@@ -8025,7 +8032,7 @@
       "source_kind": "agent",
       "source": "program-reviewer",
       "target_kind": "skill",
-      "target": "policyengine-us"
+      "target": "policyengine-aggregation"
     },
     {
       "source_kind": "agent",
@@ -8041,12 +8048,6 @@
     },
     {
       "source_kind": "agent",
-      "source": "program-reviewer",
-      "target_kind": "skill",
-      "target": "policyengine-aggregation"
-    },
-    {
-      "source_kind": "agent",
       "source": "rules-engineer",
       "target_kind": "agent",
       "target": "pr-pusher"
@@ -8055,31 +8056,7 @@
       "source_kind": "agent",
       "source": "rules-engineer",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
-    },
-    {
-      "source_kind": "agent",
-      "source": "rules-engineer",
-      "target_kind": "skill",
-      "target": "policyengine-code-style"
-    },
-    {
-      "source_kind": "agent",
-      "source": "rules-engineer",
-      "target_kind": "skill",
-      "target": "policyengine-parameter-patterns"
-    },
-    {
-      "source_kind": "agent",
-      "source": "rules-engineer",
-      "target_kind": "skill",
-      "target": "policyengine-core"
-    },
-    {
-      "source_kind": "agent",
-      "source": "rules-engineer",
-      "target_kind": "skill",
-      "target": "policyengine-period-patterns"
+      "target": "policyengine-code-organization"
     },
     {
       "source_kind": "agent",
@@ -8091,19 +8068,43 @@
       "source_kind": "agent",
       "source": "rules-engineer",
       "target_kind": "skill",
-      "target": "policyengine-code-organization"
+      "target": "policyengine-code-style"
     },
     {
       "source_kind": "agent",
       "source": "rules-engineer",
       "target_kind": "skill",
-      "target": "policyengine-vectorization"
+      "target": "policyengine-variable-patterns"
+    },
+    {
+      "source_kind": "agent",
+      "source": "rules-engineer",
+      "target_kind": "skill",
+      "target": "policyengine-parameter-patterns"
     },
     {
       "source_kind": "agent",
       "source": "rules-engineer",
       "target_kind": "skill",
       "target": "policyengine-aggregation"
+    },
+    {
+      "source_kind": "agent",
+      "source": "rules-engineer",
+      "target_kind": "skill",
+      "target": "policyengine-period-patterns"
+    },
+    {
+      "source_kind": "agent",
+      "source": "rules-engineer",
+      "target_kind": "skill",
+      "target": "policyengine-core"
+    },
+    {
+      "source_kind": "agent",
+      "source": "rules-engineer",
+      "target_kind": "skill",
+      "target": "policyengine-vectorization"
     },
     {
       "source_kind": "agent",
@@ -8115,7 +8116,7 @@
       "source_kind": "agent",
       "source": "test-creator",
       "target_kind": "skill",
-      "target": "policyengine-variable-patterns"
+      "target": "policyengine-code-organization"
     },
     {
       "source_kind": "agent",
@@ -8127,13 +8128,7 @@
       "source_kind": "agent",
       "source": "test-creator",
       "target_kind": "skill",
-      "target": "policyengine-period-patterns"
-    },
-    {
-      "source_kind": "agent",
-      "source": "test-creator",
-      "target_kind": "skill",
-      "target": "policyengine-code-organization"
+      "target": "policyengine-variable-patterns"
     },
     {
       "source_kind": "agent",
@@ -8143,21 +8138,9 @@
     },
     {
       "source_kind": "agent",
-      "source": "backend-builder",
+      "source": "test-creator",
       "target_kind": "skill",
-      "target": "policyengine-uk"
-    },
-    {
-      "source_kind": "agent",
-      "source": "backend-builder",
-      "target_kind": "skill",
-      "target": "policyengine-parameter-patterns"
-    },
-    {
-      "source_kind": "agent",
-      "source": "backend-builder",
-      "target_kind": "skill",
-      "target": "policyengine-interactive-tools"
+      "target": "policyengine-period-patterns"
     },
     {
       "source_kind": "agent",
@@ -8169,7 +8152,25 @@
       "source_kind": "agent",
       "source": "backend-builder",
       "target_kind": "skill",
+      "target": "policyengine-interactive-tools"
+    },
+    {
+      "source_kind": "agent",
+      "source": "backend-builder",
+      "target_kind": "skill",
+      "target": "policyengine-parameter-patterns"
+    },
+    {
+      "source_kind": "agent",
+      "source": "backend-builder",
+      "target_kind": "skill",
       "target": "policyengine-simulation-mechanics"
+    },
+    {
+      "source_kind": "agent",
+      "source": "backend-builder",
+      "target_kind": "skill",
+      "target": "policyengine-uk"
     },
     {
       "source_kind": "agent",
@@ -8181,7 +8182,13 @@
       "source_kind": "agent",
       "source": "dashboard-architecture-validator",
       "target_kind": "skill",
-      "target": "policyengine-frontend-builder-spec"
+      "target": "policyengine-us"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-architecture-validator",
+      "target_kind": "skill",
+      "target": "policyengine-interactive-tools"
     },
     {
       "source_kind": "agent",
@@ -8199,31 +8206,25 @@
       "source_kind": "agent",
       "source": "dashboard-architecture-validator",
       "target_kind": "skill",
-      "target": "policyengine-interactive-tools"
-    },
-    {
-      "source_kind": "agent",
-      "source": "dashboard-architecture-validator",
-      "target_kind": "skill",
-      "target": "policyengine-us"
+      "target": "policyengine-frontend-builder-spec"
     },
     {
       "source_kind": "agent",
       "source": "dashboard-design-validator",
       "target_kind": "agent",
       "target": "frontend-builder"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-design-validator",
+      "target_kind": "skill",
+      "target": "policyengine-writing"
     },
     {
       "source_kind": "agent",
       "source": "dashboard-design-validator",
       "target_kind": "skill",
       "target": "policyengine-design"
-    },
-    {
-      "source_kind": "agent",
-      "source": "dashboard-integrator",
-      "target_kind": "agent",
-      "target": "frontend-builder"
     },
     {
       "source_kind": "agent",
@@ -8234,6 +8235,12 @@
     {
       "source_kind": "agent",
       "source": "dashboard-integrator",
+      "target_kind": "agent",
+      "target": "frontend-builder"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-integrator",
       "target_kind": "skill",
       "target": "policyengine-interactive-tools"
     },
@@ -8247,19 +8254,13 @@
       "source_kind": "agent",
       "source": "dashboard-plan-validator",
       "target_kind": "skill",
-      "target": "policyengine-recharts"
+      "target": "policyengine-interactive-tools"
     },
     {
       "source_kind": "agent",
       "source": "dashboard-plan-validator",
       "target_kind": "skill",
-      "target": "policyengine-interactive-tools"
-    },
-    {
-      "source_kind": "agent",
-      "source": "dashboard-planner",
-      "target_kind": "agent",
-      "target": "frontend-builder"
+      "target": "policyengine-recharts"
     },
     {
       "source_kind": "agent",
@@ -8270,20 +8271,8 @@
     {
       "source_kind": "agent",
       "source": "dashboard-planner",
-      "target_kind": "skill",
-      "target": "policyengine-uk"
-    },
-    {
-      "source_kind": "agent",
-      "source": "dashboard-planner",
-      "target_kind": "skill",
-      "target": "policyengine-api-v2"
-    },
-    {
-      "source_kind": "agent",
-      "source": "dashboard-planner",
-      "target_kind": "skill",
-      "target": "policyengine-interactive-tools"
+      "target_kind": "agent",
+      "target": "frontend-builder"
     },
     {
       "source_kind": "agent",
@@ -8301,7 +8290,37 @@
       "source_kind": "agent",
       "source": "dashboard-planner",
       "target_kind": "skill",
+      "target": "policyengine-writing"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-planner",
+      "target_kind": "skill",
+      "target": "policyengine-interactive-tools"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-planner",
+      "target_kind": "skill",
+      "target": "policyengine-api-v2"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-planner",
+      "target_kind": "skill",
+      "target": "policyengine-uk"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-planner",
+      "target_kind": "skill",
       "target": "policyengine-design"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-scaffold",
+      "target_kind": "agent",
+      "target": "policyengine-standards"
     },
     {
       "source_kind": "agent",
@@ -8312,8 +8331,20 @@
     {
       "source_kind": "agent",
       "source": "dashboard-scaffold",
-      "target_kind": "agent",
+      "target_kind": "skill",
       "target": "policyengine-standards"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-scaffold",
+      "target_kind": "skill",
+      "target": "policyengine-app"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-scaffold",
+      "target_kind": "skill",
+      "target": "policyengine-interactive-tools"
     },
     {
       "source_kind": "agent",
@@ -8331,24 +8362,6 @@
       "source_kind": "agent",
       "source": "dashboard-scaffold",
       "target_kind": "skill",
-      "target": "policyengine-interactive-tools"
-    },
-    {
-      "source_kind": "agent",
-      "source": "dashboard-scaffold",
-      "target_kind": "skill",
-      "target": "policyengine-standards"
-    },
-    {
-      "source_kind": "agent",
-      "source": "dashboard-scaffold",
-      "target_kind": "skill",
-      "target": "policyengine-app"
-    },
-    {
-      "source_kind": "agent",
-      "source": "dashboard-scaffold",
-      "target_kind": "skill",
       "target": "policyengine-design"
     },
     {
@@ -8356,6 +8369,18 @@
       "source": "frontend-builder",
       "target_kind": "agent",
       "target": "backend-builder"
+    },
+    {
+      "source_kind": "agent",
+      "source": "frontend-builder",
+      "target_kind": "skill",
+      "target": "policyengine-app"
+    },
+    {
+      "source_kind": "agent",
+      "source": "frontend-builder",
+      "target_kind": "skill",
+      "target": "policyengine-interactive-tools"
     },
     {
       "source_kind": "agent",
@@ -8373,25 +8398,13 @@
       "source_kind": "agent",
       "source": "frontend-builder",
       "target_kind": "skill",
-      "target": "policyengine-interactive-tools"
-    },
-    {
-      "source_kind": "agent",
-      "source": "frontend-builder",
-      "target_kind": "skill",
-      "target": "policyengine-app"
-    },
-    {
-      "source_kind": "agent",
-      "source": "frontend-builder",
-      "target_kind": "skill",
       "target": "policyengine-design"
     },
     {
       "source_kind": "agent",
       "source": "microsim-runner",
       "target_kind": "agent",
-      "target": "prior-scores-finder"
+      "target": "reform-comparator"
     },
     {
       "source_kind": "agent",
@@ -8403,13 +8416,13 @@
       "source_kind": "agent",
       "source": "microsim-runner",
       "target_kind": "agent",
-      "target": "parameter-locator"
+      "target": "prior-scores-finder"
     },
     {
       "source_kind": "agent",
       "source": "microsim-runner",
       "target_kind": "agent",
-      "target": "reform-comparator"
+      "target": "parameter-locator"
     },
     {
       "source_kind": "agent",
@@ -8433,18 +8446,6 @@
       "source_kind": "agent",
       "source": "model-corroborator",
       "target_kind": "agent",
-      "target": "prior-scores-finder"
-    },
-    {
-      "source_kind": "agent",
-      "source": "model-corroborator",
-      "target_kind": "agent",
-      "target": "report-logger"
-    },
-    {
-      "source_kind": "agent",
-      "source": "model-corroborator",
-      "target_kind": "agent",
       "target": "reform-comparator"
     },
     {
@@ -8455,15 +8456,21 @@
     },
     {
       "source_kind": "agent",
-      "source": "outcome-predictor",
+      "source": "model-corroborator",
       "target_kind": "agent",
-      "target": "policy-text-researcher"
+      "target": "prior-scores-finder"
     },
     {
       "source_kind": "agent",
-      "source": "parameter-locator",
+      "source": "model-corroborator",
       "target_kind": "agent",
-      "target": "microsim-runner"
+      "target": "report-logger"
+    },
+    {
+      "source_kind": "agent",
+      "source": "outcome-predictor",
+      "target_kind": "agent",
+      "target": "policy-text-researcher"
     },
     {
       "source_kind": "agent",
@@ -8480,8 +8487,8 @@
     {
       "source_kind": "agent",
       "source": "parameter-locator",
-      "target_kind": "skill",
-      "target": "policyengine-uk"
+      "target_kind": "agent",
+      "target": "microsim-runner"
     },
     {
       "source_kind": "agent",
@@ -8497,9 +8504,15 @@
     },
     {
       "source_kind": "agent",
+      "source": "parameter-locator",
+      "target_kind": "skill",
+      "target": "policyengine-uk"
+    },
+    {
+      "source_kind": "agent",
       "source": "policy-text-researcher",
       "target_kind": "agent",
-      "target": "prior-scores-finder"
+      "target": "reform-describer"
     },
     {
       "source_kind": "agent",
@@ -8511,7 +8524,7 @@
       "source_kind": "agent",
       "source": "policy-text-researcher",
       "target_kind": "agent",
-      "target": "reform-describer"
+      "target": "prior-scores-finder"
     },
     {
       "source_kind": "agent",
@@ -8529,7 +8542,13 @@
       "source_kind": "agent",
       "source": "prior-scores-finder",
       "target_kind": "agent",
-      "target": "policy-text-researcher"
+      "target": "reform-comparator"
+    },
+    {
+      "source_kind": "agent",
+      "source": "prior-scores-finder",
+      "target_kind": "agent",
+      "target": "calibration-diagnostics"
     },
     {
       "source_kind": "agent",
@@ -8541,13 +8560,7 @@
       "source_kind": "agent",
       "source": "prior-scores-finder",
       "target_kind": "agent",
-      "target": "reform-comparator"
-    },
-    {
-      "source_kind": "agent",
-      "source": "prior-scores-finder",
-      "target_kind": "agent",
-      "target": "calibration-diagnostics"
+      "target": "policy-text-researcher"
     },
     {
       "source_kind": "agent",
@@ -8565,13 +8578,13 @@
       "source_kind": "agent",
       "source": "reference-validator",
       "target_kind": "agent",
-      "target": "ci-fixer"
+      "target": "implementation-validator"
     },
     {
       "source_kind": "agent",
       "source": "reference-validator",
       "target_kind": "agent",
-      "target": "implementation-validator"
+      "target": "ci-fixer"
     },
     {
       "source_kind": "agent",
@@ -8619,13 +8632,7 @@
       "source_kind": "agent",
       "source": "reform-comparator",
       "target_kind": "agent",
-      "target": "microsim-runner"
-    },
-    {
-      "source_kind": "agent",
-      "source": "reform-comparator",
-      "target_kind": "agent",
-      "target": "prior-scores-finder"
+      "target": "calibration-diagnostics"
     },
     {
       "source_kind": "agent",
@@ -8643,7 +8650,13 @@
       "source_kind": "agent",
       "source": "reform-comparator",
       "target_kind": "agent",
-      "target": "calibration-diagnostics"
+      "target": "prior-scores-finder"
+    },
+    {
+      "source_kind": "agent",
+      "source": "reform-comparator",
+      "target_kind": "agent",
+      "target": "microsim-runner"
     },
     {
       "source_kind": "agent",
@@ -8655,13 +8668,13 @@
       "source_kind": "agent",
       "source": "reform-describer",
       "target_kind": "agent",
-      "target": "microsim-runner"
+      "target": "policy-text-researcher"
     },
     {
       "source_kind": "agent",
       "source": "reform-describer",
       "target_kind": "agent",
-      "target": "policy-text-researcher"
+      "target": "microsim-runner"
     },
     {
       "source_kind": "agent",
@@ -8679,19 +8692,13 @@
       "source_kind": "agent",
       "source": "report-logger",
       "target_kind": "agent",
-      "target": "microsim-runner"
-    },
-    {
-      "source_kind": "agent",
-      "source": "report-logger",
-      "target_kind": "agent",
       "target": "reform-describer"
     },
     {
       "source_kind": "agent",
       "source": "report-logger",
-      "target_kind": "skill",
-      "target": "policyengine-uk"
+      "target_kind": "agent",
+      "target": "microsim-runner"
     },
     {
       "source_kind": "agent",
@@ -8703,19 +8710,19 @@
       "source_kind": "agent",
       "source": "report-logger",
       "target_kind": "skill",
-      "target": "policyengine-uk-data"
-    },
-    {
-      "source_kind": "agent",
-      "source": "report-logger",
-      "target_kind": "skill",
-      "target": "policyengine-us-data"
-    },
-    {
-      "source_kind": "agent",
-      "source": "report-logger",
-      "target_kind": "skill",
       "target": "policyengine-us"
+    },
+    {
+      "source_kind": "agent",
+      "source": "report-logger",
+      "target_kind": "skill",
+      "target": "policyengine-app"
+    },
+    {
+      "source_kind": "agent",
+      "source": "report-logger",
+      "target_kind": "skill",
+      "target": "policyengine-uk-data"
     },
     {
       "source_kind": "agent",
@@ -8727,7 +8734,13 @@
       "source_kind": "agent",
       "source": "report-logger",
       "target_kind": "skill",
-      "target": "policyengine-app"
+      "target": "policyengine-us-data"
+    },
+    {
+      "source_kind": "agent",
+      "source": "report-logger",
+      "target_kind": "skill",
+      "target": "policyengine-uk"
     },
     {
       "source_kind": "agent",
@@ -26387,13 +26400,12 @@
       "pushed_at": "2026-05-26T15:02:25Z",
       "skills": [],
       "agents": [
-        "dashboard-design-validator",
-        "dashboard-planner"
+        "dashboard-design-validator"
       ],
       "commands": [
         "create-dashboard"
       ],
-      "total": 3
+      "total": 2
     },
     {
       "name": "missouri-income-tax-elimination",
