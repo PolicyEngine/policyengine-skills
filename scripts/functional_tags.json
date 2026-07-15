@@ -1431,6 +1431,26 @@
         "policyengine-calibration-diagnostics"
       ],
       "supersedes": []
+    },
+    {
+      "id": "implement-structural",
+      "role": "workflow:implement-structural",
+      "summary": "Implements the model extension behind a STRUCTURAL /analyze-policy verdict - baseline parameter/variable change for enacted law (via country-models agents) or delegation to /encode-reform for proposals - opens the policyengine-{country} PR and records the pending re-run.",
+      "scope_repos": [
+        "policyengine-us",
+        "policyengine-uk",
+        "policyengine-canada"
+      ],
+      "invokes_agents": [
+        "parameter-architect",
+        "rules-engineer",
+        "test-creator",
+        "ci-fixer"
+      ],
+      "invokes_skills": [
+        "policyengine-standards"
+      ],
+      "supersedes": []
     }
   ]
 }
