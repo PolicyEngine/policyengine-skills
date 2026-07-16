@@ -29,7 +29,10 @@ def test_build_claude_wrapper(tmp_path: Path) -> None:
 
     manifest = json.loads(manifest_path.read_text())
     assert manifest["name"] == "policyengine-claude"
-    assert len(manifest["plugins"]) == 9
+
+    bundle_dir = repo_root / "bundles"
+    expected_plugins = len(list(bundle_dir.glob("*.json")))
+    assert len(manifest["plugins"]) == expected_plugins == 8
 
     for plugin in manifest["plugins"]:
         assert plugin.get("source") == "./", f"{plugin['name']} missing source=./"
@@ -37,8 +40,23 @@ def test_build_claude_wrapper(tmp_path: Path) -> None:
             f"{plugin['name']} has hooks: null"
         )
 
-    assert (output_dir / "skills" / "domain-knowledge" / "policyengine-us-skill" / "SKILL.md").exists()
+    assert (output_dir / "skills" / "policyengine" / "SKILL.md").exists()
+    assert (output_dir / "skills" / "policyengine-us" / "SKILL.md").exists()
     assert (output_dir / "commands" / "create-pr.md").exists()
-    assert (output_dir / "agents" / "api" / "api-reviewer.md").exists()
+    assert (output_dir / "agents" / "country-models" / "rules-engineer.md").exists()
     assert (output_dir / "hooks" / "hooks.json").exists()
     assert (output_dir / "GENERATED_FROM").read_text().strip() == "test-sha"
+
+
+def test_bundle_versions_align_with_marketplace_template() -> None:
+    repo_root = Path(__file__).resolve().parent.parent
+    template = json.loads(
+        (repo_root / "targets" / "claude" / "marketplace.template.json").read_text()
+    )
+    expected = template["version"]
+
+    for bundle_path in sorted((repo_root / "bundles").glob("*.json")):
+        bundle = json.loads(bundle_path.read_text())
+        assert bundle.get("version") == expected, (
+            f"{bundle_path.name} version {bundle.get('version')} != template {expected}"
+        )

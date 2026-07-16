@@ -8,9 +8,9 @@ from pathlib import Path
 
 FRONTMATTER_RE = re.compile(r"\A---\n(?P<body>.*?)\n---\n", re.DOTALL)
 COMMAND_SKILLS = {
-    "encode-policy-v2": Path("skills/workflows/encode-policy-v2-skill/SKILL.md"),
-    "review-program": Path("skills/workflows/review-program-skill/SKILL.md"),
-    "fix-pr": Path("skills/workflows/fix-pr-skill/SKILL.md"),
+    "encode-policy-v2": Path("skills/encode-policy-v2/SKILL.md"),
+    "review-program": Path("skills/review-program/SKILL.md"),
+    "fix-pr": Path("skills/fix-pr/SKILL.md"),
 }
 
 
@@ -117,7 +117,7 @@ def assert_installer_replaces_stale_skill_directories(
 ) -> None:
     repo_root = Path(__file__).resolve().parent.parent
     skill_home = tmp_path / home_dir_name
-    stale_skill = skill_home / "skills" / "policyengine-canada-skill"
+    stale_skill = skill_home / "skills" / "policyengine-canada"
     stale_skill.mkdir(parents=True)
     (stale_skill / "SKILL.md").write_text("---\nname: stale\n---\n")
 
@@ -127,10 +127,10 @@ def assert_installer_replaces_stale_skill_directories(
         env={**os.environ, home_var: str(skill_home)},
     )
 
-    installed = skill_home / "skills" / "policyengine-canada-skill"
+    installed = skill_home / "skills" / "policyengine-canada"
     assert installed.is_symlink()
     assert installed.resolve() == (
-        repo_root / "skills" / "domain-knowledge" / "policyengine-canada-skill"
+        repo_root / "skills" / "policyengine-canada"
     )
 
 
@@ -168,7 +168,7 @@ def test_install_codex_repo_routing_preserves_existing_agents(tmp_path: Path) ->
     assert "$policyengine-us" in us_agents
     assert "# Existing Guidance" in us_agents
     assert "$policyengine-app" in app_agents
-    assert "$policyengine-ui-kit-consumer" in app_agents
+    assert "$policyengine-design" in app_agents
 
 
 def test_install_codex_repo_routing_rejects_malformed_managed_block(

@@ -1,5 +1,10 @@
 # Structured output + native chaining for `/analyze-policy`
 
+> **Status: design spec, mostly unimplemented.** Phase A (publishing this
+> schema) is done; phases B–D (wiring report-logger, the queue, and
+> run_manifest.json) are not built. Nothing here describes live behavior —
+> treat it as the reviewed plan for future wiring.
+
 This spec captures the machine-first output shape and the composition rules
 for chaining `/analyze-policy` with adjacent commands. It lays out the
 schema without wiring implementation into the agents yet — that lands as
@@ -80,7 +85,7 @@ analyses/2026-07-01-us-standard-deduction-plus-1k.json      # NEW
   "destinations": {
     "archive": {
       "type": "archive",
-      "path": "/Users/pavel/policyengine-skills/analyses/2026-07-01-us-standard-deduction-plus-1k.md"
+      "path": "analyses/2026-07-01-us-standard-deduction-plus-1k.md"
     },
     "github_issues": [
       { "repo": "PolicyEngine/policyengine-skills", "number": 26, "url": "..." }
@@ -137,7 +142,7 @@ Verdict → follow-up mapping:
 | `INVESTIGATE` | already handled: GH issue in `policyengine-{country}-data` |
 | `structural` | `/encode-policy-v2` → scaffold the required model extension |
 | `not-possible` | none |
-| `deployed-model-lag` | re-run scheduled for next release (cron-style: after next `pip install policyengine-{country}`) |
+| `deployed-model-lag` | re-run scheduled for next release (cron-style: after the next `uv pip install -U policyengine-{country}`) |
 
 When the analyst picks a "Also queue" option, the pipeline emits a stub
 task to a local queue (`~/.policyengine/queue/` or `.policyengine/queue/`

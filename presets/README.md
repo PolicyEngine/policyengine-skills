@@ -57,7 +57,7 @@ For baseline presets, `category: baseline` and the `reform_dict` describes the p
 ```
 /analyze-policy preset:arpa-ctc-restoration
 /analyze-policy preset:arpa-ctc-restoration --horizon 10
-/analyze-policy preset:arpa-ctc-restoration vs baseline:pre-obbba
+/analyze-policy preset:arpa-ctc-restoration vs baseline:tcja-extension
 ```
 
 Under the hood: `policy-text-researcher` recognizes the `preset:<name>` syntax, loads the YAML, and skips the text-extraction stage entirely (the reform-dict is already structured).
@@ -86,9 +86,13 @@ reform_dict = preset["reform_dict"]
 
 - **`arpa-ctc-restoration`** — Full ARPA CTC ($3,600 / $3,000, refundable, no phase-out).
 - **`obbba-salt-bump`** — OBBBA's 2025 SALT cap raise ($10K → $40K joint, $500K phase-out).
-- **`tcja-std-ded-doubling`** — TCJA's ~doubling of the standard deduction from pre-TCJA levels.
 
 ## Seed baselines
 
 - **`tcja-extension`** — TCJA continued indefinitely: SALT $10K, standard deduction reverted, AMT reverted, tax rates continued. Required for corroborating any external score that used "TCJA extension" as its baseline (CRFB, TPC most-published SALT/CTC scores use this).
-- **`pre-obbba`** — Current law as of just before OBBBA enactment. Required for mirroring 2024-early-2025 published scores.
+
+### Wanted next (not yet authored)
+
+- **`pre-obbba`** — current law just before OBBBA enactment, for mirroring 2024–early-2025
+  published scores. Authoring it requires care (many OBBBA provisions to unwind); do not
+  reference it in commands until the YAML exists — `load_preset` raises on missing names.

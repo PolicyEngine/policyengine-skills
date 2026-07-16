@@ -2,162 +2,25 @@
   "_comment": "Hand-curated functional tags for every skill/agent/command. Produced by reading each artifact's body. Update by re-running the tagging agents. Used by build_manifest.py to compute real functional overlaps that don't rely on TF-IDF vocabulary similarity.",
   "skills": [
     {
-      "id": "policyengine-analysis",
-      "role": "analysis:dist-impact",
-      "summary": "Build PolicyEngine analysis repositories (blog posts, dashboards, research reports) with standard patterns and visualization, excluding population-level estimates.",
+      "id": "policyengine",
+      "role": "analysis:python",
+      "summary": "Canonical Python interface: household calculations, population microsimulation, reform scoring, regional breakdowns via the policyengine package and Populace datasets.",
       "scope_repos": [
-        "policyengine-analysis-repos"
+        "policyengine.py"
       ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-district-analysis",
-      "role": "analysis:district",
-      "summary": "Run policy impact analysis scoped to US congressional districts using HuggingFace district datasets.",
-      "scope_repos": [
-        "policyengine-us"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "content-generation",
-      "role": "workflow:content-generation",
-      "summary": "Generate branded social media images and post copy from PolicyEngine blog posts and announcements.",
-      "scope_repos": [
-        "all"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "l0",
-      "role": "data-science:l0",
-      "summary": "Apply L0 regularization for neural network sparsification and household sampling in survey calibration.",
-      "scope_repos": [
-        "l0",
-        "policyengine-us-data",
-        "policyengine-uk-data"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "microcalibrate",
-      "role": "data-science:microcalibrate",
-      "summary": "Calibrate survey weights to match population targets using MicroCalibrate.",
-      "scope_repos": [
-        "microcalibrate",
-        "policyengine-us-data",
-        "policyengine-uk-data"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "microdf",
-      "role": "data-science:microdf",
-      "summary": "Use weighted pandas DataFrames/Series for survey microdata analysis (poverty, Gini, deciles).",
-      "scope_repos": [
+      "supersedes": [
+        "policyengine-microsimulation",
+        "policyengine-simulation-mechanics",
+        "policyengine-python-client",
+        "policyengine-district-analysis",
         "microdf",
-        "all"
-      ],
-      "supersedes": []
+        "policyengine-analysis"
+      ]
     },
     {
-      "id": "microimpute",
-      "role": "data-science:microimpute",
-      "summary": "Impute missing variables in survey microdata using quantile-forest and statistical-matching ML methods.",
-      "scope_repos": [
-        "microimpute",
-        "policyengine-us-data",
-        "policyengine-uk-data"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-uk-data",
-      "role": "data-pipelines:uk-data",
-      "summary": "Work on the UK survey data enhancement pipeline producing Enhanced FRS.",
-      "scope_repos": [
-        "policyengine-uk-data"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-us-data",
-      "role": "data-pipelines:us-data",
-      "summary": "Work on the US survey data enhancement pipeline producing Enhanced CPS.",
-      "scope_repos": [
-        "policyengine-us-data"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-design",
-      "role": "domain:design-system",
-      "summary": "Apply PolicyEngine design tokens (colors, typography, charts) across React, Recharts, Plotly, static HTML.",
-      "scope_repos": [
-        "all"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-plugin-maintenance",
-      "role": "domain:plugin-maintenance",
-      "summary": "Maintain the policyengine-skills source repo and the generated policyengine-claude wrapper plugin.",
-      "scope_repos": [
-        "policyengine-skills",
-        "policyengine-claude"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-research-lookup",
-      "role": "domain:research-lookup",
-      "summary": "Find and cite existing PolicyEngine blog posts and research as evidence in new content.",
-      "scope_repos": [
-        "all"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-standards",
-      "role": "pattern:code-style",
-      "summary": "Apply PolicyEngine repo-wide coding standards (uv, formatters, pre-commit, CI requirements).",
-      "scope_repos": [
-        "all"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-user-guide",
-      "role": "domain:user-guide",
-      "summary": "Guide end users through policyengine.org's calculator, reform builder, and research features.",
-      "scope_repos": [
-        "policyengine-app",
-        "policyengine-app-v2"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-writing",
-      "role": "domain:writing-style",
-      "summary": "Apply PolicyEngine writing style (active voice, quantitative precision, neutral tone, sentence case).",
-      "scope_repos": [
-        "all"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-canada",
-      "role": "domain:tax-benefit:canada",
-      "summary": "Compute household-level Canadian federal and provincial tax/benefit outcomes.",
-      "scope_repos": [
-        "policyengine-canada"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-healthcare",
-      "role": "domain:tax-benefit:us:healthcare",
-      "summary": "Model US healthcare programs (Medicaid, ACA PTC, CHIP, Medicare) including MAGI and benchmark plans.",
+      "id": "policyengine-us",
+      "role": "domain:us",
+      "summary": "US tax-benefit domain: entities, program landscape, current-law values, SNAP mechanics, parameter tree.",
       "scope_repos": [
         "policyengine-us"
       ],
@@ -165,353 +28,222 @@
     },
     {
       "id": "policyengine-uk",
-      "role": "domain:tax-benefit:uk",
-      "summary": "Compute UK household and population tax/benefit outcomes via the policyengine package.",
+      "role": "domain:uk",
+      "summary": "UK tax-benefit domain: benunit entities, poverty measures, reform APIs, private population data.",
       "scope_repos": [
         "policyengine-uk"
       ],
       "supersedes": []
     },
     {
-      "id": "policyengine-us",
-      "role": "domain:tax-benefit:us",
-      "summary": "Compute US federal and state household and population tax/benefit outcomes via the policyengine package.",
+      "id": "policyengine-canada",
+      "role": "domain:ca",
+      "summary": "Canada household-only calculations (no representative microdata).",
+      "scope_repos": [
+        "policyengine-canada"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "policyengine-healthcare",
+      "role": "domain:us-health",
+      "summary": "US health programs in policyengine-us: Medicaid, ACA PTC, CHIP; the net-income exclusion gotcha.",
       "scope_repos": [
         "policyengine-us"
       ],
       "supersedes": []
     },
     {
-      "id": "policyengine-tailwind-shadcn",
-      "role": "frontend:styling:tailwind",
-      "summary": "Configure Tailwind v4 + shadcn/ui CSS-variable architecture so ui-kit theme tokens flow into consumer apps.",
-      "scope_repos": [
-        "policyengine-app-v2",
-        "policyengine-ui-kit",
-        "interactive-tools"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-ui-kit-consumer",
-      "role": "frontend:ui-kit",
-      "summary": "Set up a consumer app to import @policyengine/ui-kit correctly (globals.css, PostCSS, theme.css order).",
-      "scope_repos": [
-        "interactive-tools",
-        "dashboards"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-aggregation",
-      "role": "pattern:aggregation",
-      "summary": "Choose between `adds` attribute and `add()` function when summing variables across entities.",
+      "id": "policyengine-model-development",
+      "role": "engineering:country-models",
+      "summary": "Country-model engineering: variables, parameters, periods, vectorization, YAML tests, in-model reforms, style.",
       "scope_repos": [
         "policyengine-us",
         "policyengine-uk",
         "policyengine-canada"
       ],
-      "supersedes": []
+      "supersedes": [
+        "policyengine-variable-patterns",
+        "policyengine-parameter-patterns",
+        "policyengine-period-patterns",
+        "policyengine-aggregation",
+        "policyengine-vectorization",
+        "policyengine-testing-patterns",
+        "policyengine-reform-patterns",
+        "policyengine-code-style",
+        "policyengine-code-organization",
+        "policyengine-review-patterns",
+        "policyengine-core"
+      ]
     },
     {
-      "id": "policyengine-code-organization",
-      "role": "pattern:code-organization",
-      "summary": "Follow PolicyEngine variable naming, folder structure, and file organization conventions.",
+      "id": "policyengine-data",
+      "role": "data:populace",
+      "summary": "The Populace data stack: certified releases, dataset names, local-area filtering, fit/calibrate/L0 concepts.",
       "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
+        "populace"
       ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-code-style",
-      "role": "pattern:code-style",
-      "summary": "Write clean PolicyEngine formula code: eliminate intermediate variables, return directly, no hardcoded values.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-data-testing",
-      "role": "pattern:testing:data-pipelines",
-      "summary": "Add fast TESTING-mode test patterns and CI configuration for data-generation pipelines.",
-      "scope_repos": [
+      "supersedes": [
         "policyengine-us-data",
-        "policyengine-uk-data"
-      ],
-      "supersedes": []
+        "policyengine-uk-data",
+        "microimpute",
+        "microcalibrate",
+        "l0",
+        "policyengine-data-testing"
+      ]
     },
     {
-      "id": "policyengine-parameter-patterns",
-      "role": "pattern:parameters",
-      "summary": "Author parameter YAML files with required structure, metadata fields, and naming conventions.",
+      "id": "policyengine-calibration-diagnostics",
+      "role": "data:diagnostics",
+      "summary": "Sensitivity registry mapping simulation-vs-benchmark deviations to likely calibration levers.",
       "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-period-patterns",
-      "role": "pattern:periods",
-      "summary": "Handle YEAR vs MONTH definition periods correctly in formulas and tests.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-recharts",
-      "role": "frontend:charts",
-      "summary": "Build Recharts charts with brand-aligned formatting and bundle-size best practices.",
-      "scope_repos": [
-        "policyengine-app-v2",
-        "interactive-tools",
-        "dashboards"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-reform-patterns",
-      "role": "pattern:reforms",
-      "summary": "Implement contributed policy reforms via factory functions, contrib parameters, in_effect toggles.",
-      "scope_repos": [
-        "policyengine-us"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-review-patterns",
-      "role": "pattern:review",
-      "summary": "Review country-model implementations using a validation checklist comparing logic to legal sources.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-test-writing",
-      "role": "pattern:testing:frontend",
-      "summary": "Write Given-When-Then unit/integration tests for frontend apps, APIs, SDKs, and standalone tools.",
-      "scope_repos": [
-        "policyengine-app-v2",
-        "policyengine-api-v2",
-        "interactive-tools",
-        "dashboards"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-testing-patterns",
-      "role": "pattern:testing:country-models",
-      "summary": "Author YAML integration and unit tests for variables in PolicyEngine country models.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-variable-patterns",
-      "role": "pattern:variables",
-      "summary": "Author variable Python files faithful to legal code, with required metadata and no hardcoded values.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-vectorization",
-      "role": "pattern:vectorization",
-      "summary": "Write vectorized NumPy formula code (where/select, no if-elif) for array-safe formulas.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "python",
-      "role": "tooling:python-language",
-      "summary": "Set up Python environments the PolicyEngine way: uv, Python 3.13, local .venv, uv pip / uv run.",
-      "scope_repos": [
-        "all"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "seo-checklist",
-      "role": "seo",
-      "summary": "Audit and improve SEO for PolicyEngine React SPAs (meta tags, crawlability, performance, dual-mode).",
-      "scope_repos": [
-        "interactive-tools",
-        "dashboards",
-        "policyengine-app-v2"
+        "populace"
       ],
       "supersedes": []
     },
     {
       "id": "policyengine-prior-scores",
-      "role": "analysis:prior-scores",
-      "summary": "Structured index of PolicyEngine's previously-published scored reforms — query for an anchor magnitude when running new analyses.",
+      "role": "analysis:anchors",
+      "summary": "Published reform-score anchors and the scorekeepers registry for corroboration.",
       "scope_repos": [
-        "all"
+        "policyengine-skills"
       ],
       "supersedes": []
-    },
-    {
-      "id": "policyengine-calibration-diagnostics",
-      "role": "analysis:calibration-diagnostics",
-      "summary": "Sensitivity registry mapping {program × deviation signature} to the most likely calibration target driving a microsim mismatch.",
-      "scope_repos": [
-        "policyengine-us-data",
-        "policyengine-uk-data",
-        "calibration-diagnostics"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-api",
-      "role": "repo-knowledge:policyengine-api",
-      "summary": "Work in the legacy Flask-based PolicyEngine API.",
-      "scope_repos": [
-        "policyengine-api"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-api-v2",
-      "role": "repo-knowledge:policyengine-api-v2",
-      "summary": "Work in the next-generation API v2 monorepo (microservices, Python 3.13, Docker, Supabase, OpenAPI).",
-      "scope_repos": [
-        "policyengine-api-v2"
-      ],
-      "supersedes": [
-        "policyengine-api"
-      ]
     },
     {
       "id": "policyengine-app",
-      "role": "repo-knowledge:policyengine-app-v2",
-      "summary": "Develop the main React/Vite frontend at policyengine.org (policyengine-app-v2 monorepo).",
+      "role": "apps:app-v2",
+      "summary": "Developing policyengine-app-v2 (policyengine.org): architecture, conventions, API integration.",
+      "scope_repos": [
+        "policyengine-app-v2"
+      ],
+      "supersedes": [
+        "policyengine-app"
+      ]
+    },
+    {
+      "id": "policyengine-tools",
+      "role": "apps:tools",
+      "summary": "Building standalone tools and dashboards: Next.js + Tailwind v4 + ui-kit spec, multizone, Modal backends, Vercel deploys, charts.",
+      "scope_repos": [
+        "interactive-tools",
+        "dashboards"
+      ],
+      "supersedes": [
+        "policyengine-interactive-tools",
+        "policyengine-frontend-builder-spec",
+        "policyengine-dashboard-workflow",
+        "policyengine-vercel-deployment",
+        "policyengine-modal-deployment",
+        "policyengine-recharts",
+        "seo-checklist"
+      ]
+    },
+    {
+      "id": "policyengine-design",
+      "role": "apps:design",
+      "summary": "Design tokens, @policyengine/ui-kit consumption, Tailwind v4 theme, chart styling, design-system migration.",
+      "scope_repos": [
+        "policyengine-ui-kit",
+        "policyengine-app-v2"
+      ],
+      "supersedes": [
+        "policyengine-design",
+        "policyengine-ui-kit-consumer",
+        "policyengine-tailwind-shadcn"
+      ]
+    },
+    {
+      "id": "policyengine-api",
+      "role": "apps:api",
+      "summary": "Consuming and developing the PolicyEngine APIs: v1 production endpoints, api-v2 alpha.",
+      "scope_repos": [
+        "policyengine-api",
+        "policyengine-api-v2"
+      ],
+      "supersedes": [
+        "policyengine-api-v2",
+        "policyengine-python-client"
+      ]
+    },
+    {
+      "id": "policyengine-writing",
+      "role": "process:editorial",
+      "summary": "Editorial style for posts, reports, PR descriptions: neutrality, quantitative language, sentence case.",
       "scope_repos": [
         "policyengine-app-v2"
       ],
       "supersedes": []
     },
     {
-      "id": "policyengine-core",
-      "role": "repo-knowledge:policyengine-core",
-      "summary": "Work in policyengine-core, the OpenFisca-derived simulation engine.",
+      "id": "policyengine-standards",
+      "role": "process:standards",
+      "summary": "Development standards: uv, bun, ruff, towncrier changelogs, CI gates, PR discipline.",
       "scope_repos": [
-        "policyengine-core"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-dashboard-workflow",
-      "role": "workflow:dashboard-build",
-      "summary": "Use the /create-dashboard and /deploy-dashboard multi-agent pipeline.",
-      "scope_repos": [
-        "dashboards"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-frontend-builder-spec",
-      "role": "frontend:scaffold-dashboard",
-      "summary": "Enforce frontend stack requirements (Tailwind v4, Next.js App Router, ui-kit, Vercel) for dashboards.",
-      "scope_repos": [
-        "dashboards",
-        "interactive-tools"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-github-agent-skill",
-      "role": "repo-knowledge:policyengine-github-agent",
-      "summary": "Interact safely with the PolicyEngine GitHub agent bot, avoiding mention doom-loops.",
-      "scope_repos": [
-        "policyengine-github-agent",
         "all"
       ],
       "supersedes": []
     },
     {
-      "id": "policyengine-interactive-tools",
-      "role": "frontend:scaffold-tool",
-      "summary": "Build standalone React calculators (Next.js multi-zone or iframe) that embed into policyengine.org.",
+      "id": "policyengine-research-lookup",
+      "role": "process:research",
+      "summary": "Finding existing PolicyEngine research, posts, and proof points.",
       "scope_repos": [
-        "interactive-tools"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-microsimulation",
-      "role": "domain:microsim",
-      "summary": "Run population-level PolicyEngine microsimulations (cost, poverty, distributional impact).",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-modal-deployment",
-      "role": "frontend:deployment:modal",
-      "summary": "Deploy PolicyEngine custom backend APIs to the shared Modal workspace.",
-      "scope_repos": [
-        "dashboards",
-        "interactive-tools"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-python-client",
-      "role": "tooling:python-client",
-      "summary": "Install and use the policyengine Python client/REST API for programmatic calculations.",
-      "scope_repos": [
-        "policyengine.py"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-simulation-mechanics",
-      "role": "tooling:simulation-mechanics",
-      "summary": "Write advanced policyengine.py simulation scripts (datasets, ensure_datasets, entity mapping).",
-      "scope_repos": [
-        "policyengine.py"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "policyengine-vercel-deployment",
-      "role": "frontend:deployment:vercel",
-      "summary": "Deploy PolicyEngine frontend apps to Vercel under the `policy-engine` team.",
-      "scope_repos": [
-        "interactive-tools",
-        "dashboards",
         "policyengine-app-v2"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "policyengine-user-guide",
+      "role": "process:user-guide",
+      "summary": "Using the policyengine.org web app.",
+      "scope_repos": [
+        "policyengine-app-v2"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "policyengine-content",
+      "role": "process:content",
+      "summary": "Social assets for posts: image template, token usage, generation workflow.",
+      "scope_repos": [
+        "policyengine-skills"
+      ],
+      "supersedes": [
+        "content-generation"
+      ]
+    },
+    {
+      "id": "policyengine-github-agent",
+      "role": "process:bot",
+      "summary": "PolicyEngine GitHub bot operating rules (doom-loop avoidance).",
+      "scope_repos": [
+        "PolicyEngine-dotgithub"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "policyengine-plugin-maintenance",
+      "role": "process:meta",
+      "summary": "Maintaining this skills repo: structure, bundles, wrapper build, tests.",
+      "scope_repos": [
+        "policyengine-skills"
       ],
       "supersedes": []
     },
     {
       "id": "encode-policy-v2",
-      "role": "workflow:encode-policy",
-      "summary": "Run the Codex $encode-policy-v2 multi-phase workflow to implement a new state benefit program.",
+      "role": "workflow:encode",
+      "summary": "Codex-portable workflow: implement a new state benefit program end to end.",
+      "scope_repos": [
+        "policyengine-us"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "review-program",
+      "role": "workflow:review",
+      "summary": "Codex-portable workflow: review a PolicyEngine PR including PDF-cited values.",
       "scope_repos": [
         "policyengine-us"
       ],
@@ -519,57 +251,19 @@
     },
     {
       "id": "fix-pr",
-      "role": "workflow:fix-pr",
-      "summary": "Run the Codex $fix-pr workflow to apply scoped fixes to a PR based on findings or comments.",
+      "role": "workflow:fix",
+      "summary": "Codex-portable workflow: apply review findings to a PR.",
       "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
-      "supersedes": []
-    },
-    {
-      "id": "review-program",
-      "role": "workflow:review-program",
-      "summary": "Run the Codex $review-program workflow: read-only code validation + PDF audit.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
+        "policyengine-us"
       ],
       "supersedes": []
     }
   ],
   "agents": [
     {
-      "id": "api-reviewer",
-      "role": "review:api",
-      "summary": "Reviews API Flask code for RESTful conventions, security, performance, test coverage, endpoint docs.",
-      "scope_repos": [
-        "policyengine-api"
-      ]
-    },
-    {
-      "id": "app-reviewer",
-      "role": "review:app",
-      "summary": "Reviews React frontend code for hooks/component patterns, ESLint, memoization, accessibility, tests.",
-      "scope_repos": [
-        "policyengine-app",
-        "policyengine-app-v2"
-      ]
-    },
-    {
       "id": "component-test-writer",
       "role": "impl:component-test-writer",
       "summary": "Writes Vitest + RTL unit tests for ui-kit components covering CVA variants, props, a11y, interaction.",
-      "scope_repos": [
-        "policyengine-ui-kit"
-      ]
-    },
-    {
-      "id": "design-token-validator",
-      "role": "review:design-tokens",
-      "summary": "Scans ui-kit components for hardcoded hex/px/font/radii values and rewrites them to use design tokens.",
       "scope_repos": [
         "policyengine-ui-kit"
       ]
@@ -581,38 +275,6 @@
       "scope_repos": [
         "policyengine-app-v2",
         "interactive-tools"
-      ]
-    },
-    {
-      "id": "seo-content-checker",
-      "role": "review:seo:content",
-      "summary": "Audits heading hierarchy, semantic HTML, link quality, alt attributes, content depth, structured data.",
-      "scope_repos": [
-        "all"
-      ]
-    },
-    {
-      "id": "seo-crawlability-checker",
-      "role": "review:seo:crawlability",
-      "summary": "Checks robots.txt, sitemap, routing, SSR output, 404 handling, host config, canonical URLs.",
-      "scope_repos": [
-        "all"
-      ]
-    },
-    {
-      "id": "seo-meta-checker",
-      "role": "review:seo:meta",
-      "summary": "Audits HTML entry points for title, description, canonical, OG, Twitter, JSON-LD, dual-mode handling.",
-      "scope_repos": [
-        "all"
-      ]
-    },
-    {
-      "id": "seo-performance-checker",
-      "role": "review:seo:performance",
-      "summary": "Measures bundles, flags heavy deps, checks code splitting/images/fonts/render-blocking, estimates CWV.",
-      "scope_repos": [
-        "all"
       ]
     },
     {
@@ -628,7 +290,7 @@
     {
       "id": "content-orchestrator",
       "role": "orchestrate:content",
-      "summary": "Generates marketing assets from blog posts — localized social images and LinkedIn/X post copy.",
+      "summary": "Generates marketing assets from blog posts \u2014 localized social images and LinkedIn/X post copy.",
       "scope_repos": [
         "policyengine.org"
       ]
@@ -664,16 +326,6 @@
       ]
     },
     {
-      "id": "documentation-enricher",
-      "role": "impl:documentation-enricher",
-      "summary": "Adds calculation examples, citations, descriptions, cross-refs to already-implemented variables.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ]
-    },
-    {
       "id": "edge-case-generator",
       "role": "impl:edge-cases",
       "summary": "Generates YAML edge-case tests (thresholds, cliffs, division-by-zero, household variations).",
@@ -687,16 +339,6 @@
       "id": "implementation-validator",
       "role": "review:standards-deep",
       "summary": "Mode A fixes YAML structural/cross-ref/state placement issues; Mode B reports code-pattern findings.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ]
-    },
-    {
-      "id": "integration-agent",
-      "role": "orchestrate:integration",
-      "summary": "Merges parallel test-creator/rules-engineer branches and fixes basic entity/naming mismatches.",
       "scope_repos": [
         "policyengine-us",
         "policyengine-uk",
@@ -727,16 +369,6 @@
       "id": "issue-manager",
       "role": "orchestrate:issue-manager",
       "summary": "Searches GitHub for existing program issues/PRs, creates with template if absent, returns numbers.",
-      "scope_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ]
-    },
-    {
-      "id": "performance-optimizer",
-      "role": "impl:performance-optimizer",
-      "summary": "Refactors formulas to remove loops, consolidate params, eliminate redundant calcs, use where/select.",
       "scope_repos": [
         "policyengine-us",
         "policyengine-uk",
@@ -796,7 +428,7 @@
     {
       "id": "backend-builder",
       "role": "dashboard:backend-builder",
-      "summary": "Builds dashboard data layer — precomputed JSON, policyengine-api client, or Modal gateway+worker.",
+      "summary": "Builds dashboard data layer \u2014 precomputed JSON, policyengine-api client, or Modal gateway+worker.",
       "scope_repos": [
         "interactive-tools"
       ]
@@ -805,14 +437,6 @@
       "id": "dashboard-architecture-validator",
       "role": "dashboard:architecture-validator",
       "summary": "Verifies dashboard uses Tailwind v4, App Router, ui-kit, bun, multi-zone config, Modal backend.",
-      "scope_repos": [
-        "interactive-tools"
-      ]
-    },
-    {
-      "id": "dashboard-build-validator",
-      "role": "dashboard:build-validator",
-      "summary": "Runs bun install/build, Makefile checks, vitest, reports build/test status.",
       "scope_repos": [
         "interactive-tools"
       ]
@@ -828,23 +452,15 @@
     {
       "id": "dashboard-integrator",
       "role": "dashboard:integrator",
-      "summary": "Wires frontend components to backend — request builders, transforms, React Query hooks, states.",
+      "summary": "Wires frontend components to backend \u2014 request builders, transforms, React Query hooks, states.",
       "scope_repos": [
         "interactive-tools"
       ]
     },
     {
-      "id": "dashboard-overview-updater",
-      "role": "dashboard:overview-updater",
-      "summary": "Diffs dashboard-builder marketplace.json vs commands/dashboard-overview.md and updates tables.",
-      "scope_repos": [
-        "policyengine-claude"
-      ]
-    },
-    {
       "id": "dashboard-plan-validator",
       "role": "dashboard:plan-validator",
-      "summary": "Verifies implementation matches plan.yaml — contract, components, embedding, states, charts, zone.",
+      "summary": "Verifies implementation matches plan.yaml \u2014 contract, components, embedding, states, charts, zone.",
       "scope_repos": [
         "interactive-tools"
       ]
@@ -852,7 +468,7 @@
     {
       "id": "dashboard-planner",
       "role": "dashboard:planner",
-      "summary": "Turns natural-language brief into structured plan.yaml — data pattern, variables, charts, zone_path.",
+      "summary": "Turns natural-language brief into structured plan.yaml \u2014 data pattern, variables, charts, zone_path.",
       "scope_repos": [
         "interactive-tools"
       ]
@@ -860,7 +476,7 @@
     {
       "id": "dashboard-scaffold",
       "role": "dashboard:scaffold",
-      "summary": "Generates complete Next.js dashboard project from plan.yaml — config, vercel.json, CI, stubs.",
+      "summary": "Generates complete Next.js dashboard project from plan.yaml \u2014 config, vercel.json, CI, stubs.",
       "scope_repos": [
         "interactive-tools"
       ]
@@ -922,7 +538,7 @@
     {
       "id": "pr-merge-checklist",
       "role": "review:pr-merge",
-      "summary": "Pre-merge decision guide — checks reviews+CI, routes to /fix-pr or allows squash-merge.",
+      "summary": "Pre-merge decision guide \u2014 checks reviews+CI, routes to /fix-pr or allows squash-merge.",
       "scope_repos": [
         "all"
       ]
@@ -950,7 +566,7 @@
     {
       "id": "prior-scores-finder",
       "role": "analysis:prior-scores-finder",
-      "summary": "Finds prior scored reforms — PolicyEngine first, then official fiscal notes, then think-tank analyses.",
+      "summary": "Finds prior scored reforms \u2014 PolicyEngine first, then official fiscal notes, then think-tank analyses.",
       "scope_repos": [
         "all",
         "state-legislative-tracker"
@@ -976,7 +592,7 @@
     {
       "id": "reform-classifier",
       "role": "analysis:reform-classifier",
-      "summary": "Stage-2 gate — classifies a reform as parametric, structural, or not-possible based on provision verdicts.",
+      "summary": "Stage-2 gate \u2014 classifies a reform as parametric, structural, or not-possible based on provision verdicts.",
       "scope_repos": [
         "policyengine-us",
         "policyengine-uk",
@@ -986,7 +602,7 @@
     {
       "id": "reform-comparator",
       "role": "analysis:reform-comparator",
-      "summary": "Stage-5 comparator — checks microsim output against the prior-score anchor and returns PASS or INVESTIGATE.",
+      "summary": "Stage-5 comparator \u2014 checks microsim output against the prior-score anchor and returns PASS or INVESTIGATE.",
       "scope_repos": [
         "all"
       ]
@@ -994,7 +610,7 @@
     {
       "id": "calibration-diagnostics",
       "role": "analysis:calibration-diagnostics",
-      "summary": "Stage-6 diagnostic — hypothesizes which calibration targets are driving a microsim mismatch.",
+      "summary": "Stage-6 diagnostic \u2014 hypothesizes which calibration targets are driving a microsim mismatch.",
       "scope_repos": [
         "policyengine-us-data",
         "policyengine-uk-data",
@@ -1043,12 +659,7 @@
       "scope_repos": [
         "all"
       ],
-      "invokes_agents": [
-        "seo-meta-checker",
-        "seo-crawlability-checker",
-        "seo-performance-checker",
-        "seo-content-checker"
-      ],
+      "invokes_agents": [],
       "invokes_skills": [],
       "supersedes": []
     },
@@ -1106,11 +717,9 @@
         "backend-builder",
         "frontend-builder",
         "dashboard-integrator",
-        "dashboard-build-validator",
         "dashboard-design-validator",
         "dashboard-architecture-validator",
-        "dashboard-plan-validator",
-        "dashboard-overview-updater"
+        "dashboard-plan-validator"
       ],
       "invokes_skills": [],
       "supersedes": []
@@ -1123,7 +732,6 @@
         "policyengine-ui-kit"
       ],
       "invokes_agents": [
-        "design-token-validator",
         "component-test-writer"
       ],
       "invokes_skills": [
@@ -1138,17 +746,6 @@
       "summary": "Creates draft PR, polls CI to completion, marks ready on success or auto-triggers /fix-pr on failure.",
       "scope_repos": [
         "all"
-      ],
-      "invokes_agents": [],
-      "invokes_skills": [],
-      "supersedes": []
-    },
-    {
-      "id": "dashboard-overview",
-      "role": "workflow:dashboard-overview",
-      "summary": "Displays a static inventory of the dashboard builder ecosystem's commands, agents, skills, tech stack.",
-      "scope_repos": [
-        "policyengine-claude"
       ],
       "invokes_agents": [],
       "invokes_skills": [],
@@ -1390,7 +987,7 @@
     {
       "id": "analyze-policy",
       "role": "workflow:analyze-policy",
-      "summary": "End-to-end reform analysis — text → classify → priors → microsim → compare → diagnose calibration mismatch → log to archive/issue/draft.",
+      "summary": "End-to-end reform analysis \u2014 text \u2192 classify \u2192 priors \u2192 microsim \u2192 compare \u2192 diagnose calibration mismatch \u2192 log to archive/issue/draft.",
       "scope_repos": [
         "all"
       ],

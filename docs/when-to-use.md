@@ -1,6 +1,6 @@
 # When to use what
 
-The PolicyEngine plugin ships 19 slash commands, 46 agents, and 53 skills. Most days you'll only use 3-5 of them. This guide maps common work to the right entry point.
+The PolicyEngine plugin ships ~23 slash commands, ~33 agents, and 23 skills (consolidated from 53 in the July 2026 rebuild). Most days you'll only use 3-5 of them. This guide maps common work to the right entry point.
 
 ## Quick decision matrix
 
@@ -13,6 +13,7 @@ The PolicyEngine plugin ships 19 slash commands, 46 agents, and 53 skills. Most 
 | Check whether we already analyzed this reform | `/prior-analysis` | Read the archived analysis or run fresh |
 | Consult external scorekeepers (JCT/CBO/OBR/IFS/CRFB/TPC/etc.) | `/prior-scores` | Cite in your writeup |
 | Implement a NEW state benefit program | `/encode-policy-v2` | `/review-program` → `/fix-pr` → `/create-pr` |
+| Implement a STRUCTURAL reform the model can't express as parameters | `/implement-structural` | `/review-program` → `/create-pr` |
 | Change parameters on an EXISTING program | `/encode-reform` | `/review-program` → `/create-pr` |
 | Backdate parameters to earlier years | `/backdate-program` | `/create-pr` |
 | Review a PR (code + PDF-cited values) | `/review-program` | `/fix-pr` if findings; else `/create-pr` |
@@ -27,7 +28,6 @@ The PolicyEngine plugin ships 19 slash commands, 46 agents, and 53 skills. Most 
 | Audit a multi-zone Next.js app | `/audit-multizone` | Fix + `/create-pr` |
 | Write unit tests for source files | `/write-tests` | `/create-pr` |
 | Generate a social image / social copy from a blog post | `/generate-content` | Post to socials |
-| See what's in the dashboard-builder toolkit | `/dashboard-overview` | Use one of the dashboard commands |
 | Add a themed spinner verb to your Claude session | `/setup-verbs` | Ambient |
 
 ## Decision tree (not sure where to start)
@@ -50,6 +50,7 @@ The PolicyEngine plugin ships 19 slash commands, 46 agents, and 53 skills. Most 
 
 - **New program** (state TANF variant, new state credit, new federal benefit): `/encode-policy-v2`
 - **Reform to existing** (raise a cap, add a phase-out): `/encode-reform`
+- **Structural change** (`/analyze-policy` classified it structural — new formula logic, not a parameter): `/implement-structural`
 - **Backdate parameters** (fill in historical years): `/backdate-program`
 
 **Q4: Dashboard, standalone tool, or UI component?**
@@ -68,43 +69,32 @@ The PolicyEngine plugin ships 19 slash commands, 46 agents, and 53 skills. Most 
 
 These get pulled in automatically by their trigger keywords, but useful to know exists:
 
-- **`policyengine-{us,uk,canada}`** — country model knowledge, loaded whenever the user's question mentions a country's tax/benefit specifics
+- **`policyengine`** — the Python interface: household calcs, microsimulation, reform scoring; load for any "what does this policy do" question
+- **`policyengine-{us,uk,canada}`** — country domain knowledge, loaded whenever the user's question mentions a country's tax/benefit specifics
 - **`policyengine-writing`** — style for any blog post, PR description, or research report
-- **`policyengine-standards`** — CI, formatters, PR standards (uv, ruff, prettier, pre-commit)
-- **`policyengine-code-style`** — formula-writing patterns (direct returns, eliminate intermediate variables, no hardcoding)
+- **`policyengine-standards`** — CI, formatters, PR standards (uv, bun, ruff, towncrier)
 
 ## Skills for specific work
 
 **Microsimulation / population analysis** (cost, poverty, distributional):
-- `policyengine-microsimulation` — always the first skill for population-level questions
-- `policyengine-simulation-mechanics` — deeper API patterns
-- `policyengine-district-analysis` — congressional district impacts
-- `microdf` — weighted survey dataframe utilities
+- `policyengine` — household + population analysis, regional breakdowns, MicroSeries weighting; the one skill for all of it
+- `policyengine-prior-scores` — external score anchors for corroboration
+- `policyengine-healthcare` — Medicaid/ACA/CHIP specifics
 
 **Implementing programs** (adding new variables, parameters, formulas):
-- `policyengine-variable-patterns` — variable creation, naming, no-hardcoding
-- `policyengine-parameter-patterns` — YAML structure, federal/state separation
-- `policyengine-vectorization` — NumPy `where`/`select` patterns
-- `policyengine-aggregation` — summing across entities (person → tax unit → household)
-- `policyengine-period-patterns` — YEAR vs MONTH definition periods
-- `policyengine-testing-patterns` — YAML integration tests
-- `policyengine-reform-patterns` — reform-dict syntax
+- `policyengine-model-development` — the consolidated engineering skill; its references/ cover variables, parameters, periods, vectorization, tests, and in-model reforms
 
 **Data pipeline / calibration**:
-- `microimpute` — imputation for survey data (used in policyengine-us-data)
-- `microcalibrate` — weight calibration to hit population targets
-- `l0` — sparsity regularization
+- `policyengine-data` — the Populace stack: certified releases, local-area filtering, fit/calibrate/L0
+- `policyengine-calibration-diagnostics` — deviation-signature → calibration-lever registry
 
 **Frontend / dashboards**:
-- `policyengine-design` — design tokens, typography, chart standards
-- `policyengine-tailwind-shadcn` — component patterns
-- `policyengine-recharts` — chart primitives
-- `policyengine-interactive-tools` — embed-friendly tool patterns
-- `policyengine-ui-kit-consumer` — using `@policyengine/ui-kit`
+- `policyengine-design` — design tokens, `@policyengine/ui-kit`, chart standards
+- `policyengine-tools` — standalone tools/dashboards: Next.js + Tailwind v4 spec, multizone, Modal, Vercel
+- `policyengine-app` — working on policyengine-app-v2 itself
 
 **API integration**:
-- `policyengine-python-client` — installing + calling the API from Python
-- `policyengine-api-v2` — API internals (only when working on the API itself)
+- `policyengine-api` — REST endpoints (v1 production, api-v2 alpha); analysts calling from Python should use the `policyengine` skill instead
 
 ## Common workflows (recipes)
 
@@ -116,7 +106,7 @@ These get pulled in automatically by their trigger keywords, but useful to know 
 3. If PASS or PASS-WITH-CORROBORATION:
    /generate-content --source analyses/YYYY-MM-DD-slug.md
    → produces social image + copy
-4. Manually drop the analysis body into policyengine-app/src/posts/articles/<slug>.md
+4. Manually drop the analysis body into the posts directory in policyengine-app-v2
 5. /create-pr
 ```
 
@@ -149,12 +139,6 @@ These get pulled in automatically by their trigger keywords, but useful to know 
 3. /create-pr
 ```
 
-### "I want to know what's in the dashboard toolkit"
-
-```
-1. /dashboard-overview  (this is a listing command, not a workflow)
-```
-
 ## Tests — realistic scenarios that this guide should answer
 
 | # | Scenario | Guide answer | Match? |
@@ -169,7 +153,7 @@ These get pulled in automatically by their trigger keywords, but useful to know 
 | 8 | Someone finished a working branch and needs to open a PR | `/create-pr` | ✅ |
 | 9 | Dev wants to make sure a web property has good SEO | `/audit-seo` | ✅ |
 | 10 | Analyst wants historical values for a program that only has 2024 data | `/backdate-program` | ✅ |
-| 11 | User wants to know how the tools relate | `/dashboard-overview` (listing) or read this guide | ✅ |
+| 11 | User wants to know how the tools relate | Read this guide | ✅ |
 | 12 | Dev wants to write pytest tests for a Python file | `/write-tests` | ✅ |
 | 13 | Analyst wants to check what a single family gets on SNAP | `/household-calc` | ✅ |
 | 14 | Researcher wants to translate HR 1234 into a reform-dict without scoring it yet | `/text-to-reform` | ✅ |
@@ -184,7 +168,7 @@ Most gaps identified in the initial pass were filled in a follow-up PR. Remainin
 
 **2. `/audit-multizone` is niche.** Useful only when working on `policyengine-app-v2` (multi-zone Next.js app). Kept because it's cheap and the alternative would be inlining into `/audit-seo` which would confuse both.
 
-**3. `/dashboard-overview` overlaps with this guide's role.** It lists the dashboard-builder toolkit; this guide covers the whole catalog. Both have distinct purposes — `/dashboard-overview` is a discovery listing, this guide is a decision matrix.
+**3. `/dashboard-overview` was removed in the July 2026 rebuild.** This guide is the catalog-wide decision matrix; the dashboard commands are listed in the quick matrix above.
 
 ### Filled by follow-up commits (this PR)
 

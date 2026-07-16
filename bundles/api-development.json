@@ -2,7 +2,7 @@
   "name": "api-development",
   "description": "API development - Flask endpoints, caching, services, and integration patterns",
   "category": "development",
-  "version": "3.22.3",
+  "version": "4.0.0",
   "keywords": [
     "api",
     "flask",
@@ -17,19 +17,17 @@
   "license": "MIT",
   "hooks": null,
   "skills": [
-    "./skills/tools-and-apis/policyengine-api-v2-skill",
-    "./skills/tools-and-apis/policyengine-core-skill",
-    "./skills/domain-knowledge/policyengine-us-skill",
-    "./skills/domain-knowledge/policyengine-uk-skill",
-    "./skills/documentation/policyengine-design-skill",
-    "./skills/documentation/policyengine-standards-skill",
-    "./skills/documentation/policyengine-writing-skill"
+    "./skills/policyengine-api",
+    "./skills/policyengine-model-development",
+    "./skills/policyengine-us",
+    "./skills/policyengine-uk",
+    "./skills/policyengine-design",
+    "./skills/policyengine-standards",
+    "./skills/policyengine-writing"
   ],
   "commands": [
     "./commands/create-pr.md",
     "./commands/fix-pr.md"
   ],
-  "agents": [
-    "./agents/api/api-reviewer.md"
-  ]
+  "agents": []
 }

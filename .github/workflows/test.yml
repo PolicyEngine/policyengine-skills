@@ -17,7 +17,25 @@ jobs:
         run: uv python install
 
       - name: Run tests
-        run: uv run pytest
+        run: uv run pytest --ignore=tests/test_skill_examples.py
 
       - name: Smoke build Claude wrapper
         run: python3 scripts/build_claude_wrapper.py --source-root . --output-root build/policyengine-claude
+
+  skill-examples:
+    # Executes every fast `<!-- verify -->` example in skills/ against the
+    # latest released policyengine stack. Slow (population-scale) examples
+    # only run when PE_SKILLS_RUN_SLOW=1 (not in CI).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.1.0
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install policyengine
+        run: uv venv && uv pip install "policyengine[us]" pytest
+
+      - name: Run fast skill examples
+        run: uv run --no-project pytest tests/test_skill_examples.py -v

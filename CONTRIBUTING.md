@@ -35,20 +35,45 @@ Claude-only files live in `targets/claude/`:
 - `marketplace.template.json`
 - `README.md`
 
+## Skill authoring rules
+
+See [skills/README.md](skills/README.md) for the full list. The load-bearing ones:
+
+1. **Verify every API claim** by executing it or reading the live source before
+   writing it down. Nothing goes in from memory.
+2. **Mark runnable examples**: `<!-- verify -->` on the line before a ```python
+   fence makes CI execute it (fast, household-tier, asserted).
+   `<!-- verify: slow -->` marks population-scale examples (run at authoring time
+   and via `PE_SKILLS_RUN_SLOW=1 uv run pytest tests/test_skill_examples.py`).
+3. **Anti-rot lint**: `tests/test_no_stale_references.py` bans known-dead patterns.
+   Deliberate history notes take `<!-- stale-ok -->` on the preceding line.
+4. Descriptions stay ≤1024 characters (Codex hard limit).
+
 ## Testing
 
 Run:
 
 ```bash
-uv run pytest
+uv run pytest --ignore=tests/test_skill_examples.py
 python3 scripts/build_claude_wrapper.py --source-root . --output-root build/policyengine-claude
+
+# Example harness (needs policyengine installed):
+uv run pytest tests/test_skill_examples.py
+```
+
+## Keeping the website in sync
+
+policyengine.org/us/claude-plugin (in `PolicyEngine/policyengine-app-v2`,
+`website/src/app/[countryId]/claude-plugin/`) displays catalog stats from a
+checked-in data module. When skills/agents/commands/bundles are added or removed,
+regenerate the counts and update that module in an app-v2 PR:
+
+```bash
+python3 scripts/export_site_stats.py
 ```
 
 ## Versioning
 
-The wrapper version currently lives in:
-
-- `targets/claude/marketplace.template.json`
-- `bundles/*.json`
-
-Keep them aligned when cutting a release.
+The wrapper version lives in `targets/claude/marketplace.template.json`;
+every `bundles/*.json` must carry the same version
+(`tests/test_build_claude_wrapper.py` enforces alignment).
