@@ -1016,6 +1016,16 @@
       "scope_repos": [
         "all"
       ]
+    },
+    {
+      "id": "structural-implementer",
+      "role": "country-models:structural-implementer",
+      "summary": "Implements the model extension behind a STRUCTURAL verdict: verifies the backlog issue against the enrolled statute (statute wins), baseline change with inertness guarantee + hand-verified boundary tests, draft PR to policyengine-{country}. Invoked by /implement-structural.",
+      "scope_repos": [
+        "policyengine-us",
+        "policyengine-uk",
+        "policyengine-canada"
+      ]
     }
   ],
   "commands": [
