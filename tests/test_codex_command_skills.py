@@ -149,7 +149,7 @@ def assert_installer_replaces_stale_skill_directories(
     assert installed.resolve() == (
         repo_root / "skills" / "policyengine-canada"
     )
-    assert not dangling_ours.exists(follow_symlinks=False), (
+    assert not dangling_ours.is_symlink() and not dangling_ours.exists(), (
         "old-layout policyengine-skills symlink should be pruned"
     )
     assert dangling_other.is_symlink(), (
