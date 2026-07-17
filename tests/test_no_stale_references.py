@@ -25,10 +25,6 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
         "by geography columns",
     ),
     (
-        re.compile(r"niceTicks"),
-        "fabricated Recharts API — never existed in any recharts release",
-    ),
-    (
         re.compile(r"@mantine/|Mantine"),
         "app-v2 has zero Mantine dependencies",
     ),

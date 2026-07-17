@@ -145,8 +145,9 @@ automatically. Do not claim built-in dark mode at this version.
 
 - **Recharts / SVG:** pass `var(--chart-1)`…`var(--chart-5)` to `fill`/`stroke`; grid/chrome
   use `var(--border)`, `var(--foreground)`, `var(--font-sans)`. SVG resolves `var()` natively —
-  no helper. (Recharts has no built-in round-tick prop; that API was fabricated. Use
-  `tickFormatter` / `tickCount` / an explicit `ticks` array.) Conventions: gains `--chart-1`; losses `--chart-5`
+  no helper. Round ticks: `niceTicks="snap125"` on numeric axes (recharts ≥3.8,
+  PolicyEngine-contributed; see the policyengine-tools skill for the version gate and the
+  `domain={["auto", "auto"]}` pairing). Conventions: gains `--chart-1`; losses `--chart-5`
   or `--destructive`; neutral `--border`.
 - **Plotly (Python maps/charts)** — house style: white `plot_bgcolor`/`paper_bgcolor`, Inter
   font, teal series, logo bottom-right. Reference tokens by hex with a CSS-var comment.

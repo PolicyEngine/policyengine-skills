@@ -52,8 +52,9 @@ python3 scripts/build_claude_wrapper.py --source-root . --output-root build/poli
 
 ## The verification harness (do not defeat it)
 
-The rebuild exists because the old catalog shipped fabricated APIs. Two tests hold the line;
-treat them as the definition of "done", not as obstacles.
+The rebuild exists because the old catalog shipped API claims nothing had ever executed —
+some deleted upstream, some never real. Two tests hold the line; treat them as the
+definition of "done", not as obstacles.
 
 ### Executable examples — `tests/test_skill_examples.py`
 
@@ -77,9 +78,9 @@ Scans `skills/`, `targets/`, `docs/`, `bundles/`, and `presets/` (`.md`, `.json`
 `.yml`, `.py`, `.sh`, `.html`) for a table of regexes that each name a dead API, path, dataset,
 or package the pre-rebuild catalog leaked: the archived us-data Hugging Face URI, per-state and
 per-district H5 filenames, the retired enhanced-CPS/FRS dataset names, the deprecated per-entry
-changelog YAML, v1 app source paths, legacy UI libraries and fabricated chart calls that app-v2
-never shipped, deleted household-impact functions from policyengine.py, the old design-system
-package as an install target, and non-uv pip installs. The authoritative pattern-and-reason list
+changelog YAML, v1 app source paths, legacy UI libraries app-v2 no longer uses, deleted
+household-impact functions from policyengine.py, the old design-system package as an install
+target, and non-uv pip installs. The authoritative pattern-and-reason list
 lives in the test's `FORBIDDEN` table — read it there rather than duplicating it. Any hit fails
 CI. A line opts out when the marker `<!-- stale-ok -->` sits on it or on the line directly above,
 reserved for a deliberate "this is the superseded thing" history or migration note.

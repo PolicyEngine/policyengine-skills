@@ -214,9 +214,14 @@ Prefer ui-kit's chart components (`PEBarChart`, `PELineChart`, `ChartContainer`)
 round-tick and formatting logic. When hand-rolling Recharts:
 
 - **Colors: pass `var(--chart-1)` … `var(--chart-5)` directly** to SVG `fill`/`stroke`; grid
-  and chrome use `var(--border)` / `var(--foreground)`. Never hardcode hex. Recharts has **no
-  built-in round-tick prop** — that API was hallucinated; control ticks with `tickFormatter`,
-  `tickCount`, an explicit `ticks={[…]}` array, and `domain`.
+  and chrome use `var(--border)` / `var(--foreground)`. Never hardcode hex.
+- **Round ticks: set `niceTicks="snap125"` on every numeric `<XAxis>`/`<YAxis>`** (recharts
+  ≥3.8 — a PolicyEngine-contributed prop; verify your resolved recharts version first, e.g.
+  app-v2's lockfile still resolves 3.7.0 where the prop is silently ignored). `snap125` snaps
+  tick steps to {1, 2, 2.5, 5}×10ⁿ for human-round labels; pair it with
+  `domain={["auto", "auto"]}` because the default `[0, 'auto']` domain clamps the minimum and
+  breaks tick calculation for data that doesn't start at 0. Below 3.8, control ticks with
+  `tickFormatter`, `tickCount`, or an explicit `ticks={[…]}` array.
 - **Tooltip**: set `separator=": "` (the default has a leading space).
 - **Currency: sign before symbol** — `-$31`, never `$-31`. Use `Intl.NumberFormat` (or
   ui-kit's `formatCurrency`), never string concatenation:

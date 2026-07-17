@@ -12,7 +12,7 @@ are executed by CI against the latest released `policyengine` stack
 (`tests/test_skill_examples.py`); `<!-- verify: slow -->` marks population-scale
 examples run at authoring time and on demand. `tests/test_no_stale_references.py`
 lints the whole tree against the failure modes that rotted the previous catalog
-(archived-repo dataset URIs, deleted APIs, fabricated props).
+(archived-repo dataset URIs, deleted APIs, phantom methods).
 
 ## Catalog
 
@@ -77,8 +77,12 @@ lints the whole tree against the failure modes that rotted the previous catalog
 ## Authoring rules
 
 1. Verify every API claim by executing it or reading the live source; never write
-   from memory. The pre-rebuild catalog contained a fabricated Recharts prop and a
-   deleted household API — both shipped for months because nothing executed them.
+   from memory. The pre-rebuild catalog taught a household API that had been deleted
+   upstream and quickstarts that crashed — they shipped for months because nothing
+   executed them. Verification cuts both ways: check claims against the *ecosystem's
+   current release*, not just a locally-installed (possibly stale) version — this
+   rebuild briefly misjudged a real recharts 3.8 prop as fabricated by checking a
+   lockfile-pinned 3.7 install.
 2. Only non-derivable content. If a paragraph would be true of any project, cut it.
 3. One home per fact; cross-reference sibling skills instead of duplicating.
 4. Mark runnable examples with `<!-- verify -->` (fast, asserted, household-tier)
