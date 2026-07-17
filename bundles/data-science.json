@@ -2,7 +2,7 @@
   "name": "data-science",
   "description": "Data analysis, survey enhancement, imputation, calibration, and microdata utilities",
   "category": "data",
-  "version": "3.22.3",
+  "version": "4.0.0",
   "keywords": [
     "data",
     "microdata",
@@ -20,20 +20,14 @@
   "license": "MIT",
   "hooks": null,
   "skills": [
-    "./skills/data-science/microdf-skill",
-    "./skills/data-science/microimpute-skill",
-    "./skills/data-science/microcalibrate-skill",
-    "./skills/data-science/l0-skill",
-    "./skills/data-science/policyengine-us-data-skill",
-    "./skills/tools-and-apis/policyengine-simulation-mechanics-skill",
-    "./skills/tools-and-apis/policyengine-microsimulation-skill",
-    "./skills/domain-knowledge/policyengine-us-skill",
-    "./skills/domain-knowledge/policyengine-uk-skill",
-    "./skills/domain-knowledge/policyengine-healthcare-skill",
-    "./skills/technical-patterns/python-skill",
-    "./skills/documentation/policyengine-design-skill",
-    "./skills/documentation/policyengine-standards-skill",
-    "./skills/documentation/policyengine-writing-skill"
+    "./skills/policyengine",
+    "./skills/policyengine-data",
+    "./skills/policyengine-us",
+    "./skills/policyengine-uk",
+    "./skills/policyengine-healthcare",
+    "./skills/policyengine-design",
+    "./skills/policyengine-standards",
+    "./skills/policyengine-writing"
   ],
   "commands": [],
   "agents": []

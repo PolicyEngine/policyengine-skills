@@ -438,8 +438,28 @@ def extract_triggers(description: str) -> list[str]:
 def load_skills() -> list[Artifact]:
     artifacts: list[Artifact] = []
     for skill_md in sorted(SKILLS_DIR.glob("**/SKILL.md")):
-        meta, body = parse_frontmatter(skill_md.read_text())
-        category = skill_md.parent.parent.name  # skills/<category>/<slug>/SKILL.md
+        text = skill_md.read_text()
+        meta, body = parse_frontmatter(text)
+        # Flat layout: skills/<slug>/SKILL.md with the category declared in
+        # frontmatter metadata. parse_frontmatter only nests when PyYAML is
+        # available, so fall back to a direct scan of the frontmatter block,
+        # then to the parent dir for any legacy nested layout.
+        metadata = meta.get("metadata") or {}
+        category = (
+            metadata.get("category") if isinstance(metadata, dict) else None
+        )
+        if not category:
+            fm_match = FRONTMATTER_RE.match(text)
+            if fm_match:
+                cat_match = re.search(
+                    r"^\s+category:\s*(\S+)", fm_match.group(1), re.MULTILINE
+                )
+                if cat_match:
+                    category = cat_match.group(1)
+        if not category:
+            category = skill_md.parent.parent.name
+        if category == "skills":
+            category = "uncategorized"
         slug = skill_md.parent.name
         name = meta.get("name") or slug
         description = meta.get("description") or ""
@@ -835,22 +855,29 @@ def owner_for_artifact(art: Artifact) -> str:
     scope = set(art.functional_scope or art.target_repos)
     if art.kind == "agent" and art.category == "dashboard":
         return "Dashboard tooling"
-    if art.category in {"frontend", "content"} or scope & {
+    if art.category in {"frontend", "content", "apps"} or scope & {
         "policyengine-app-v2",
         "policyengine-ui-kit",
         "interactive-tools",
         "dashboards",
     }:
         return "Frontend & product"
-    if art.category in {"domain-knowledge", "technical-patterns", "workflows"} or scope & {
+    if art.category in {
+        "domain-knowledge",
+        "domain",
+        "technical-patterns",
+        "model-development",
+        "workflows",
+    } or scope & {
         "policyengine-us",
         "policyengine-uk",
         "policyengine-canada",
     }:
         return "Country model engineering"
-    if art.category == "data-science" or scope & {
+    if art.category in {"data-science", "data"} or scope & {
         "policyengine-us-data",
         "policyengine-uk-data",
+        "populace",
         "microdf",
         "microimpute",
         "microcalibrate",

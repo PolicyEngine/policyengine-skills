@@ -4,24 +4,32 @@ Portable PolicyEngine skills and Claude wrapper source.
 
 This repository is the canonical source of truth for:
 
-- reusable PolicyEngine `SKILL.md` content
-- bundle definitions for install profiles like `complete` and `app-development`
+- reusable PolicyEngine `SKILL.md` content (rebuilt July 2026 — see
+  [skills/README.md](skills/README.md) for the catalog and authoring rules)
+- bundle definitions for install profiles like `complete` and `analysis-tools`
 - Claude-only wrapper assets such as commands, agents, and hooks
 
 The public Claude marketplace repo stays at `PolicyEngine/policyengine-claude`, but it is generated from this repository.
 
 **Which command / skill do I reach for?** See [docs/when-to-use.md](docs/when-to-use.md) for the decision matrix + recipes for common workflows.
 
+Skills teach the current stack: the `policyengine` package
+(`pe.us.calculate_household`, population `Simulation`, `economic_impact_analysis`)
+over certified Populace datasets. Code examples marked `<!-- verify -->` are
+executed in CI against the latest release, and an anti-rot lint bans the stale
+patterns (archived dataset URIs, deleted APIs) that degraded the previous catalog.
+
 ## Repository layout
 
 ```text
 policyengine-skills/
 ├── bundles/                 # Bundle manifests for Claude install profiles
-├── skills/                  # Portable skill folders with SKILL.md
+├── skills/                  # Flat skill folders: skills/<name>/SKILL.md
 ├── targets/codex/           # Codex-specific repo routing templates
-├── targets/claude/          # Claude-only wrapper assets
+├── targets/claude/          # Claude-only wrapper assets (commands, agents, hooks)
+├── presets/                 # Named reform-dicts + scorekeepers registry
 ├── scripts/                 # Build and install helpers
-└── tests/                   # Wrapper build tests
+└── tests/                   # Contract tests, anti-rot lint, example harness
 ```
 
 ## Install
