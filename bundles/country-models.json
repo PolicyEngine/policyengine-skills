@@ -45,6 +45,7 @@
     "./agents/country-models/pr-pusher.md",
     "./agents/country-models/program-reviewer.md",
     "./agents/country-models/rules-engineer.md",
+    "./agents/country-models/structural-implementer.md",
     "./agents/country-models/test-creator.md"
   ]
 }
