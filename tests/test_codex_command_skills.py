@@ -121,6 +121,23 @@ def assert_installer_replaces_stale_skill_directories(
     stale_skill.mkdir(parents=True)
     (stale_skill / "SKILL.md").write_text("---\nname: stale\n---\n")
 
+    # Dangling symlink from a pre-rebuild layout (category dirs + -skill
+    # suffix) — the installer must prune it.
+    old_layout = (
+        skill_home
+        / "clone"
+        / "policyengine-skills"
+        / "skills"
+        / "domain-knowledge"
+        / "policyengine-us-skill"
+    )
+    dangling_ours = skill_home / "skills" / "policyengine-us-skill"
+    dangling_ours.symlink_to(old_layout)
+
+    # Dangling symlink unrelated to this repo — the installer must leave it.
+    dangling_other = skill_home / "skills" / "someones-other-skill"
+    dangling_other.symlink_to(skill_home / "elsewhere" / "gone")
+
     subprocess.run(
         [str(repo_root / "scripts" / script_name)],
         check=True,
@@ -131,6 +148,12 @@ def assert_installer_replaces_stale_skill_directories(
     assert installed.is_symlink()
     assert installed.resolve() == (
         repo_root / "skills" / "policyengine-canada"
+    )
+    assert not dangling_ours.exists(follow_symlinks=False), (
+        "old-layout policyengine-skills symlink should be pruned"
+    )
+    assert dangling_other.is_symlink(), (
+        "unrelated dangling symlinks must be preserved"
     )
 
 
