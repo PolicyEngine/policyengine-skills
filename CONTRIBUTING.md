@@ -63,8 +63,8 @@ uv run pytest tests/test_skill_examples.py
 
 ## Keeping the website in sync
 
-policyengine.org/us/claude-plugin (in `PolicyEngine/policyengine-app-v2`,
-`website/src/app/[countryId]/claude-plugin/`) displays catalog stats from a
+policyengine.org/us/ai-agents (in `PolicyEngine/policyengine-app-v2`,
+`website/src/app/[countryId]/ai-agents/`) displays catalog stats from a
 checked-in data module. When skills/agents/commands/bundles are added or removed,
 regenerate the counts and update that module in an app-v2 PR:
 
