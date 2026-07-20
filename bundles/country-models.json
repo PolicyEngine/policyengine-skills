@@ -25,7 +25,10 @@
     "./skills/policyengine-model-development",
     "./skills/policyengine-data",
     "./skills/policyengine-standards",
-    "./skills/policyengine-writing"
+    "./skills/policyengine-writing",
+    "./skills/encode-policy-v2",
+    "./skills/review-program",
+    "./skills/fix-pr"
   ],
   "commands": [
     "./commands/backdate-program.md",

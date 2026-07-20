@@ -25,7 +25,8 @@
     "./skills/policyengine-uk",
     "./skills/policyengine-design",
     "./skills/policyengine-standards",
-    "./skills/policyengine-writing"
+    "./skills/policyengine-writing",
+    "./skills/fix-pr"
   ],
   "commands": [
     "./commands/create-new-component.md",
