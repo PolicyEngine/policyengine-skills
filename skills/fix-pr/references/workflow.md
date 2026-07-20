@@ -83,7 +83,19 @@ PR's `headRefName`:
   use `--ignore-other-worktrees`, never mutate another worktree's checkout.
 - Otherwise `gh pr checkout $PR_NUMBER` in the current worktree.
 
-All edits, tests, staging, commits, and pushes run from `WORKTREE_ROOT`.
+All edits, tests, staging, commits, and pushes run from `WORKTREE_ROOT`. Capture the
+remote identities needed for a guarded push **before any edits**:
+
+```bash
+gh pr view "$PR_NUMBER" \
+  --json url,baseRefName,headRefName,headRefOid,headRepository,headRepositoryOwner
+```
+
+Derive `BASE_REPO_URL` from `PR_URL%/pull/*`, and derive `HEAD_REPO`,
+`HEAD_REPO_URL`, `HEAD_BRANCH`, and `EXPECTED_HEAD_SHA` from that response. In push mode,
+verify the authenticated user has push permission on `HEAD_REPO`; otherwise stop before
+editing. Never substitute the base repository or a convenient named remote for the PR's
+actual head repository.
 
 After checkout (or branch match), derive the prefix and initialize state:
 
@@ -243,7 +255,11 @@ or stage it (`git status --short -- sources/working_references.md` to confirm).
   repository by URL (`PR_URL%/pull/*` — not a named remote, which may be a fork), and
   rebase the commit on it — never guess main/master; if the rebase changes program files
   or hits conflicts, rerun the targeted test manifest after resolving
-- push
+- query `HEAD_REPO_URL` for `refs/heads/HEAD_BRANCH`; if its SHA no longer equals the
+  pre-edit `EXPECTED_HEAD_SHA`, stop as stale and do not overwrite the newer remote work
+- push `HEAD` explicitly to the PR's head repository/branch with
+  `--force-with-lease=refs/heads/HEAD_BRANCH:EXPECTED_HEAD_SHA`; never use a plain
+  `git push`, an implicit upstream, or `origin` after rebasing
 
 Then delegate the summary comment (role: comment-writer): read the plan, CI result, and
 verification files; write `{RUN_ROOT}/{PREFIX}-fix-pr-comment.md` with sections (only

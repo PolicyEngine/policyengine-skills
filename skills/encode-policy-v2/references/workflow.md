@@ -235,19 +235,24 @@ scope-decision paths. Do not create an issue, branch, PR, commit, or push.
 
 ### 2B. Create implementation issue, branch, and draft PR
 
-After scope approval, delegate issue-manager. Before writing, verify that the target is
-`PolicyEngine/policyengine-us` or the user's corresponding fork. Search for an existing
-issue and PR before creating either. If candidates exist, show their numbers, titles,
-status, activity, and short scope, then ask the user which to reuse or whether to create a
-new one. Do not select among competing existing work automatically.
+After scope approval, delegate issue-manager in discovery mode. Before writing, verify
+that the base target is `PolicyEngine/policyengine-us` and the push target is that
+repository or the user's corresponding fork. Search for **both** an existing issue and PR
+before creating either. Discovery makes no GitHub or Git writes. If it returns
+`DECISION_NEEDED`, show all candidate numbers, titles, status, activity, and short scope;
+ask the issue and PR reuse/create decisions one at a time, then re-delegate issue-manager
+with both explicit decisions. Do not select among competing existing work automatically.
 
-For new work, create the issue first. In this worktree only, create `BRANCH`, make the
-empty initialization commit required to establish a remote branch without staging
-research or implementation files, push to the user's correct fork/remote, and create a
-draft PR targeting `PolicyEngine/policyengine-us`. Never take over a branch checked out in
-another worktree. Record `ISSUE_NUMBER`, `PR_NUMBER`, `PR_URL`, branch, head/base
-repositories, and whether each resource was reused or created in the ledger. Failure is
-blocking.
+After decisions are complete, execute them as one plan: reuse or create the issue, then
+reuse or create the PR. Reusing an issue must not suppress creation of a requested new PR;
+reusing a PR must not create a duplicate. For a new PR, create the issue first when
+needed; in this worktree only, create `BRANCH`, make the empty initialization commit
+required to establish a remote branch without staging research or implementation files,
+push explicitly to the user's verified fork/repository URL, and create a draft PR
+targeting the resolved upstream default branch. For a reused PR, check out its exact head
+repository/branch only after verifying push access and the worktree guard. Record
+`ISSUE_NUMBER`, `PR_NUMBER`, `PR_URL`, branch, head/base repositories and SHAs, and whether
+each resource was reused or created in the ledger. Failure is blocking.
 
 ## Phase 3: Implementation and requirement coverage
 

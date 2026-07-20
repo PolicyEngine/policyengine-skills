@@ -11,6 +11,10 @@ Claude Code mechanics and adds no workflow behavior.
 - **Ask the user** → use `AskUserQuestion` for a missing argument, the existing-program
   route, unreachable references, every scope choice, blocked CI, and the optional final
   review-fix round. Ask one scope decision at a time and use the canonical option order.
+- **Issue/PR discovery** → run `issue-manager` once in read-only discovery mode. If it
+  returns `DECISION_NEEDED`, ask the issue and PR choices one at a time, then invoke a new
+  `issue-manager` with both explicit decisions. Continue only on `SETUP_COMPLETE`; treat
+  `BLOCKED` or a partial result as a blocking gate.
 - **Run identity** → after deriving `WORKTREE_ID` and `PREFIX`, create
   `TeamCreate({WORKTREE_ID}-{PREFIX}-encode)` and pass
   `team_name: "{WORKTREE_ID}-{PREFIX}-encode"` to each delegated agent.

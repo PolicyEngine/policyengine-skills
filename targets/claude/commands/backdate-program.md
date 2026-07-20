@@ -10,6 +10,11 @@ Coordinate a multi-agent workflow to add historical date entries, fix reference 
 
 **GLOBAL RULE — PDF Page Numbers**: Every PDF reference href MUST end with `#page=XX` (the file page number, NOT the printed page number). The ONLY exception is single-page PDFs. This rule applies to ALL agents in ALL phases — research, implementation, audit, and finalize. Include this instruction in every agent prompt that touches parameter YAML files.
 
+**GLOBAL RULE — Plugin Namespacing**: Agent and skill names below are logical,
+unprefixed names. Resolve each against the session's installed components by suffix before
+invocation; never assume `complete:` or another bundle prefix. For example,
+`country-models:issue-manager` means the available agent whose name ends with that suffix.
+
 ## Arguments
 
 `$ARGUMENTS` should contain:
@@ -102,19 +107,21 @@ These two agents have no dependency on each other. Spawn them in a **single mess
 **Agent 1: issue-manager** — searches GitHub (network calls)
 
 ```
-subagent_type: "complete:country-models:issue-manager"
+subagent_type: "country-models:issue-manager"  # resolve installed name by suffix
 name: "issue-manager"
 run_in_background: true
 
-"Find or create a GitHub issue and draft PR for backdating {STATE_FULL} {PROGRAM} parameters.
+"Run issue/PR setup for backdating {STATE_FULL} {PROGRAM} parameters.
 
-1. Search for existing issues related to '{STATE_FULL} {PROGRAM}' backdating.
-   If none found, create one with title: 'Backdate {STATE_FULL} {PROGRAM} parameters to {TARGET_YEAR}'.
-2. Search for existing PRs related to '{STATE_FULL} {PROGRAM}'.
-   If none found, create a new branch and a draft PR. To create the initial commit:
-   - Preferred: create a changelog fragment (echo 'Backdate {STATE_FULL} {PROGRAM} parameters.' > changelog.d/{branch}.added.md)
-   - Fallback: if the repo rejects that, use --allow-empty for the commit
-3. Return both the issue number and PR number."
+BASE_REPO=PolicyEngine/policyengine-us and
+BASE_REPO_URL=https://github.com/PolicyEngine/policyengine-us.git. Verify the checkout and
+derive the authenticated user's writable PUSH_REPO/PUSH_REPO_URL before any write. Pass
+WORKTREE_ROOT={WORKTREE_ROOT}, RUN_ROOT={RUN_ROOT}, PREFIX={st}-{prog},
+BRANCH={st}-{prog}-backdate, and setup summary 'Backdate {STATE_FULL} {PROGRAM} parameters
+to {TARGET_YEAR}'. Search for BOTH existing issues and PRs before creating either. If
+candidates exist, return DECISION_NEEDED without writes. If neither exists, create the
+issue, branch, one --allow-empty initialization commit, and draft PR.
+Return the issue number, PR number, branch, head repository URL, and head SHA."
 ```
 
 **Agent 2: inventory** — scans local files (disk reads)
@@ -148,6 +155,10 @@ run_in_background: true
 **After both agents complete**:
 
 - Read ONLY `{RUN_ROOT}/{st}-{prog}-inventory-summary.md` (max 10 lines) — just counts and the program path
+- If issue-manager returned `DECISION_NEEDED`, ask the issue and PR reuse/create choices
+  one at a time with `AskUserQuestion`, then spawn a new issue-manager with both explicit
+  decisions and the same verified repository/worktree inputs. Continue only when it
+  returns `SETUP_COMPLETE`; treat `BLOCKED` or a partial result as a blocking gate.
 - Store from issue-manager:
   - **ISSUE_NUMBER** — referenced in commit messages, changelog, and final report
   - **PR_NUMBER** — used by `/review-program` in Phase 6, and by `pr-pusher` in Phase 7
@@ -199,7 +210,7 @@ Spawn ALL research agents in a **single message** for maximum parallelism:
 
 | Agent Name | Type | Starts On |
 |------------|------|-----------|
-| **discovery** | `complete:country-models:document-collector` | `discover-sources` (immediate) |
+| **discovery** | `country-models:document-collector` | `discover-sources` (immediate) |
 | **secondary-validator** | `general-purpose` | `secondary-validation` (immediate) |
 | **prep-1** | `general-purpose` | Waits for discovery message |
 | **prep-2** | `general-purpose` | Waits for discovery message |
@@ -437,7 +448,7 @@ Spawn two agents in parallel:
 ### Reference Auditor
 
 ```
-subagent_type: "complete:reference-validator",
+subagent_type: "reference-validator",
   team_name: "{st}-{prog}-backdate", name: "ref-auditor"
 ```
 
@@ -464,7 +475,7 @@ Write findings to {RUN_ROOT}/{st}-{prog}-ref-audit.md."
 ### Formula Reviewer
 
 ```
-subagent_type: "complete:country-models:program-reviewer",
+subagent_type: "country-models:program-reviewer",
   team_name: "{st}-{prog}-backdate", name: "formula-reviewer"
 ```
 
@@ -549,7 +560,7 @@ Spawn implementation agents in parallel. Each reads specs from disk — NOT from
 ### Tier A: Parameter Backdating (most common)
 
 ```
-subagent_type: "complete:country-models:rules-engineer",
+subagent_type: "country-models:rules-engineer",
   team_name: "{st}-{prog}-backdate", name: "impl-parameters"
 ```
 
@@ -624,7 +635,7 @@ Pattern 2 — regional in_effect (provision that varies by region, then stops):
 ### Tier B/C: New Parameters & Formula Changes (if user-approved)
 
 ```
-subagent_type: "complete:country-models:rules-engineer",
+subagent_type: "country-models:rules-engineer",
   team_name: "{st}-{prog}-backdate", name: "impl-formulas"
 ```
 
@@ -709,7 +720,7 @@ After implementation agents complete, spawn TWO test agents in sequence:
 ### Step 4A: Test Creator
 
 ```
-subagent_type: "complete:country-models:test-creator",
+subagent_type: "country-models:test-creator",
   team_name: "{st}-{prog}-backdate", name: "test-creator"
 ```
 
@@ -739,7 +750,7 @@ GOTCHAS:
 ### Step 4B: Edge Case Generator
 
 ```
-subagent_type: "complete:country-models:edge-case-generator",
+subagent_type: "country-models:edge-case-generator",
   team_name: "{st}-{prog}-backdate", name: "edge-case-gen"
 ```
 
@@ -767,7 +778,7 @@ Focus on:
 ### Step 5A: Implementation Validator
 
 ```
-subagent_type: "complete:country-models:implementation-validator"
+subagent_type: "country-models:implementation-validator"
 
 "Validate {STATE} {PROGRAM} implementation for PolicyEngine standards compliance.
 Load the consolidated policyengine-model-development skill (resolve its installed name
@@ -788,7 +799,7 @@ Write findings to {RUN_ROOT}/{st}-{prog}-impl-validation.md."
 ### Step 5B: CI Fixer
 
 ```
-subagent_type: "complete:country-models:ci-fixer"
+subagent_type: "country-models:ci-fixer"
 "Run tests for {STATE} {PROGRAM}, fix failures, iterate until all pass.
 After tests pass, run make format as a final step."
 ```
@@ -864,11 +875,11 @@ Phase 7        → final push (changelog, any remaining changes)
 ### Step 6A: Run /review-program --local --full (Round N)
 
 Invoke the `review-program` skill in local-only mode with `--full`. On **round 1**, this runs the full review:
-- **PDF acquisition** (always on): `complete:country-models:document-collector` discovers and renders source PDFs
-- **Regulatory accuracy**: `complete:country-models:program-reviewer` researches regulations independently, compares to code
-- **Reference quality**: `complete:reference-validator` checks reference completeness and corroboration
-- **Code patterns**: `complete:country-models:implementation-validator` checks code patterns
-- **Test coverage**: `complete:country-models:edge-case-generator` identifies untested scenarios
+- **PDF acquisition** (always on): `country-models:document-collector` discovers and renders source PDFs
+- **Regulatory accuracy**: `country-models:program-reviewer` researches regulations independently, compares to code
+- **Reference quality**: `reference-validator` checks reference completeness and corroboration
+- **Code patterns**: `country-models:implementation-validator` checks code patterns
+- **Test coverage**: `country-models:edge-case-generator` identifies untested scenarios
 - **PDF audit**: 2-5 `general-purpose` agents audit parameter values against PDF screenshots
 - **Mismatch verification**: 600 DPI re-render + text cross-reference for every reported mismatch
 
@@ -908,7 +919,7 @@ These will be noted in the final report for manual resolution."
 Spawn a fixer agent to address the critical issues found in this round:
 
 ```
-subagent_type: "complete:country-models:rules-engineer",
+subagent_type: "country-models:rules-engineer",
   team_name: "{st}-{prog}-backdate", name: "review-fixer-{ROUND}"
 
 "Fix the critical issues from the /review-program review (round {ROUND}).
@@ -940,7 +951,7 @@ UNUSED-PARAM, WRONG-ENTITY, NAMING, FORMULA-LOGIC, TEST-GAP, OTHER"
 **6D-1: Run tests and fix failures:**
 
 ```
-subagent_type: "complete:country-models:ci-fixer",
+subagent_type: "country-models:ci-fixer",
   team_name: "{st}-{prog}-backdate", name: "ci-fixer-{ROUND}"
 
 "Run tests for {STATE} {PROGRAM} after review-fix round {ROUND}.
@@ -977,8 +988,12 @@ git push
 ### Step 7A: Push & Changelog
 
 ```
-subagent_type: "complete:country-models:pr-pusher",
+subagent_type: "country-models:pr-pusher",
   team_name: "{st}-{prog}-backdate", name: "pusher"
+
+"Finalize and push PR {PR_NUMBER}. Resolve its actual head repository and branch and
+capture EXPECTED_HEAD_SHA before formatting or committing. Push only with the agent's
+explicit guarded-lease contract; never infer origin."
 ```
 
 The `pr-pusher` agent ensures PRs are properly formatted with changelog, linting, and tests before pushing. It handles:
@@ -1081,24 +1096,24 @@ Present to user:
 
 | Phase | Agent | Plugin Type | Why This Agent |
 |-------|-------|-------------|----------------|
-| 0B | issue-manager | `complete:country-models:issue-manager` | Finds/creates tracking issue + draft PR |
-| 0E | discovery | `complete:country-models:document-collector` | Purpose-built for finding regulatory sources |
+| 0B | issue-manager | `country-models:issue-manager` | Finds/creates tracking issue + draft PR |
+| 0E | discovery | `country-models:document-collector` | Purpose-built for finding regulatory sources |
 | 0E | secondary-validator | `general-purpose` | Custom WRDTP/CBPP web research |
 | 0E | prep-1, prep-2 | `general-purpose` | Slim: Bash for curl/pdftoppm/pdfinfo only — no page mapping |
 | 0E | research-{N}-{a,b,...} (1-5 per PDF) | `general-purpose` | Self-map sections + Read PNG screenshots + YAML cross-ref |
 | 1 | consolidator | `general-purpose` | Custom merge logic across all findings |
-| 2 | ref-auditor | `complete:reference-validator` | Purpose-built for reference validation |
-| 2 | formula-reviewer | `complete:country-models:program-reviewer` | Purpose-built for regulation-vs-code comparison |
-| 3 | impl-parameters | `complete:country-models:rules-engineer` | Purpose-built for parameter YAML design |
-| 3 | impl-formulas | `complete:country-models:rules-engineer` | Purpose-built for formula implementation |
-| 4 | test-creator | `complete:country-models:test-creator` | Purpose-built for integration tests |
-| 4 | edge-case-gen | `complete:country-models:edge-case-generator` | Purpose-built for boundary condition tests |
-| 5A | validator | `complete:country-models:implementation-validator` | Purpose-built for code pattern checks |
-| 5B | ci-fixer | `complete:country-models:ci-fixer` | Purpose-built for test fix iteration |
+| 2 | ref-auditor | `reference-validator` | Purpose-built for reference validation |
+| 2 | formula-reviewer | `country-models:program-reviewer` | Purpose-built for regulation-vs-code comparison |
+| 3 | impl-parameters | `country-models:rules-engineer` | Purpose-built for parameter YAML design |
+| 3 | impl-formulas | `country-models:rules-engineer` | Purpose-built for formula implementation |
+| 4 | test-creator | `country-models:test-creator` | Purpose-built for integration tests |
+| 4 | edge-case-gen | `country-models:edge-case-generator` | Purpose-built for boundary condition tests |
+| 5A | validator | `country-models:implementation-validator` | Purpose-built for code pattern checks |
+| 5B | ci-fixer | `country-models:ci-fixer` | Purpose-built for test fix iteration |
 | 6 | review-program x1-3 | (invokes /review-program skill) | Review-fix loop: runs until 0 critical issues or max 3 rounds |
-| 6 | review-fixer-{N} x1-3 | `complete:country-models:rules-engineer` | Fix critical issues from each review round |
-| 6 | ci-fixer-{N} x1-3 | `complete:country-models:ci-fixer` | Verify fixes don't break tests after each round |
-| 7A | pusher | `complete:country-models:pr-pusher` | Purpose-built for changelog + format + push |
+| 6 | review-fixer-{N} x1-3 | `country-models:rules-engineer` | Fix critical issues from each review round |
+| 6 | ci-fixer-{N} x1-3 | `country-models:ci-fixer` | Verify fixes don't break tests after each round |
+| 7A | pusher | `country-models:pr-pusher` | Purpose-built for changelog + format + push |
 | 7B | reporter | `general-purpose` | Final report + PR description with unresolved items |
 
 **11 plugin agents + 1 skill invoked + 6 general-purpose agents** (only where no plugin agent fits).
