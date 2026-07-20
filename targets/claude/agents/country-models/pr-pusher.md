@@ -15,7 +15,9 @@ workflow or issue-manager owns PR creation.
 
 `sources/working_references.md` and the rest of `sources/` are local-only working notes. **Never stage or commit anything under `sources/`.** Use scoped paths in every `git add`; never use `git add -A` or `git add .`.
 
-Stage exactly these paths (any that exist):
+Stage exactly the files the calling prompt or approved fix plan names, plus
+formatting/changelog changes. Only when the caller names no files, default to these
+program paths (any that exist; adapt the package directory for UK/Canada repos):
 
 ```
 policyengine_us/parameters/
@@ -30,9 +32,9 @@ If you find yourself wanting to commit a `sources/*` file, stop — it's local w
 
 **Never mark the PR as ready for review.** The orchestrator (or user) decides when. If the PR is already a draft when you start, it MUST remain a draft when you finish. If it's already non-draft when you start, leave it as-is — do NOT flip it back.
 
-- ✅ Create new PRs with `--draft`
 - ✅ Push commits to the existing PR
 - ✅ Edit PR body, title, labels
+- ❌ Never create a PR — the invoking workflow or issue-manager owns PR creation
 - ❌ Never run `gh pr ready` or pass `--ready-for-review`
 
 ## Load the consolidated standards skill first
@@ -42,14 +44,28 @@ unprefixed name when available) for CI, formatting, changelog, and Git rules.
 
 ## Capture the push contract before editing
 
-Use the `PR_NUMBER`, `HEAD_REPO_URL`, `HEAD_BRANCH`, and `EXPECTED_HEAD_SHA` supplied by
-the caller. If a legacy caller supplies only `PR_NUMBER`, derive them immediately with
-`gh pr view` before formatting or committing. `EXPECTED_HEAD_SHA` is immutable for this
-run: it is the lease protecting remote work that appeared while local changes were made.
+Use the `PR_NUMBER`, `BASE_REPO` (with `BASE_REPO_URL`), `HEAD_REPO_URL`, `HEAD_BRANCH`,
+and `EXPECTED_HEAD_SHA` supplied by the caller. If a legacy caller supplies only
+`PR_NUMBER`, derive them immediately with `gh pr view` before formatting or committing —
+after confirming `gh` targets the PR's base repository (`gh repo set-default --view`, or
+pass `--repo`), since in a fork checkout a bare PR number resolves against the fork.
+`EXPECTED_HEAD_SHA` is immutable for this run: it is the lease protecting remote work
+that appeared while local changes were made.
 
 Verify that the authenticated user can push to the PR's actual head repository. If the
 PR, head repository, branch, expected SHA, or permission cannot be resolved, stop without
 committing or pushing. Never infer the push target from `origin`.
+
+## Follow the caller's commit contract
+
+When the calling workflow specifies the commit message(s) and count — for example,
+encode-policy-v2's initial-pusher contract (stage approved paths, commit once as
+`Implement {STATE} {PROGRAM} (ref #{ISSUE_NUMBER})`, push once), its review-round-pusher
+round commit, or fix-pr's `Fix issues from review: {brief summary}` — follow it exactly:
+stage the caller's named files together with the changelog and any formatting/lint
+fixes, create only the caller's commit(s), and skip the standalone
+`Apply code formatting` / `Fix linting issues` commits in Steps 2-3. Those Step 2-3
+commits are the default only when the caller specifies no commit contract.
 
 ## CRITICAL: Version Sync
 
@@ -83,9 +99,11 @@ uv sync --extra dev
 uv run ruff format
 uv run linecheck . --fix 2>/dev/null || true
 
-# Scoped staging — NEVER `git add -A` (would commit sources/working_references.md)
+# Scoped staging — NEVER `git add -A` (would commit sources/working_references.md).
+# Stage the caller-named files instead of these default paths when supplied.
 git add policyengine_us/parameters/ policyengine_us/variables/ policyengine_us/tests/ \
         changelog.d/ 2>/dev/null || true
+# Standalone default only — skip when the caller specifies its own commit contract
 git diff --cached --quiet || git commit -m "Apply code formatting"
 ```
 
@@ -96,8 +114,10 @@ make lint 2>&1 | tee lint_output.txt
 if grep -q "error:" lint_output.txt; then
   autoflake --remove-all-unused-imports --in-place -r .
   isort . --profile ruff --line-length 79
+  # Stage the caller-named files instead of these default paths when supplied
   git add policyengine_us/parameters/ policyengine_us/variables/ policyengine_us/tests/ \
           changelog.d/ 2>/dev/null || true
+  # Standalone default only — skip when the caller specifies its own commit contract
   git commit -m "Fix linting issues"
 fi
 ```
@@ -123,7 +143,23 @@ grep -r "pdb.set_trace\|import pdb\|TODO\|FIXME\|XXX" --include="*.py" \
 grep -r "print(" --include="*.py" policyengine_us/variables/
 ```
 
-### Step 6: Push
+### Step 6: Rebase when the caller requires it
+
+When the calling workflow requires rebasing onto the PR's base branch before pushing
+(fix-pr's fix-pusher role), fetch the base branch from the PR's base repository by URL —
+never from a named remote, which may be a fork — and rebase on it:
+
+```bash
+BASE_BRANCH=$(gh pr view "$PR_NUMBER" --repo "$BASE_REPO" --json baseRefName --jq .baseRefName)
+git fetch "$BASE_REPO_URL" "$BASE_BRANCH"
+git rebase FETCH_HEAD
+```
+
+If the rebase changes program files or hits conflicts, rerun the caller's targeted test
+manifest after resolving. `EXPECTED_HEAD_SHA` remains the push lease. Skip this step when
+the caller does not require a rebase.
+
+### Step 7: Push
 
 ```bash
 REMOTE_HEAD=$(git ls-remote "$HEAD_REPO_URL" "refs/heads/$HEAD_BRANCH" | cut -f1)
@@ -141,11 +177,15 @@ git push \
 Never create a PR here. Never use a plain push, an implicit upstream, or `origin`; this
 agent may run after a rebase in a fork checkout.
 
-### Step 7: Initial CI status (best-effort)
+### Step 8: Initial CI status (best-effort)
 
 ```bash
-gh pr checks "$PR_NUMBER" || true
+gh pr checks "$PR_NUMBER" --repo "$BASE_REPO" || true
 ```
+
+The `--repo` scope is required: the PR number identifies a PR in the base repository,
+and in a fork checkout an unscoped `gh pr checks` resolves against the fork, where that
+number does not exist.
 
 ## Success criteria
 
@@ -156,4 +196,5 @@ gh pr checks "$PR_NUMBER" || true
 
 ## Integration
 
-Run AFTER implementation; BEFORE `@ci-fixer`.
+Run AFTER implementation, validation, and `@ci-fixer` — pushing is the final local step
+in every canonical workflow that invokes this agent.

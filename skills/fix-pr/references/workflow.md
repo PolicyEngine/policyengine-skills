@@ -126,15 +126,25 @@ gh pr checks $PR_NUMBER
 gh pr diff $PR_NUMBER > {RUN_ROOT}/{PREFIX}-fix-pr-diff.txt
 ```
 
-Check for a local review-program report from a prior run:
+Check for a local review-program report from a prior run. A prior review may have used
+a different artifact prefix — review-program derives its prefix from the branch checked
+out when it ran, or from an explicit `--prefix` — so discover candidates by glob and
+select by head SHA:
 
 ```bash
-ls $RUN_ROOT/${PREFIX}-review-full-report.md 2>/dev/null && echo LOCAL_REVIEW=true || echo LOCAL_REVIEW=false
+LOCAL_REVIEW=false
+for R in "$RUN_ROOT"/*-review-full-report.md; do
+  [ -e "$R" ] || continue
+  if grep -q "Reviewed head SHA: $EXPECTED_HEAD_SHA" "$R"; then
+    LOCAL_REVIEW=true; LOCAL_REPORT="$R"; break
+  fi
+done
 ```
 
-Reuse a local review only when its `Reviewed head SHA` matches the current PR head;
-otherwise treat it as historical context and use current review comments and the diff as
-authoritative.
+Only a report whose recorded `Reviewed head SHA` matches the current PR head is current;
+treat any other report as historical context and use current review comments and the
+diff as authoritative. Pass the concrete `LOCAL_REPORT` path (when set) to the
+context-gatherer and evidence extractors.
 
 **Delegate context gathering** (role: context-gatherer). It reads the saved diff, the
 local review files if present, and GitHub review data via:
@@ -190,7 +200,9 @@ through decisions:
    verification results, and the reviewer's assessment, and writes
    `{RUN_ROOT}/{PREFIX}-fix-pr-research-{N}.md` (≤15 lines) ending in a verdict
    (CONFIRMED BUG / BY DESIGN / AMBIGUOUS) and recommended action. Read each short
-   result and re-ask the user with the recommendation first.
+   result and re-ask the user, offering: the recommended action from the research
+   (first, marked recommended), the alternative action when the evidence supports one,
+   and `Skip — I'll handle this manually`.
 5. **Write the fix plan** to `{RUN_ROOT}/{PREFIX}-fix-pr-plan.md`: confirmed fixes with
    assigned roles, skipped issues with reasons, and the fix order
    (parameters → variables → tests → CI). Do not edit before this file exists.
@@ -301,7 +313,7 @@ reruns, and elapsed time in the run-state file.
 | `{RUN_ROOT}/{PREFIX}-fix-pr-verification.md` | fix-verifier | coordinator, comment-writer | ≤15 lines |
 | `{RUN_ROOT}/{PREFIX}-fix-pr-comment.md` | comment-writer | `gh pr comment --body-file` | Full |
 | `{RUN_ROOT}/{PREFIX}-fix-pr-run-state.md` | coordinator | coordinator | ≤30 lines |
-| `{RUN_ROOT}/{PREFIX}-review-full-report.md` | prior review-program run | context-gatherer, evidence-extractor | Full |
+| `{RUN_ROOT}/*-review-full-report.md` (head-SHA-matched `LOCAL_REPORT`) | prior review-program run | context-gatherer, evidence-extractor | Full |
 
 The coordinator reads only the Short files — never the Full ones.
 

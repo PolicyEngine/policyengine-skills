@@ -51,11 +51,11 @@ files and downloaded/rendered source artifacts.
 | reference-checker | Validate reference presence, format, corroboration, page numbers | `{RUN_ROOT}/{PREFIX}-review-references.md` | policyengine-model-development (references/parameters.md) |
 | code-validator | Audit code patterns (read-only; ten categories) | `{RUN_ROOT}/{PREFIX}-review-code.md` | policyengine-model-development (references/parameters.md, references/variables.md, references/style.md, references/periods-and-aggregation.md) |
 | edge-case-checker | Audit test coverage for missing boundaries and scenarios | `{RUN_ROOT}/{PREFIX}-review-tests.md` | policyengine-model-development (references/tests.md, references/periods-and-aggregation.md) |
-| pdf-audit-{topic} | Compare repo values against assigned PDF pages only | `{RUN_ROOT}/{PREFIX}-review-pdf-{topic}.md` | policyengine-model-development (references/parameters.md) |
+| pdf-audit-{topic} | Compare repo values against assigned PDF pages only | `{RUN_ROOT}/{PREFIX}-review-pdf-{topic}.md` | policyengine-model-development (references/parameters.md, references/periods-and-aggregation.md) |
 | verifier-xref-{N} | Verify one cross-referenced page flagged by an auditor | `{RUN_ROOT}/{PREFIX}-review-xref-{N}.md` | — |
 | verifier-ext-{N} | Find and verify one external PDF flagged by an auditor | `{RUN_ROOT}/{PREFIX}-review-ext-{N}.md` | — |
-| verifier-codepath-{N} | Trace whether one mismatched parameter is reachable in the target year | `{RUN_ROOT}/{PREFIX}-review-codepath-{N}.md` | policyengine-model-development (references/variables.md, references/parameters.md, references/periods-and-aggregation.md) |
-| verifier-mismatch-{N} | Visually verify one surviving mismatch at 600 DPI | `{RUN_ROOT}/{PREFIX}-review-mismatch-{N}.md` | policyengine-model-development (references/parameters.md) |
+| verifier-codepath-{N} | Trace whether one mismatched parameter is reachable in the target year | `{RUN_ROOT}/{PREFIX}-review-codepath-{N}.md` | policyengine-model-development (references/variables.md, references/parameters.md, references/periods-and-aggregation.md, references/style.md) |
+| verifier-mismatch-{N} | Visually verify one surviving mismatch at 600 DPI | `{RUN_ROOT}/{PREFIX}-review-mismatch-{N}.md` | policyengine-model-development (references/parameters.md, references/periods-and-aggregation.md) |
 | verifier-pages | Verify every `#page=XX` reference the PR adds | `{RUN_ROOT}/{PREFIX}-review-pages.md` | — |
 | consolidator | Merge, deduplicate, classify all findings; write full report + summary | `{RUN_ROOT}/{PREFIX}-review-full-report.md`, `{RUN_ROOT}/{PREFIX}-review-summary.md` | — |
 
@@ -77,6 +77,10 @@ exception.
 - `--resume`: reuse valid artifacts from an interrupted review
 - `--incremental REPORT`: review changes and unresolved findings since a prior full
   report; reuse its source/PDF evidence when policy values and references are unchanged
+- `--prefix NAME`: override the artifact filename prefix. Nesting workflows
+  (encode-policy-v2, backdate-program) pass their own prefix so the
+  `{RUN_ROOT}/{PREFIX}-review-...` paths their coordinators read are the paths this run
+  writes, regardless of which branch is checked out when the review runs
 
 ## Phase 0: Worktree namespace, run state, PR resolution, posting mode
 
@@ -87,9 +91,12 @@ WORKTREE_ROOT=$(git rev-parse --show-toplevel)
 WORKTREE_ID=$(printf '%s' "$WORKTREE_ROOT" | git hash-object --stdin | cut -c1-12)
 RUN_ROOT="/tmp/policyengine-command-runs/$WORKTREE_ID"
 mkdir -p "$RUN_ROOT"
-PREFIX=$(git branch --show-current | tr '/' '-')
+PREFIX=${ARG_PREFIX:-$(git branch --show-current | tr '/' '-')}
 PREFIX=${PREFIX:-review-program}
 ```
+
+`ARG_PREFIX` is the `--prefix` value when supplied; a caller that overrides the prefix
+owns its uniqueness within this worktree's `RUN_ROOT`.
 
 All runtime files use `{RUN_ROOT}/{PREFIX}-...` paths. The absolute worktree root — not
 the shared Git common directory or the branch name — is the isolation boundary. Pass the
@@ -195,7 +202,9 @@ the report's Branch Status note; never classify staleness as a finding.
 PDF URL is already known. The context-analyzer reads the saved diff — which is
 authoritative scope; files outside it do not exist for this review — and writes
 `{RUN_ROOT}/{PREFIX}-review-context.md` (≤25 lines): PR scope/type; state, program, year
-(or N/A); CI status; branch staleness; changed parameter/variable/test/other file lists;
+(or N/A); CI status and branch staleness — both supplied by the coordinator in the
+delegation from its `gh pr checks` output and AHEAD/BEHIND counts, since the delegate
+cannot derive them from the diff; changed parameter/variable/test/other file lists;
 topics; PDF references found in the PR body or YAML `reference:` fields; whether source
 documents exist.
 
@@ -247,7 +256,8 @@ everything under the state/program path into
 `{RUN_ROOT}/{PREFIX}-review-full-filelist.md` (≤30 lines). Without `--full`, use the
 changed-file lists from the context summary. In incremental mode, scope is the
 incremental file list plus unresolved prior findings; run PDF auditors only for changed
-semantic topics and reuse prior verified findings for untouched topics.
+semantic topics and reuse prior verified findings for untouched topics. Do not reopen
+findings already recorded as resolved unless a changed file could regress them.
 
 Map files and PDF page ranges to topics (eligibility & income, benefits & standards,
 rates & brackets, credits, deductions, tests, infrastructure).
@@ -437,6 +447,7 @@ Recommended severity: `APPROVE` (no criticals, minor suggestions only), `COMMENT
 | Mismatches (code-path confirmed + visually verified) | M |
 | Mismatches rejected (code-path cleared) | R |
 | Unmodeled items | K |
+| Pre-existing issues | P |
 
 ### Validation Summary
 | Check | Result |
@@ -444,6 +455,7 @@ Recommended severity: `APPROVE` (no criticals, minor suggestions only), `COMMENT
 | Regulatory Accuracy | X issues |
 | Reference Quality | X issues |
 | Code Patterns | X issues |
+| Formatting (params & vars) | X issues |
 | Test Coverage | X gaps |
 | PDF Value Audit | X mismatches / Y confirmed |
 | CI Status | Passing/Failing |

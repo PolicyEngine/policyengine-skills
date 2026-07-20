@@ -558,8 +558,10 @@ When building a state TANF program, follow this systematic approach:
 - **Start with State Plans** - Identify the TANF State Plan PDF first
   - State Plans often have critical formulas and calculation details
   - **Page 10 is particularly important** - often contains income calculation methodology
-  - **Report the PDF URL to the orchestrator** for extraction (see section 2 above)
-  - Example: "Found critical State Plan PDF: [URL] - Need extraction for income calculation methodology on page 10"
+  - **Download and extract the PDF yourself** with curl + pdftotext (see section 2 above) — PDF extraction is YOUR job, never the orchestrator's
+  - If extraction fails, retry with your own tools: re-download with different curl options, try WebFetch, or look for an HTML version of the State Plan
+  - If the PDF is truly unreadable after retries, record it in the "PDFs for Future Reference" section of `sources/working_references.md` (URL, reason, expected content) so downstream agents know the source exists but could not be read
+  - Example entry: "State Plan PDF: [URL] - could not extract (403 Forbidden); expected income calculation methodology on page 10"
 - **Policy manuals** from the state's official TANF agency
 - **Read each page carefully** - do not skip or skim content
 - **Read each website thoroughly** from the official source

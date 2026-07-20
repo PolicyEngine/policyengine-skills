@@ -40,7 +40,7 @@ The coordinator protects its context window and owns only orchestration:
   structured commands;
 - present user checkpoints and write the resulting scope decision;
 - delegate research, implementation, testing, validation, reporting, and Git operations;
-- read only handoff files marked **Short** in the Handoff table;
+- read only handoff files the Handoff table marks `Coordinator may read? Yes`;
 - never read full source research, the implementation specification, PDF text/images, or
   implementation files; never implement or fix program code directly;
 - continue automatically between gates, stopping only at a user checkpoint or a blocked
@@ -56,8 +56,10 @@ result exists and is well formed. Its final response is one line:
 `DONE — {identifiers or commit/push result}`. If a delegate stops without its required
 output, retry once with the missing contract; then apply the phase's blocked behavior.
 
-**Ownership contract.** No implementation role commits. Only the initial-pusher and
-review-round-pusher roles may commit or push. Parallel roles never write the same file.
+**Ownership contract.** No implementation role commits. Only initial-pusher,
+review-round-pusher, and issue-manager — the latter solely for the Phase 2B branch
+initialization (empty commit, push, PR reuse checkout) — may commit or push. Parallel
+roles never write the same file.
 All roles receive concrete `WORKTREE_ROOT`, `WORKTREE_ID`, `RUN_ROOT`, and `PREFIX` values
 and stay inside the current worktree and their owned paths.
 
@@ -197,9 +199,10 @@ implementations. It must:
    - `{RUN_ROOT}/{PREFIX}-impl-spec.md` (**Full**): every requirement numbered
      `REQ-001...`, tagged `ELIGIBILITY`, `INCOME`, `BENEFIT`, `EXEMPTION`,
      `DEMOGRAPHIC`, `IMMIGRATION`, `RESOURCE`, or `NOT-MODELED`; verified citations;
-     reusable variables; all reference implementations; suggested parameter/variable
-     structure; income-source list for `sources.yaml`; and TANF approach recommendation
-     when relevant.
+     reusable variables; all reference implementations, noting for each requirement
+     whether the selected reference implementation covers it; suggested
+     parameter/variable structure; income-source list for `sources.yaml`; and TANF
+     approach recommendation when relevant.
    - `{RUN_ROOT}/{PREFIX}-requirements-checklist.md` (**Short**, maximum 40 lines): total
      and one cited line per requirement.
    - `{RUN_ROOT}/{PREFIX}-scope-summary.md` (**Short**, maximum 15 lines): program/type,
@@ -235,15 +238,24 @@ scope-decision paths. Do not create an issue, branch, PR, commit, or push.
 
 ### 2B. Create implementation issue, branch, and draft PR
 
-After scope approval, delegate issue-manager in discovery mode. Before writing, verify
-that the base target is `PolicyEngine/policyengine-us` and the push target is that
-repository or the user's corresponding fork. Search for **both** an existing issue and PR
-before creating either. Discovery makes no GitHub or Git writes. If it returns
-`DECISION_NEEDED`, show all candidate numbers, titles, status, activity, and short scope;
-ask the issue and PR reuse/create decisions one at a time, then re-delegate issue-manager
-with both explicit decisions. Do not select among competing existing work automatically.
+After scope approval, resolve the repository targets first and record them in the
+ledger: `BASE_REPO` is the intended upstream (`PolicyEngine/policyengine-us`) with its
+Git `BASE_REPO_URL`; `PUSH_REPO` and `PUSH_REPO_URL` are the user's writable repository
+or fork, derived from the checkout's push remote (for example
+`git remote get-url --push origin`). Verify that the base target is
+`PolicyEngine/policyengine-us` and the push target is that repository or the user's
+corresponding fork. Pass these values, with the concrete worktree/run values and the
+proposed `BRANCH`, to issue-manager in every delegation.
 
-After decisions are complete, execute them as one plan: reuse or create the issue, then
+Delegate issue-manager in discovery mode (`MODE=discover`), which makes no GitHub or Git
+writes. It searches for **both** an existing issue and PR before either is created. If
+it returns `DECISION_NEEDED`, show all candidate numbers, titles, status, activity, and
+short scope; ask the issue and PR reuse/create decisions one at a time. Do not select
+among competing existing work automatically. If it returns `NO_CANDIDATES`, treat both
+decisions as create-new without asking. Then re-delegate issue-manager in execution mode
+(`MODE=execute`) with both explicit decisions.
+
+The execution delegation applies both decisions as one plan: reuse or create the issue, then
 reuse or create the PR. Reusing an issue must not suppress creation of a requested new PR;
 reusing a PR must not create a duplicate. For a new PR, create the issue first when
 needed; in this worktree only, create `BRANCH`, make the empty initialization commit
@@ -283,7 +295,8 @@ requirements covered, and intended test file. It must verify every listed variab
 
 After the implementation manifest exists, delegate one test-creator so ordinary,
 integration, and edge cases have a single owner. It must use only verified existing
-inputs and the exact variable contract, and create:
+inputs and the exact variable contract, read `sources/working_references.md` for the
+documented calculation examples that ground its scenarios, and create:
 
 - unit cases for every formula variable;
 - five to seven integration scenarios with inline calculation explanations;
@@ -413,8 +426,11 @@ or improvise a second review methodology here.
 ### Round 1: full review
 
 Run `review-program` with arguments
-`PR_NUMBER --local --full [--600dpi when DPI is 600]`. Read only
-`{RUN_ROOT}/{PREFIX}-review-summary.md`.
+`PR_NUMBER --local --full --prefix {PREFIX} [--600dpi when DPI is 600]`. Pass
+`--prefix {PREFIX}` on every review invocation: a reused PR's head branch need not equal
+`{ST}-{PROG}`, and without the override review-program derives its artifact prefix from
+the checked-out branch — writing paths other than the Handoff table entries this phase
+reads. Read only `{RUN_ROOT}/{PREFIX}-review-summary.md`.
 
 - If the count of still-open critical findings is zero, Phase 6 completes.
 - Otherwise delegate review-fixer-vars and review-fixer-tests concurrently. Each reads
@@ -444,10 +460,11 @@ A follow-up review after a fix is mandatory.
 ### Round 2: verification review
 
 For mechanical/test-only fixes, run with
-`PR_NUMBER --local --incremental {RUN_ROOT}/{PREFIX}-review-full-report.md [--600dpi]`
+`PR_NUMBER --local --incremental {RUN_ROOT}/{PREFIX}-review-full-report.md --prefix {PREFIX} [--600dpi]`
 so unchanged source/PDF evidence is reused. When a fix changed policy semantics,
 parameter values, references, or sources, instead run
-`PR_NUMBER --local --full --resume [--600dpi]`. Read only the new short summary.
+`PR_NUMBER --local --full --resume --prefix {PREFIX} [--600dpi]`. Read only the new
+short summary.
 
 - If still-open critical findings are zero, Phase 6 completes.
 - Otherwise ask whether to attempt one final fix round or stop and show the remaining

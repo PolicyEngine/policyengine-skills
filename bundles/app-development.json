@@ -45,6 +45,7 @@
     "./agents/country-models/edge-case-generator.md",
     "./agents/country-models/implementation-validator.md",
     "./agents/country-models/pr-pusher.md",
-    "./agents/country-models/rules-engineer.md"
+    "./agents/country-models/rules-engineer.md",
+    "./agents/country-models/test-creator.md"
   ]
 }

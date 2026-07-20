@@ -11,10 +11,12 @@ Claude Code mechanics and adds no workflow behavior.
 - **Ask the user** → use `AskUserQuestion` for a missing argument, the existing-program
   route, unreachable references, every scope choice, blocked CI, and the optional final
   review-fix round. Ask one scope decision at a time and use the canonical option order.
-- **Issue/PR discovery** → run `issue-manager` once in read-only discovery mode. If it
-  returns `DECISION_NEEDED`, ask the issue and PR choices one at a time, then invoke a new
-  `issue-manager` with both explicit decisions. Continue only on `SETUP_COMPLETE`; treat
-  `BLOCKED` or a partial result as a blocking gate.
+- **Issue/PR discovery** → run `issue-manager` once with `MODE=discover` (read-only; it
+  stops after searching). On `DECISION_NEEDED`, ask the issue and PR choices one at a
+  time; on `NO_CANDIDATES`, use create-new for both. Then invoke a new `issue-manager`
+  with `MODE=execute`, both explicit decisions, and the canonical repository values
+  (`BASE_REPO`, `BASE_REPO_URL`, `PUSH_REPO`, `PUSH_REPO_URL`). Continue only on
+  `SETUP_COMPLETE`; treat `BLOCKED` or a partial result as a blocking gate.
 - **Run identity** → after deriving `WORKTREE_ID` and `PREFIX`, create
   `TeamCreate({WORKTREE_ID}-{PREFIX}-encode)` and pass
   `team_name: "{WORKTREE_ID}-{PREFIX}-encode"` to each delegated agent.
@@ -33,8 +35,9 @@ Claude Code mechanics and adds no workflow behavior.
   dependency-ordered implementation, validation, CI, and Git roles run sequentially.
 - **Nested review** → invoke the installed `review-program` skill through the Skill tool
   with the exact canonical arguments; that skill owns all review mechanics.
-- **Coordinator context** → read only artifacts marked Short/Yes in the canonical Handoff
-  table. Never read full research/spec/PDF/code/review files or implement/fix code.
+- **Coordinator context** → read only artifacts the canonical Handoff table marks
+  `Coordinator may read? Yes`. Never read full research/spec/PDF/code/review files or
+  implement/fix code.
 
 ## Role → agent type
 

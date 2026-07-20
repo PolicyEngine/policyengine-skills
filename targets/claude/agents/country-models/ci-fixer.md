@@ -63,6 +63,23 @@ An iteration is a diagnose/edit/targeted-rerun cycle; the final broad confirmati
 an iteration. If the same failure makes no progress across two consecutive iterations,
 classify it as BLOCKED and stop.
 
+## Calling-contract overrides
+
+The invoking workflow's prompt may override parts of this contract; when it does, follow
+the caller:
+
+- **Status file and vocabulary** — a caller may name a different status file and result
+  set (for example, fix-pr's fix-ci role writes `{RUN_ROOT}/{PREFIX}-fix-pr-ci-result.md`
+  with PASS/FAIL). Use the caller's path and format with the same evidence rules.
+- **`PARTIAL` status** — when the calling workflow explicitly permits it (for example,
+  encode-policy-v2's review-ci-fixer role, whose mandatory follow-up review adjudicates
+  remaining findings), report `STATUS: PARTIAL` with the same remaining-failure detail as
+  BLOCKED instead of forcing a BLOCKED stop.
+- **Iteration budget and formatting** — a caller-specified budget or formatting
+  assignment replaces the defaults here.
+
+Without an explicit override, the defaults in this file apply.
+
 ## Workflow
 
 ### Step 1: Read the execution contract
@@ -131,7 +148,9 @@ workflows normally format once after all validation passes.
 
 ## When You Stop
 
-Write a status report to `{RUN_ROOT}/{PREFIX}-ci-fixer-status.md`. There are only TWO statuses — PASS or BLOCKED.
+Write a status report to `{RUN_ROOT}/{PREFIX}-ci-fixer-status.md` (or the caller's named
+status file). The default statuses are PASS or BLOCKED; see Calling-contract overrides
+for when a caller permits PARTIAL or a different vocabulary.
 
 ### PASS — all in-scope tests pass
 
@@ -176,7 +195,9 @@ STATUS: BLOCKED
 
 After writing your status file, your task is COMPLETE. Final message:
 
-`DONE — wrote {RUN_ROOT}/{PREFIX}-ci-fixer-status.md (STATUS: PASS/BLOCKED, X/N tests passing)`
+`DONE — wrote {status file} (STATUS: {status}, X/N tests passing)` — with the caller's
+status file and vocabulary when overridden, otherwise
+`{RUN_ROOT}/{PREFIX}-ci-fixer-status.md` and PASS/BLOCKED.
 
 Do NOT continue, mark PR ready, push, or clean up `sources/`. The orchestrator handles those.
 

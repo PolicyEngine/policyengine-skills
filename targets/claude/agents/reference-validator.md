@@ -298,12 +298,17 @@ Output a structured report for review:
 ## Integration with Other Agents
 
 **Used by:**
-- `/review-program` command - Phase 2 validation step
-- `implementation-validator` - Cross-references with other checks
+- The `review-program` workflow - Phase 4 parallel validation, as the
+  `reference-checker` role (skipped for infrastructure/API/frontend PRs with no
+  parameter files)
 
 **Outputs to:**
-- GitHub PR review comments
-- Validation report for ci-fixer
+- `{RUN_ROOT}/{PREFIX}-review-references.md` (or the output path the invoking prompt
+  supplies) - read only by the review's consolidator role, which merges it into the
+  full report and summary
+
+This is a read-only review role: never post to GitHub or edit repository files —
+report findings only through the output file above.
 
 ## Key Principle
 

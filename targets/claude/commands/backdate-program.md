@@ -83,10 +83,11 @@ in another worktree, stop and report that path — never use `--ignore-other-wor
 ```bash
 # Clean /backdate-program files (use {st}-{prog} prefix after parsing)
 rm -f "$RUN_ROOT"/{st}-{prog}-*.md
-# Derive PREFIX for reading the review-program output files (Phase 6) — that workflow
-# names its files from the current branch, under the same RUN_ROOT
-PREFIX=$(git branch --show-current | tr '/' '-')
-PREFIX=${PREFIX:-review-program}
+# Artifact prefix for the Phase 6 /review-program invocations. Pass it explicitly with
+# --prefix so review-program writes its {PREFIX}-review-*.md files at the paths this
+# orchestrator reads (Steps 6B, 6C, 7B), regardless of which branch is checked out when
+# a review round runs
+PREFIX={st}-{prog}-backdate
 # Note: review-program's own Phase 0 handles its file cleanup
 ```
 
@@ -106,6 +107,14 @@ These two agents have no dependency on each other. Spawn them in a **single mess
 
 **Agent 1: issue-manager** — searches GitHub (network calls)
 
+Derive the push target first — the issue-manager agent requires caller-supplied values
+for any new-PR write and returns `BLOCKED` when they are missing:
+
+```bash
+PUSH_REPO_URL=$(git remote get-url --push origin)
+PUSH_REPO=$(gh repo view "$PUSH_REPO_URL" --json nameWithOwner --jq .nameWithOwner)
+```
+
 ```
 subagent_type: "country-models:issue-manager"  # resolve installed name by suffix
 name: "issue-manager"
@@ -113,15 +122,13 @@ run_in_background: true
 
 "Run issue/PR setup for backdating {STATE_FULL} {PROGRAM} parameters.
 
-BASE_REPO=PolicyEngine/policyengine-us and
-BASE_REPO_URL=https://github.com/PolicyEngine/policyengine-us.git. Verify the checkout and
-derive the authenticated user's writable PUSH_REPO/PUSH_REPO_URL before any write. Pass
-WORKTREE_ROOT={WORKTREE_ROOT}, RUN_ROOT={RUN_ROOT}, PREFIX={st}-{prog},
-BRANCH={st}-{prog}-backdate, and setup summary 'Backdate {STATE_FULL} {PROGRAM} parameters
-to {TARGET_YEAR}'. Search for BOTH existing issues and PRs before creating either. If
-candidates exist, return DECISION_NEEDED without writes. If neither exists, create the
-issue, branch, one --allow-empty initialization commit, and draft PR.
-Return the issue number, PR number, branch, head repository URL, and head SHA."
+MODE=discover. BASE_REPO=PolicyEngine/policyengine-us and
+BASE_REPO_URL=https://github.com/PolicyEngine/policyengine-us.git.
+PUSH_REPO={PUSH_REPO} and PUSH_REPO_URL={PUSH_REPO_URL} (derived by the orchestrator;
+verify before any later write). Pass WORKTREE_ROOT={WORKTREE_ROOT}, RUN_ROOT={RUN_ROOT},
+PREFIX={PREFIX}, BRANCH={st}-{prog}-backdate, and setup summary 'Backdate {STATE_FULL}
+{PROGRAM} parameters to {TARGET_YEAR}'. Search for BOTH existing issues and PRs and stop
+without writing: return DECISION_NEEDED with the candidates, or NO_CANDIDATES."
 ```
 
 **Agent 2: inventory** — scans local files (disk reads)
@@ -155,18 +162,22 @@ run_in_background: true
 **After both agents complete**:
 
 - Read ONLY `{RUN_ROOT}/{st}-{prog}-inventory-summary.md` (max 10 lines) — just counts and the program path
-- If issue-manager returned `DECISION_NEEDED`, ask the issue and PR reuse/create choices
-  one at a time with `AskUserQuestion`, then spawn a new issue-manager with both explicit
-  decisions and the same verified repository/worktree inputs. Continue only when it
-  returns `SETUP_COMPLETE`; treat `BLOCKED` or a partial result as a blocking gate.
+- issue-manager (`MODE=discover`) returns `DECISION_NEEDED` or `NO_CANDIDATES` without
+  writing. On `DECISION_NEEDED`, ask the issue and PR reuse/create choices one at a time
+  with `AskUserQuestion`; on `NO_CANDIDATES`, use `create_new` for both. Then spawn a new
+  issue-manager with `MODE=execute`, both explicit decisions, and the same verified
+  repository/worktree inputs. Continue only when it returns `SETUP_COMPLETE`; treat
+  `BLOCKED` or a partial result as a blocking gate.
 - Store from issue-manager:
   - **ISSUE_NUMBER** — referenced in commit messages, changelog, and final report
   - **PR_NUMBER** — used by `/review-program` in Phase 6, and by `pr-pusher` in Phase 7
   - **BRANCH** — the working branch for all implementation
+  - **HEAD_REPO_URL** — the guarded push target for Steps 5C and 6D-2 (the branch has no
+    configured upstream; every push names this URL and BRANCH explicitly)
 
 These are used throughout the workflow:
 - Review-fix loop commits: `"Review-fix round {N}: address critical issues (ref #{ISSUE_NUMBER})"`
-- Phase 6: `/review-program {PR_NUMBER} --local --full`
+- Phase 6: `/review-program {PR_NUMBER} --local --full --prefix {PREFIX}`
 - Phase 7: `pr-pusher` pushes to the branch, reporter writes PR description
 - Final report: links to issue and PR
 
@@ -821,13 +832,17 @@ Read ONLY the checkpoint file.
 
 ### Step 5C: Push to Remote
 
-**Phase 6 requires code on the remote.** `/review-program` reads the PR via `gh pr diff $PR_NUMBER` (GitHub remote API), so local-only commits are invisible. Push all Phase 3-5 work before entering the review-fix loop:
+**Phase 6 requires code on the remote.** `/review-program` never reads local worktree
+state for a remote PR — it fetches the PR head ref (`pull/N/head`) from the base
+repository on GitHub, so local-only commits are invisible to it. Push all Phase 3-5 work
+before entering the review-fix loop:
 
 ```bash
 # Stage only the program's directories — avoid staging unintended files
 git add policyengine_us/parameters/gov/states/{st}/ policyengine_us/variables/gov/states/{st}/ policyengine_us/tests/policy/baseline/gov/states/{st}/
 git commit -m "Backdate {STATE} {PROGRAM} parameters to {TARGET_YEAR} (ref #{ISSUE_NUMBER})"
-git push
+# Guarded push — the branch has no configured upstream; name the target explicitly
+git push "$HEAD_REPO_URL" HEAD:"$BRANCH"
 ```
 
 **Skip this step if `--skip-review`** (Phase 6 won't run).
@@ -847,34 +862,40 @@ ROUND = 1
 MAX_ROUNDS = 3
 
 while ROUND <= MAX_ROUNDS:
-    1. Run /review-program --local --full
+    1. Run /review-program {PR_NUMBER} --local --full --prefix {PREFIX}
+       (add --600dpi when DPI is 600; round 2+ may use --incremental per Step 6A)
     2. Read summary → count critical issues
     3. If critical == 0 → EXIT LOOP (success)
     4. If ROUND == MAX_ROUNDS → EXIT LOOP (escalate to user)
     5. If ROUND == 2 → ask user before attempting round 3
     6. Fix critical issues
     7. Run make format + tests
-    8. Commit + push fixes (so next round's gh pr diff sees them)
+    8. Commit + push fixes (so next round's review fetch sees them)
     9. ROUND += 1
 ```
 
 ### Why commit + push is required between rounds
 
-`/review-program` reads the PR code via `gh pr diff $PR_NUMBER`, which fetches the diff from the **GitHub remote API**. Local-only commits are invisible to `gh pr diff`. Step 5C pushes the initial implementation, and each fix round must also **commit AND push** so the next review round sees the updated code.
+`/review-program` reviews the PR head it fetches from **GitHub** (`pull/N/head` from the
+base repository, diffed against the merge-base). Local-only commits are invisible to
+that fetch. Step 5C pushes the initial implementation, and each fix round must also
+**commit AND push** so the next review round sees the updated code.
 
 ```
 Step 5C push   → implementation commits on remote (commit A)
-Round 1 review → gh pr diff sees commit A → reviews implementation
+Round 1 review → fetched PR head is commit A → reviews implementation
 Round 1 fix    → commit B + push (fixes from round 1)
-Round 2 review → gh pr diff now includes commit B → reviews the fixed code
+Round 2 review → fetched PR head includes commit B → reviews the fixed code
 Round 2 fix    → commit C + push (fixes from round 2, if any)
-Round 3 review → gh pr diff includes commits B+C → final check
+Round 3 review → fetched PR head includes commits B+C → final check
 Phase 7        → final push (changelog, any remaining changes)
 ```
 
 ### Step 6A: Run /review-program --local --full (Round N)
 
-Invoke the `review-program` skill in local-only mode with `--full`. On **round 1**, this runs the full review:
+Invoke the `review-program` skill in local-only mode with `--full`, passing
+`--prefix {PREFIX}` (so its artifacts land at the paths Steps 6B, 6C, and 7B read) and
+`--600dpi` when DPI is 600. On **round 1**, this runs the full review:
 - **PDF acquisition** (always on): `country-models:document-collector` discovers and renders source PDFs
 - **Regulatory accuracy**: `country-models:program-reviewer` researches regulations independently, compares to code
 - **Reference quality**: `reference-validator` checks reference completeness and corroboration
@@ -883,7 +904,12 @@ Invoke the `review-program` skill in local-only mode with `--full`. On **round 1
 - **PDF audit**: 2-5 `general-purpose` agents audit parameter values against PDF screenshots
 - **Mismatch verification**: 600 DPI re-render + text cross-reference for every reported mismatch
 
-**Note on round 2+**: The `/review-program` command always runs a full review — it has no "incremental" mode. This is by design: fixes can introduce new issues, and PDF audit agents need to re-verify values that may have changed. The cost of a redundant re-check is low compared to missing a regression.
+**Note on round 2+**: when a fix round changed only tests or mechanical code, run
+`/review-program {PR_NUMBER} --local --prefix {PREFIX} --incremental {RUN_ROOT}/{PREFIX}-review-full-report.md`
+so unchanged source/PDF evidence is reused. When a fix changed policy semantics,
+parameter values, references, or sources, run the full review again
+(`--full --resume --prefix {PREFIX}`). Fixes can introduce new issues — the follow-up
+review is mandatory either way.
 
 ### Step 6B: Check Results
 
@@ -960,13 +986,15 @@ Fix any test failures introduced by the fixes. Run make format."
 
 **6D-2: Commit and push fixes:**
 
-After ci-fixer completes, Main Claude commits and pushes so the next round's `/review-program` (which uses `gh pr diff` from the remote) sees the updated code:
+After ci-fixer completes, Main Claude commits and pushes so the next round's
+`/review-program` (which fetches the PR head from GitHub) sees the updated code:
 
 ```bash
 # Stage only the program's directories — avoid staging unintended files
 git add policyengine_us/parameters/gov/states/{st}/ policyengine_us/variables/gov/states/{st}/ policyengine_us/tests/policy/baseline/gov/states/{st}/
 git commit -m "Review-fix round {ROUND}: address critical issues from /review-program"
-git push
+# Guarded push — the branch has no configured upstream; name the target explicitly
+git push "$HEAD_REPO_URL" HEAD:"$BRANCH"
 ```
 
 **6D-3: Increment ROUND and go back to Step 6A.**

@@ -21,7 +21,7 @@ Treat the text after `$review-program` or `/review` as the raw workflow argument
 
 ```text
 $review-program [PR_NUMBER_OR_SEARCH] [PDF_URL] [--local] [--local-diff] [--full]
-  [--skip-pdf] [--600dpi] [--resume] [--incremental REPORT]
+  [--skip-pdf] [--600dpi] [--resume] [--incremental REPORT] [--prefix NAME]
 ```
 
 Mandatory completion gate:

@@ -15,11 +15,14 @@ decisions.
 
 Require the calling prompt to provide:
 
+- `MODE`: `discover` (search and report only — never write) or `execute` (apply the
+  supplied decisions);
 - state code/name, program abbreviation/name, and the caller's approved scope or setup summary;
 - `BASE_REPO` and its Git `BASE_REPO_URL` for the intended upstream repository;
-- for a new PR, `PUSH_REPO` and its Git `PUSH_REPO_URL` for the user's writable repository or fork;
+- for `MODE=execute` with a new PR, `PUSH_REPO` and its Git `PUSH_REPO_URL` for the user's writable repository or fork;
 - concrete `WORKTREE_ROOT`, `RUN_ROOT`, `PREFIX`, and proposed `BRANCH`;
-- optional `ISSUE_DECISION` and `PR_DECISION`, each `create_new` or `use NUMBER`.
+- for `MODE=execute`, explicit `ISSUE_DECISION` and `PR_DECISION`, each `create_new` or
+  `use NUMBER`.
 
 Before any GitHub write, verify that `BASE_REPO` is the intended PolicyEngine repository.
 For a new PR, also verify that `PUSH_REPO` is that repository or the user's corresponding
@@ -30,11 +33,10 @@ not match, return `BLOCKED` without writing.
 Load the installed skill whose name ends in `policyengine-standards` (or the exact
 unprefixed name when available) and follow its Git/GitHub rules.
 
-## Phase 1: Discover everything without writing
+## Phase 1: `MODE=discover` — search everything, write nothing
 
-Unless an explicit decision already selects an object, search **both** open issues and
-open PRs before creating either. Search state abbreviation, full state name, program
-abbreviation, full program name, and common alternative names. Always pass
+Search **both** open issues and open PRs. Search state abbreviation, full state name,
+program abbreviation, full program name, and common alternative names. Always pass
 `--repo "$BASE_REPO"`.
 
 For each issue candidate, collect number, title, state, URL, `updatedAt`, and a short scope
@@ -51,8 +53,8 @@ gh pr view <number> --repo "$BASE_REPO" \
   --json number,title,state,url,updatedAt,files,headRepository,headRepositoryOwner,headRefName,headRefOid
 ```
 
-When issue candidates exist and `ISSUE_DECISION` is absent, or PR candidates exist and
-`PR_DECISION` is absent, return one combined result and stop:
+Discovery is terminal: make no issue, branch, commit, push, PR, label, or comment in
+this mode. When any group has candidates, return one combined result and stop:
 
 ```text
 DECISION_NEEDED
@@ -64,13 +66,19 @@ NEEDS: ISSUE_DECISION=<use NUMBER|create_new> (only when issue candidates exist)
 NEEDS: PR_DECISION=<use NUMBER|create_new> (only when PR candidates exist)
 ```
 
-Return all candidate groups at once. Make no issue, branch, commit, push, PR, label, or
-comment before the coordinator supplies every required decision. When a group has no
-candidates, treat its decision as `create_new` without asking.
+Return all candidate groups at once. When neither group has candidates, return:
 
-## Phase 2: Validate the selected plan
+```text
+NO_CANDIDATES
+```
 
-After decisions are complete:
+The coordinator answers with a `MODE=execute` invocation whose decisions cover every
+group (`create_new` for a group without candidates).
+
+## Phase 2: `MODE=execute` — validate the selected plan
+
+Require explicit `ISSUE_DECISION` and `PR_DECISION`; if either is missing, return
+`BLOCKED` without writing. Then:
 
 1. Re-read every selected issue/PR by number from `BASE_REPO`; never trust a number copied
    from another repository.
@@ -83,7 +91,7 @@ After decisions are complete:
    authenticated user can push to the head repository. If not, return `BLOCKED` before
    modifying the checkout.
 
-## Phase 3: Apply the selected plan
+## Phase 3: `MODE=execute` — apply the selected plan
 
 ### Issue
 
@@ -109,7 +117,8 @@ stage or commit `sources/`.
 
 ## Result
 
-Return exactly one terminal result.
+Return exactly one terminal result. In `MODE=discover` that is `DECISION_NEEDED` or
+`NO_CANDIDATES` (above). In `MODE=execute`:
 
 Success:
 

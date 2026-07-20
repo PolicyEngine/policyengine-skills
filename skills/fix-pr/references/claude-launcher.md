@@ -16,9 +16,10 @@ operations onto Claude Code mechanics and adds nothing else.
   for fix roles — "fix ONLY the issues assigned to you in the fix plan" plus "DO NOT
   commit; fix-pusher handles all commits". Include `Load skills:` lines naming the
   role's skills from the canonical Roles table.
-- **Guarded push** → pass fix-pusher the captured `PR_NUMBER`, `HEAD_REPO_URL`,
-  `HEAD_BRANCH`, and pre-edit `EXPECTED_HEAD_SHA`. It must compare the live remote head to
-  that SHA after rebasing and use the canonical explicit `--force-with-lease` push.
+- **Guarded push** → pass fix-pusher the captured `PR_NUMBER`, `BASE_REPO_URL`,
+  `HEAD_REPO_URL`, `HEAD_BRANCH`, and pre-edit `EXPECTED_HEAD_SHA`. It fetches the base
+  branch from `BASE_REPO_URL` for the canonical rebase, must compare the live remote head
+  to that SHA after rebasing, and uses the canonical explicit `--force-with-lease` push.
 - **Namespacing** → plugin agents and skills are namespaced by the *installed plugin*
   (e.g. `complete:country-models:rules-engineer` under the complete bundle, but a
   different prefix under other bundles). Resolve every agent and skill name in this

@@ -1,6 +1,6 @@
 ---
 name: fix-pr
-description: Use when the user invokes $fix-pr or asks Codex to apply fixes to a PolicyEngine PR based on $review-program findings, GitHub review comments, CI failures, or local review reports.
+description: Use when the user invokes $fix-pr or asks Codex or Claude Code to apply fixes to a PolicyEngine PR based on $review-program findings, GitHub review comments, CI failures, or local review reports.
 metadata:
   category: workflows
 ---
