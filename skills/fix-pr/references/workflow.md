@@ -37,13 +37,15 @@ it never edits code directly — fix roles make all code changes.
 | fix-parameters | Fix parameter, reference, and legal-value issues from the plan | parameter files | policyengine-model-development (references/parameters.md) |
 | fix-variables | Fix formula, naming, entity, aggregation, and hard-coded-value issues from the plan | variable files | policyengine-model-development (references/variables.md, references/style.md) |
 | fix-tests | Add or repair tests from the plan | test files | policyengine-model-development (references/tests.md) |
-| fix-ci | Run the targeted test funnel and fix evidenced failures | `{RUN_ROOT}/{PREFIX}-fix-pr-ci-result.md` | policyengine-model-development (references/tests.md, references/variables.md) |
+| fix-code | Fix ALL planned issues in a non-country-model PR (API/frontend/app) — replaces the three roles above | source and test files named in the plan | — |
+| fix-ci | Run the targeted test funnel and fix evidenced failures | `{RUN_ROOT}/{PREFIX}-fix-pr-ci-result.md` | policyengine-model-development (references/tests.md, references/variables.md) — country-model PRs only |
 | fix-verifier | Verify every fix-plan item was applied; catch new issues | `{RUN_ROOT}/{PREFIX}-fix-pr-verification.md` | policyengine-model-development (references/variables.md, references/parameters.md, references/style.md) |
 | fix-pusher | Format once, stage intended files only, commit, rebase on the actual base, push | commit/push | policyengine-standards |
 | comment-writer | Summarize actual fixes for GitHub from result files | `{RUN_ROOT}/{PREFIX}-fix-pr-comment.md` | — |
 
 Ownership: fix-parameters owns parameter YAMLs named in the plan; fix-variables owns
 variable Python files named in the plan; fix-tests owns test files named in the plan;
+fix-code (non-country-model PRs) owns every file named in the plan;
 fix-ci may edit files only to resolve failures arising from the planned fixes;
 fix-pusher owns formatting, staging, commit, rebase, and push — and must never delete or
 stage local research under `sources/`. No role commits except fix-pusher.
@@ -91,8 +93,9 @@ gh pr view "$PR_NUMBER" \
   --json url,baseRefName,headRefName,headRefOid,headRepository,headRepositoryOwner
 ```
 
-Derive `BASE_REPO_URL` from `PR_URL%/pull/*`, and derive `HEAD_REPO`,
-`HEAD_REPO_URL`, `HEAD_BRANCH`, and `EXPECTED_HEAD_SHA` from that response. In push mode,
+Derive `BASE_REPO_URL` from `PR_URL%/pull/*` (and `BASE_REPO` — its `owner/name`
+path — for repo-scoped `gh` calls), and derive `HEAD_REPO`, `HEAD_REPO_URL`,
+`HEAD_BRANCH`, and `EXPECTED_HEAD_SHA` from that response. In push mode,
 verify the authenticated user has push permission on `HEAD_REPO`; otherwise stop before
 editing. Never substitute the base repository or a convenient named remote for the PR's
 actual head repository.
@@ -135,7 +138,7 @@ select by head SHA:
 LOCAL_REVIEW=false
 for R in "$RUN_ROOT"/*-review-full-report.md; do
   [ -e "$R" ] || continue
-  if grep -q "Reviewed head SHA: $EXPECTED_HEAD_SHA" "$R"; then
+  if grep -q "Reviewed head SHA.*$EXPECTED_HEAD_SHA" "$R"; then
     LOCAL_REVIEW=true; LOCAL_REPORT="$R"; break
   fi
 done
@@ -153,17 +156,30 @@ local review files if present, and GitHub review data via:
 gh pr view $PR_NUMBER --json reviews --jq '.reviews[] | {author: .author.login, state: .state, submittedAt: .submittedAt, body: .body}'
 gh pr view $PR_NUMBER --json comments --jq '.comments[] | {author: .author.login, createdAt: .createdAt, body: .body}'
 gh pr view $PR_NUMBER --json commits --jq '.commits[-1].committedDate'
+# Inline review comments — the usual carrier of actionable feedback; NOT included in
+# either query above (--json comments is issue comments, --json reviews is summaries)
+gh api "repos/$BASE_REPO/pulls/$PR_NUMBER/comments" --paginate \
+  --jq '.[] | {author: .user.login, path: .path, line: .line, createdAt: .created_at, body: .body}'
+# Thread resolution state — only exposed via GraphQL reviewThreads
+gh api graphql -F owner="${BASE_REPO%/*}" -F repo="${BASE_REPO#*/}" -F pr="$PR_NUMBER" -f query='
+  query($owner: String!, $repo: String!, $pr: Int!) {
+    repository(owner: $owner, name: $repo) { pullRequest(number: $pr) {
+      reviewThreads(first: 100) { nodes {
+        isResolved isOutdated path
+        comments(first: 1) { nodes { body author { login } createdAt } } } } } } }'
 ```
 
 **Comment freshness** — classify each comment/review against the last commit timestamp:
 
 - posted AFTER the last commit → CURRENT (valid)
-- posted BEFORE the last commit: thread resolved on GitHub → RESOLVED (skip); the
+- posted BEFORE the last commit: thread resolved on GitHub (`isResolved` from the
+  reviewThreads query) → RESOLVED (skip); the
   flagged file was modified after the comment (check
   `git log --oneline --after='{comment_date}' -- '{file_path}'`) → POSSIBLY-FIXED;
   otherwise → STALE-BUT-OPEN (still valid, flag for the user)
 - ignore reviews with state DISMISSED
-- include ALL comments from all authors — a reviewer may leave several separate issues
+- include ALL comments from all authors and all three sources (review summaries, issue
+  comments, inline review comments) — a reviewer may leave several separate issues
 
 Merge local-review findings and valid PR comments (deduplicate, preferring the more
 detailed version) and classify each issue:
@@ -173,7 +189,9 @@ detailed version) and classify each issue:
 - RESEARCH-NEEDED: requires review-report evidence before deciding
 
 Write `{RUN_ROOT}/{PREFIX}-fix-pr-issues.md` (≤50 lines): source summary (local report
-found?; comment counts by freshness class), issues grouped Critical / Should Address /
+found?; comment counts by freshness class), the PR's repository type — `country-model`
+(parameter YAML / model variables / policy tests dominate the diff) or
+`api/frontend/app` (everything else) — issues grouped Critical / Should Address /
 Suggestions with `[CLASSIFICATION]` and `[POSSIBLY-FIXED]` tags and sources, and a
 totals summary. The coordinator reads only this file.
 
@@ -205,12 +223,21 @@ through decisions:
    and `Skip — I'll handle this manually`.
 5. **Write the fix plan** to `{RUN_ROOT}/{PREFIX}-fix-pr-plan.md`: confirmed fixes with
    assigned roles, skipped issues with reasons, and the fix order
-   (parameters → variables → tests → CI). Do not edit before this file exists.
+   (parameters → variables → tests → CI; fix-code → CI for non-country-model PRs). Do
+   not edit before this file exists.
 
 ## Phase 3: Apply fixes
 
 Fix ONLY issues listed in the plan, in dependency order. Skip any step with no assigned
 issues.
+
+**Repository-type dispatch.** The role split and skill loads below apply to
+country-model PRs. When the issue inventory classifies the PR as `api/frontend/app`,
+assign every planned fix to a single fix-code role (steps 1-3 collapse into one; it
+loads no model skills and follows the target repository's own conventions), and fix-ci
+replaces the policyengine-core funnel with the repository's native test command —
+discovered from its CI workflow, Makefile, or package.json — under the same cycle
+budget, classification-before-editing, and no-expectation-changes rules.
 
 1. **Parameter fixes** (role: fix-parameters). References get detailed subsections
    (e.g., 42 USC 8624(b)(2)(B)) and `#page=XX` file-page anchors for PDF links; new
@@ -300,6 +327,7 @@ reruns, and elapsed time in the run-state file.
 | Missing test | 3 | fix-tests |
 | CI failure | 4 | fix-ci |
 | Format issue | Phase 4 | fix-pusher |
+| Any issue in a non-country-model PR | 1-3 | fix-code |
 
 ## Handoff artifacts
 

@@ -44,6 +44,7 @@ Agent names below are unprefixed; resolve them per the namespacing rule above.
 | fix-parameters | `rules-engineer` |
 | fix-variables | `rules-engineer` |
 | fix-tests | `edge-case-generator` |
+| fix-code (non-country-model PRs) | `general-purpose` |
 | fix-ci | `ci-fixer` |
 | fix-verifier | `implementation-validator` |
 | fix-pusher | `pr-pusher` |

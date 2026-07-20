@@ -23,7 +23,8 @@ delegated. The coordinator:
 - parses arguments, resolves the PR, and runs small structured `gh` commands;
 - saves the diff to disk for delegates — and never reads it;
 - reads ONLY short summary files: context (≤25 lines), manifest (≤30 lines),
-  full-audit file list (≤30 lines), run state (≤30 lines), summary (≤20 lines);
+  full-audit file list (≤30 lines), run state (≤30 lines), verification queue
+  (≤30 lines), summary (≤20 lines);
 - never reads parameter YAMLs, variable `.py` files, PDF text or screenshots, or any
   individual finding file — those flow between delegates via disk;
 - posts the final report from disk without loading it (local display mode is the one
@@ -57,6 +58,7 @@ files and downloaded/rendered source artifacts.
 | verifier-codepath-{N} | Trace whether one mismatched parameter is reachable in the target year | `{RUN_ROOT}/{PREFIX}-review-codepath-{N}.md` | policyengine-model-development (references/variables.md, references/parameters.md, references/periods-and-aggregation.md, references/style.md) |
 | verifier-mismatch-{N} | Visually verify one surviving mismatch at 600 DPI | `{RUN_ROOT}/{PREFIX}-review-mismatch-{N}.md` | policyengine-model-development (references/parameters.md, references/periods-and-aggregation.md) |
 | verifier-pages | Verify every `#page=XX` reference the PR adds | `{RUN_ROOT}/{PREFIX}-review-pages.md` | — |
+| verification-planner | Read every Phase 4 report; write the bounded verification queue the coordinator routes Phase 5 from | `{RUN_ROOT}/{PREFIX}-review-verification-queue.md` | — |
 | consolidator | Merge, deduplicate, classify all findings; write full report + summary | `{RUN_ROOT}/{PREFIX}-review-full-report.md`, `{RUN_ROOT}/{PREFIX}-review-summary.md` | — |
 
 Every role that reviews parameter files must know: PDF reference hrefs use the FILE page
@@ -100,12 +102,16 @@ owns its uniqueness within this worktree's `RUN_ROOT`.
 
 All runtime files use `{RUN_ROOT}/{PREFIX}-...` paths. The absolute worktree root — not
 the shared Git common directory or the branch name — is the isolation boundary. Pass the
-concrete `RUN_ROOT`, `WORKTREE_ID`, and `PREFIX` values to every delegate; no delegate
-may read or write process-global `/tmp/{PREFIX}-...` paths.
+concrete `RUN_ROOT`, `WORKTREE_ID`, and `PREFIX` values (and, from Phase 1 on,
+`SNAPSHOT`) to every delegate; no delegate may read or write process-global
+`/tmp/{PREFIX}-...` paths.
 
 This workflow is read-only across the whole worktree set: never switch or detach any
-worktree, and never read another worktree's uncommitted files. Standard mode reviews
-fetched SHAs; `--local-diff` is scoped to `WORKTREE_ROOT`.
+existing worktree, and never read another worktree's uncommitted files. The one
+exception is the run's own disposable `PR_HEAD` snapshot worktree (created in Phase 1
+under `RUN_ROOT`, removed in Phase 7), which exists so delegates read the PR's actual
+file contents. Standard mode reviews fetched SHAs; `--local-diff` is scoped to
+`WORKTREE_ROOT`.
 
 Record `WORKTREE_ROOT`, `WORKTREE_ID`, arguments, PR/head SHA, source checksums, phase
 completion, and timings in `{RUN_ROOT}/{PREFIX}-review-run-state.md`. Refuse artifacts
@@ -184,8 +190,28 @@ git diff "$MERGE_BASE".."$PR_HEAD" > $RUN_ROOT/${PREFIX}-review-diff.txt
 If a fetch fails, STOP and surface the error — never continue with a possibly-stale or
 wrong-HEAD diff.
 
+**Materialize the PR's file contents.** The current checkout need not be at `PR_HEAD`,
+and delegates must never audit whatever branch happens to be checked out. After the
+fetch, create a disposable read-only snapshot unless the checkout already matches:
+
+```bash
+SNAPSHOT="$WORKTREE_ROOT"
+if [ "$(git rev-parse HEAD)" != "$PR_HEAD" ]; then
+  SNAPSHOT="$RUN_ROOT/${PREFIX}-pr-snapshot"
+  # clear any stale snapshot from an interrupted run before creating
+  git worktree remove --force "$SNAPSHOT" 2>/dev/null || rm -rf "$SNAPSHOT"
+  git worktree add --detach "$SNAPSHOT" "$PR_HEAD"
+fi
+```
+
+Pass the concrete `SNAPSHOT` value to every delegate; every role that reads repository
+files (validators, PDF auditors, code-path verifiers, file-lister) reads them under
+`SNAPSHOT`, never under a path it chose itself. The snapshot is read-only: no role
+edits, commits, or branches in it. Record its creation in the run state and remove it
+in Phase 7.
+
 For `--local-diff`, use `HEAD` as `PR_HEAD` after fetching the base branch — same
-merge-base approach, no branch switch.
+merge-base approach, no branch switch, and `SNAPSHOT` stays `WORKTREE_ROOT`.
 
 For `--incremental`, read the prior reviewed head SHA from the prior report, prove it is
 an ancestor of `PR_HEAD`, and diff `PRIOR_HEAD..PR_HEAD` instead. If ancestry cannot be
@@ -342,6 +368,20 @@ parameter only feeds a deprecated code path; the value is inherited from a feder
 variable; parameter interactions the auditor did not trace; an `in_effect`/`flat_applies`
 boolean disables the path for the target year.
 
+**Routing without reading findings.** The coordinator never reads the Phase 4 report
+files, so it cannot enumerate flags and mismatches itself. After Phase 4 completes,
+delegate verification-planner: it reads every validator and PDF-audit report and writes
+`{RUN_ROOT}/{PREFIX}-review-verification-queue.md` (≤30 lines) — one line per item to
+verify, in one of these forms, or a single `NONE` line:
+
+```
+XREF | page {XX} | {parameter} | repo {value} | from {report file}
+EXT | {document} | {parameter} | expected {X} / repo {Y} | from {report file}
+MISMATCH | {parameter} | repo {X} vs PDF {Y} (p.{NN}) | from {report file}
+```
+
+The coordinator reads only this queue and spawns the 5A-5D verifiers from its lines.
+
 - **5A** For each CROSS-REFERENCE NEEDED flag, delegate verifier-xref-{N}: read the
   flagged page's screenshot, find the value, report it with confirming context and
   `#page=XX`.
@@ -353,15 +393,17 @@ boolean disables the path for the target year.
   the call chain to determine whether the parameter affects the target year's
   computation (deprecated branches, `in_effect` gates, overrides, uprating transforms).
   Verdict: CONFIRMED (with the code-path trace) / REJECTED (with the disproving
-  evidence) / INCONCLUSIVE. The coordinator reads only the verdict line of each report.
+  evidence) / INCONCLUSIVE. Each verifier's completion line carries its verdict —
+  `DONE — wrote {file} ({verdict})` — so the coordinator routes 5D from completion
+  messages without reading any report.
 - **5D** For each CONFIRMED or INCONCLUSIVE mismatch (REJECTED ones are dropped and
   noted as "investigated and cleared"), delegate verifier-mismatch-{N} (all
   concurrently): re-render the disputed page at 600 DPI
   (`pdftoppm -png -r 600 -f {PAGE} -l {PAGE} …`), read it carefully, cross-check the
   extracted text, compute uprated values where applicable, and check for logic gaps (a
   correct value whose formula misses a rule). Verdict: CONFIRMED MISMATCH (repo/PDF
-  values + page) or FALSE POSITIVE (what the auditor misread). Flag any difference
-  greater than 0.3.
+  values + page) or FALSE POSITIVE (what the auditor misread), carried in the DONE
+  completion line as in 5C. Flag any difference greater than 0.3.
 - **5E** If the PR adds `#page=XX` references, delegate verifier-pages: for every
   reference in the diff, read the screenshot at that page and verify the cited value
   actually appears there; if wrong, search nearby pages for the correct page. Common
@@ -403,9 +445,10 @@ Rules:
    S2… (Suggestions). Incremental reviews carry prior IDs unchanged, mark each prior
    finding RESOLVED or STILL OPEN, and number new findings after the highest prior ID.
 5. Write the FULL report to `{RUN_ROOT}/{PREFIX}-review-full-report.md`. Its Source
-   Documents section MUST include `Reviewed head SHA: {PR_HEAD}` and `Mode: full` or
-   `Mode: incremental from {PRIOR_HEAD}` so a later incremental run can prove its
-   baseline.
+   Documents section MUST include `Reviewed head SHA: {PR_HEAD}` (the template renders
+   the label bold — consumers match the label and SHA tolerantly, never exact
+   punctuation) and `Mode: full` or `Mode: incremental from {PRIOR_HEAD}` so a later
+   incremental run can prove its baseline.
 6. Write the SHORT summary to `{RUN_ROOT}/{PREFIX}-review-summary.md` (≤20 lines):
    critical count with one-line descriptions; should/suggestion counts; PDF audit tally
    (confirmed correct / mismatches / unmodeled); recommended severity; run metrics
@@ -479,11 +522,17 @@ incomplete until both the full report and the summary exist.
 gh pr comment $PR_NUMBER --body-file $RUN_ROOT/${PREFIX}-review-full-report.md
 ```
 
+Finally, if a snapshot worktree was created in Phase 1, remove it —
+`git worktree remove --force "$SNAPSHOT"` — even when earlier phases failed. Report
+artifacts under `RUN_ROOT` stay.
+
 End with a short summary and mention that fixes can be applied with the fix-pr workflow.
 
 ## Global rules
 
-1. **READ-ONLY**: never edit files, never switch branches or worktrees.
+1. **READ-ONLY**: never edit files, never switch branches or worktrees; the only
+   worktree the run may create or remove is its own detached `PR_HEAD` snapshot under
+   `RUN_ROOT`, and all repository file reads happen under `SNAPSHOT`.
 2. **PDF by default**: acquisition runs unless `--skip-pdf`; no PDF found → code-only
    review, noted in the report.
 3. **Render every page**: render collected PDFs completely at the requested DPI (300

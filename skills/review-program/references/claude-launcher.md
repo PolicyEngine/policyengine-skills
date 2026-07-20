@@ -44,4 +44,5 @@ Agent names below are unprefixed; resolve them per the namespacing rule above.
 | code-validator | `implementation-validator` (Mode B — read-only code-pattern audit; do NOT run its structural-fix phases) |
 | edge-case-checker | `edge-case-generator` |
 | pdf-audit-{topic}, verifier-* | `general-purpose` (need Bash for pdftoppm + Read for PNGs) |
+| verification-planner | `general-purpose` (needs Write) |
 | consolidator | `general-purpose` (foreground) |
