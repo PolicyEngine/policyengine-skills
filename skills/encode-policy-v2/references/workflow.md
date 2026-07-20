@@ -55,10 +55,12 @@ approves scope; skip those writes entirely for `--research-only`.
 Collect official documentation:
 
 - Discover the official program name.
-- Download official PDFs and pages.
-- Extract text with `pdftotext` where possible.
-- Search extracted text first. Render only cited, tabular, scanned, or ambiguous pages
-  with `pdftoppm -png -r {DPI}` and reuse URL/checksum-matched downloads.
+- Download each PDF to `{RUN_ROOT}/{PREFIX}-source-{N}.pdf`.
+- Extract text to `{RUN_ROOT}/{PREFIX}-source-{N}.txt` with `pdftotext` where possible.
+- Render every page of every collected PDF with
+  `pdftoppm -png -r {DPI} {RUN_ROOT}/{PREFIX}-source-{N}.pdf {RUN_ROOT}/{PREFIX}-source-{N}-page`.
+  Extracted text helps search but does not replace visual rendering. Reuse pages only
+  when the PDF checksum and DPI match and the complete expected page sequence exists.
 - Save research detail to `sources/working_references.md`.
 - Write `{RUN_ROOT}/{PREFIX}-research-summary.md` in 20 lines or fewer with sources found, failed fetches, major eligibility tests, income deductions, and benefit calculation type.
 
@@ -148,8 +150,10 @@ Run local validation before pushing:
 - if blocked, list each remaining failure, root cause, and why it is blocked
 - quick diff audit for hard-coded values, year conditionals, altered parameters, and missing coverage
 
-Stop at a user checkpoint if CI is blocked. Enforce quick-audit failures through one
-targeted fix/recheck and do not push if the gate remains red.
+If CI is blocked, stop and ask the user whether to pause for manual fixes, proceed to the
+draft PR with a "Known failing tests" section, or abort (artifacts stay resumable). Never
+push a knowingly failing implementation without that explicit consent. Enforce quick-audit
+failures through one targeted fix/recheck and do not push if the gate remains red.
 
 ## Phase 5: Draft PR Preparation
 

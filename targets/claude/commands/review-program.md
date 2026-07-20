@@ -128,6 +128,12 @@ preserve artifacts and validate them against the run state. Refuse artifacts rec
 another worktree. Invalidate an artifact and its
 dependents when the PR head, source checksum, or review scope it depends on changed.
 
+`--resume` is also valid after a *completed* run whose PR head has since changed (e.g.,
+encode Phase 6 re-reviews after fixes): the head change invalidates the analysis
+artifacts (diff, context, findings), which re-run in full, while checksum-valid PDF
+downloads and rendered pages are reused. A completed ledger with an unchanged head means
+there is nothing to redo — report that instead of re-reviewing.
+
 ```bash
 if [ "$RESUME" != "true" ] && [ -z "$INCREMENTAL_REPORT" ]; then
   rm -f {RUN_ROOT}/{PREFIX}-review-*.md {RUN_ROOT}/{PREFIX}-review-pdf-*.{pdf,txt,png} {RUN_ROOT}/{PREFIX}-600dpi-*.png {RUN_ROOT}/{PREFIX}-ext-*.{pdf,txt,png,md}
@@ -236,7 +242,7 @@ git diff "$MERGE_BASE".."$PR_HEAD" > {RUN_ROOT}/{PREFIX}-review-diff.txt
 only `git diff "$PRIOR_HEAD".."$PR_HEAD"` to the diff file. If it is not an ancestor, or
 the prior report lacks its head SHA, fall back to a full merge-base diff and explain why.
 The unresolved findings in the prior report remain in scope even when their original file
-did not change.
+did not change. Track them by their stable finding IDs (C1/A1/S1…) from the prior report.
 
 If `git fetch` failed above, STOP and surface the error to the user. Do not continue with a possibly-stale or wrong-HEAD diff.
 
@@ -361,9 +367,9 @@ TASK:
    a. Download: curl -L -o {RUN_ROOT}/{PREFIX}-review-pdf-{N}.pdf 'URL'
    b. Get page count: pdfinfo {RUN_ROOT}/{PREFIX}-review-pdf-{N}.pdf | grep Pages
    c. Extract text: pdftotext {RUN_ROOT}/{PREFIX}-review-pdf-{N}.pdf {RUN_ROOT}/{PREFIX}-review-pdf-{N}.txt
-   d. Search extracted text to identify relevant topic page ranges
-   e. Determine page offset (cover/TOC pages before content page 1)
-   f. Do NOT render the full PDF here; Phase 3 renders only assigned pages on demand
+   d. Render every page at {DPI} DPI: `pdftoppm -png -r {DPI} {RUN_ROOT}/{PREFIX}-review-pdf-{N}.pdf {RUN_ROOT}/{PREFIX}-review-pdf-{N}-page`
+   e. Verify the rendered page count matches the PDF page count
+   f. Determine page offset (cover/TOC pages before content page 1)
 4. Check for supplementary documents referenced by the main booklet
 5. Write manifest to {RUN_ROOT}/{PREFIX}-review-pdf-manifest.md (MAX 30 LINES):
 
@@ -373,7 +379,7 @@ TASK:
    - Path: {RUN_ROOT}/{PREFIX}-review-pdf-1.pdf
    - Pages: [count], offset: [N] preliminary pages
    - Text: {RUN_ROOT}/{PREFIX}-review-pdf-1.txt
-   - Screenshot pattern (rendered on demand): {RUN_ROOT}/{PREFIX}-review-pdf-1-page-{NN}.png
+   - Screenshots: {RUN_ROOT}/{PREFIX}-review-pdf-1-page-{NN}.png
    - Topics covered: [list of topics and page ranges]
    ### PDF 2: [title] (if applicable)
    ...
@@ -444,15 +450,10 @@ When subdividing a topic, each sub-agent gets:
 - The SAME repo file list (so both can cross-reference the same parameters)
 - Instructions to only report on values found within their page range
 
-Before spawning PDF audit agents, render only their assigned ranges:
-
-```bash
-pdftoppm -png -r {DPI} -f {FIRST_PAGE} -l {LAST_PAGE} \
-  {RUN_ROOT}/{PREFIX}-review-pdf-{N}.pdf {RUN_ROOT}/{PREFIX}-review-pdf-{N}-page
-```
-
-Overlapping topic ranges share the same rendered pages. Do not rerender an existing page
-at the same DPI. A disputed page may later be rerendered at 600 DPI in Step 5D.
+Before spawning PDF audit agents, verify that the complete rendered page sequence exists.
+Reuse it only when the PDF checksum and DPI match the manifest. If any page is missing or
+stale, rerender the full PDF. Audit agents still read only their assigned ranges to bound
+context, but every page remains available for cross-reference and citation verification.
 
 ---
 
@@ -929,6 +930,10 @@ READ these files:
 - {RUN_ROOT}/{PREFIX}-review-mismatch-*.md (600 DPI visual verifications, if any)
 - {RUN_ROOT}/{PREFIX}-review-pages.md (page number verifications, if exists)
 - {RUN_ROOT}/{PREFIX}-review-context.md (PR context: state, year, CI status)
+- {RUN_ROOT}/{PREFIX}-review-run-state.md (run metrics: elapsed time, agents spawned,
+  pages rendered, cache hits — source for the summary's Run metrics line)
+- {RUN_ROOT}/{PREFIX}-review-prior-report.md (incremental mode only: prior findings and
+  their IDs)
 
 TASK:
 1. Merge all findings, removing duplicates
@@ -966,6 +971,11 @@ TASK:
    Its Source Documents section MUST include `Reviewed head SHA: {PR_HEAD}` and
    `Mode: full` or `Mode: incremental from {PRIOR_HEAD}` so a later incremental run can
    prove its baseline.
+   Assign each finding a stable ID: C1, C2… (Critical), A1, A2… (Should Address),
+   S1, S2… (Suggestions). In incremental mode, carry over the prior report's IDs
+   unchanged and mark each prior finding RESOLVED or STILL OPEN; number new findings
+   after the highest prior ID. IDs are how incremental reviews track unresolved
+   findings across rounds.
 6. Write SHORT summary to {RUN_ROOT}/{PREFIX}-review-summary.md (MAX 20 LINES):
    - Critical count + one-line descriptions
    - Should count
@@ -1022,16 +1032,16 @@ The consolidator writes `{RUN_ROOT}/{PREFIX}-review-full-report.md` in this stru
 - **Mode**: {full / incremental from PRIOR_HEAD}
 
 ### Critical (Must Fix)
-1. **Regulatory mismatch**: [Description] — [file:line] — PDF [p.NN](URL#page=NN)
-2. **Value mismatch**: [Param] repo: X, PDF: Y — [file:line] — PDF [p.NN](URL#page=NN)
+1. **[C1] Regulatory mismatch**: [Description] — [file:line] — PDF [p.NN](URL#page=NN)
+2. **[C2] Value mismatch**: [Param] repo: X, PDF: Y — [file:line] — PDF [p.NN](URL#page=NN)
 ...
 
 ### Should Address
-1. **Pattern violation**: Use `add()` instead of manual sum — [file:line]
+1. **[A1] Pattern violation**: Use `add()` instead of manual sum — [file:line]
 ...
 
 ### Suggestions
-1. Consider adding calculation example in docstring
+1. [S1] Consider adding calculation example in docstring
 
 ### PDF Audit Summary
 | Category | Count |
@@ -1108,9 +1118,10 @@ Main Claude reads short summaries (≤30 lines) during phases 0-6, then reads th
 
 1. **READ-ONLY**: Never edit files. Never switch branches. This is a review.
 2. **PDF by default**: pdf-collector runs unless `--skip-pdf` flag is used. If no PDF found (or skipped), manifest says so and Phase 4 runs code validators only.
-3. **Render on demand**: Extract/search text first. Render only assigned or disputed pages
-   at the requested DPI (300 by default); use 600 DPI for mismatch verification or when
-   `--600dpi` is set.
+3. **Render every page**: Render every collected PDF completely at the requested DPI (300
+   by default, 600 with `--600dpi`). Cache by PDF checksum + DPI and verify the complete
+   page sequence before reuse. At the default DPI, rerender disputed pages at 600 DPI for
+   mismatch verification.
 4. **Two-stage mismatch verification**: Every mismatch must pass BOTH code-path verification (Step 5C — is the parameter reachable in the target year?) AND visual verification (Step 5D — 600 DPI + text cross-reference). Never include a mismatch in the final report without both checks.
 5. **Trace code paths**: A parameter mismatch is only real if the parameter is actually used in the target year's computation. Always verify the parameter is reachable from the top-level variable — check for `in_effect` gates, deprecated branches, and overriding parameters.
 6. **Agents stay in scope**: Agents only read their assigned pages. Cross-references and external PDFs get separate verification agents.

@@ -43,6 +43,10 @@ On a fresh review, clean only review artifacts inside `RUN_ROOT`. With `--resume
 and validate artifacts. With `--incremental`, first copy the supplied report to
 `{RUN_ROOT}/{PREFIX}-review-prior-report.md` so the canonical report can be replaced.
 
+`--resume` is also valid after a completed run whose PR head has since changed: the head
+change invalidates analysis artifacts (diff, context, findings), which re-run in full,
+while checksum-valid PDF downloads and rendered pages are reused.
+
 ```bash
 if [ "$RESUME" != "true" ] && [ -z "$INCREMENTAL_REPORT" ]; then
   rm -f "$RUN_ROOT/${PREFIX}-review-"*.md \
@@ -103,8 +107,9 @@ Skip when `--skip-pdf` is set or the PR is clearly code-only. Otherwise:
 - use the user-provided PDF or discover source PDFs from PR body, YAML references, and official sites
 - download up to five official PDFs
 - extract text with `pdftotext`
-- search extracted text to identify relevant topic ranges
-- render only assigned or disputed ranges with `pdftoppm -png -r {DPI}`
+- render every PDF page with `pdftoppm -png -r {DPI}`
+- verify the rendered page count matches the PDF page count
+- reuse rendering only when PDF checksum + DPI match and the full page sequence exists
 - determine page offsets
 - write `{RUN_ROOT}/{PREFIX}-review-pdf-manifest.md` in 30 lines or fewer
 
@@ -183,8 +188,10 @@ Write:
 - `{RUN_ROOT}/{PREFIX}-review-summary.md` in 20 lines or fewer
 
 Every full report must include the reviewed head SHA and `full` or `incremental from
-{PRIOR_HEAD}` mode. The summary includes elapsed time, agent count, rendered pages, and
-cache hits.
+{PRIOR_HEAD}` mode. Assign each finding a stable ID (C1/C2… Critical, A1… Should Address,
+S1… Suggestions); incremental reviews carry prior IDs unchanged and mark each prior
+finding resolved or still open. The summary includes elapsed time, agent count, rendered
+pages, and cache hits, read from the run-state ledger.
 
 Severity rules:
 

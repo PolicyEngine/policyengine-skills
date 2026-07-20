@@ -40,7 +40,8 @@ def test_review_program_supports_incremental_evidence_reuse() -> None:
 
     assert "--incremental REPORT" in text
     assert "Reviewed head SHA" in text
-    assert "Render only assigned or disputed pages" in text
+    assert "Render every page" in text
+    assert "complete rendered page sequence" in text
 
 
 def test_fix_pr_artifacts_are_worktree_scoped() -> None:

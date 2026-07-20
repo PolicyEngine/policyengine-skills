@@ -11,7 +11,7 @@ Subagents can use PolicyEngine skills, but the orchestrator should name them exp
 | Claude role | Codex role | Responsibility | Output |
 |---|---|---|---|
 | context-analyzer | worker | Analyze saved diff and classify PR scope | `{RUN_ROOT}/{PREFIX}-review-context.md` |
-| pdf-collector | worker | Find/download/extract official PDFs and map relevant pages | `{RUN_ROOT}/{PREFIX}-review-pdf-manifest.md` |
+| pdf-collector | worker | Find/download/extract official PDFs and render every page | `{RUN_ROOT}/{PREFIX}-review-pdf-manifest.md` |
 | file-lister | worker | List full-audit files when `--full` | `{RUN_ROOT}/{PREFIX}-review-full-filelist.md` |
 | regulatory-reviewer | worker | Independently verify legal accuracy | `{RUN_ROOT}/{PREFIX}-review-regulatory.md` |
 | reference-checker | worker | Validate references and page numbers | `{RUN_ROOT}/{PREFIX}-review-references.md` |
@@ -50,9 +50,9 @@ Include these lines in subagent prompts as relevant:
 7. Spawn consolidator after all validators and verifiers complete.
 8. Locally read only `{RUN_ROOT}/{PREFIX}-review-summary.md`; post or display the full report according to mode.
 
-Pass concrete `RUN_ROOT`, `WORKTREE_ID`, and `PREFIX` values to every worker. Render only
-assigned PDF ranges, and never allow a worker to use process-global `/tmp/{PREFIX}-...`
-paths.
+Pass concrete `RUN_ROOT`, `WORKTREE_ID`, and `PREFIX` values to every worker. The collector
+renders every PDF page; audit workers read only assigned ranges. Never allow a worker to
+use process-global `/tmp/{PREFIX}-...` paths.
 
 ## Read-Only Contract
 

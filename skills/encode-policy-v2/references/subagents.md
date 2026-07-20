@@ -11,7 +11,7 @@ Subagents can use PolicyEngine skills, but the orchestrator should name them exp
 | Claude role | Codex role | Responsibility | Output |
 |---|---|---|---|
 | issue-manager | worker | Find/create issue, branch, draft PR | PR/issue identifiers |
-| document-collector | worker | Find official sources, extract text, render relevant pages | `sources/working_references.md`, `{RUN_ROOT}/{PREFIX}-research-summary.md` |
+| document-collector | worker | Find official sources, extract text, render every PDF page | `sources/working_references.md`, `{RUN_ROOT}/{PREFIX}-research-summary.md` |
 | consolidator | worker | Extract requirements and write specs | `{RUN_ROOT}/{PREFIX}-impl-spec.md`, checklist, scope summary |
 | rules-engineer parameters | worker | Create parameter YAML only | parameter files |
 | rules-engineer variables | worker | Create variables and the implementation contract | variable files, implementation manifest |

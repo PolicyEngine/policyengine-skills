@@ -13,10 +13,9 @@ Coordinate a multi-agent workflow to implement $ARGUMENTS as a complete, product
 4. No orchestrator scoping — user approves scope at checkpoint
 5. No orchestrator implementation guidance — agents read specs from disk + reference implementations
 6. Independent regulatory verification — review-fix loop, not self-evaluation
-7. Lessons learned — extract and persist after every run
-8. Completeness tracking — every documented requirement tracked through to implementation
-9. Resumable execution — preserve completed phase artifacts and reuse them when inputs are unchanged
-10. Validation funnel — exact changed tests first, diagnostic traces only on failure, one final broad confirmation
+7. Completeness tracking — every documented requirement tracked through to implementation
+8. Resumable execution — preserve completed phase artifacts and reuse them when inputs are unchanged
+9. Validation funnel — exact changed tests first, diagnostic traces only on failure, one final broad confirmation
 
 **GLOBAL RULE — PDF Page Numbers**: Every PDF reference href MUST end with `#page=XX` (the file page number, NOT the printed page number). The ONLY exception is single-page PDFs. This rule applies to ALL agents in ALL phases. Include this instruction in every agent prompt that touches parameter YAML files.
 
@@ -62,7 +61,7 @@ Parse $ARGUMENTS:
 - OPTIONS:
   - --skip-review — skip Phase 6 (review-fix loop)
   - --research-only — stop after Phase 2 (scope review), produce spec but don't implement
-  - --600dpi — render required PDF pages at 600 DPI instead of 300 DPI
+  - --600dpi — render all PDF pages at 600 DPI instead of 300 DPI
   - --resume — reuse valid artifacts from an interrupted run
   - --from-phase N — resume at phase N after verifying prerequisites (implies --resume)
   - --full-validation — after the program suite passes, also run the broader state/package suite
@@ -120,6 +119,8 @@ if [ "$RESUME" != "true" ]; then
   rm -f \
     "$RUN_ROOT/${PREFIX}-research-summary.md" \
     "$RUN_ROOT/${PREFIX}-impl-spec.md" \
+    "$RUN_ROOT/${PREFIX}-requirements-checklist.md" \
+    "$RUN_ROOT/${PREFIX}-scope-summary.md" \
     "$RUN_ROOT/${PREFIX}-scope-decision.md" \
     "$RUN_ROOT/${PREFIX}-implementation-manifest.md" \
     "$RUN_ROOT/${PREFIX}-test-manifest.md" \
@@ -152,12 +153,16 @@ run_in_background: true
 "Research {STATE} {PROGRAM} and gather sufficient official documentation for every
 in-scope requirement.
 - Discover the state's official program name
-- Download and extract PDFs with curl + pdftotext
-- Work text-first: search extracted text before rendering pages
-- Render only cited, tabular, scanned, or ambiguous pages at {DPI} DPI; do not render an
-  entire PDF unless text extraction failed. Use 600 DPI only when requested or when a
-  disputed page cannot be read reliably at 300 DPI.
+- Download each PDF to {RUN_ROOT}/{PREFIX}-source-{N}.pdf with curl and extract text to
+  {RUN_ROOT}/{PREFIX}-source-{N}.txt with pdftotext
+- Render every page of every collected PDF at {DPI} DPI:
+  pdftoppm -png -r {DPI} {RUN_ROOT}/{PREFIX}-source-{N}.pdf {RUN_ROOT}/{PREFIX}-source-{N}-page
+  Full rendering is required so later agents can verify any rule, table, cross-reference,
+  or page citation visually without reopening the acquisition phase.
+- Extracted text may guide research, but it does not replace full-page rendering.
 - Reuse a cached download when its URL/checksum matches the run-state ledger
+- Reuse rendered pages only when the PDF checksum and DPI both match and the complete
+  expected page sequence exists; otherwise rerender the full PDF.
 - Save all documentation to sources/working_references.md
 - Write SHORT research summary (max 20 lines) to {RUN_ROOT}/{PREFIX}-research-summary.md:
   - Official program name
@@ -762,8 +767,22 @@ test counts, rerun count, elapsed time, and each remaining failure/root cause.
 After ci-fixer completes, read `{RUN_ROOT}/{PREFIX}-ci-fixer-status.md`.
 
 - PASS: proceed to Step 4C.
-- BLOCKED: stop at a user checkpoint with the remaining failures and evidence. Do not
-  silently push a knowingly failing implementation.
+- BLOCKED: stop at a user checkpoint. Show the remaining failures and root causes from
+  the status file, then ask:
+
+```
+AskUserQuestion:
+  Question: "ci-fixer is BLOCKED: {N} failing tests remain. How should we proceed?"
+  Options:
+    - "Pause — I'll fix or advise manually" — wait for user guidance, then re-run ci-fixer
+      on the affected cases
+    - "Proceed anyway" — continue to Step 4C; the PR description MUST include the
+      'Known failing tests' section from the status file
+    - "Abort the run" — stop; artifacts are preserved for --resume
+```
+
+Never push a knowingly failing implementation silently — the proceed path exists only
+with this explicit user consent.
 
 ### Step 4C: Quick Audit
 
@@ -826,7 +845,9 @@ READ:
 - {RUN_ROOT}/{PREFIX}-impl-spec.md (regulatory details)
 - {RUN_ROOT}/{PREFIX}-ci-fixer-status.md (test status — if STATUS = BLOCKED, list the
   remaining failures in a 'Known failing tests' section near the bottom of the PR
-  description so reviewers see what didn't pass and why)
+  description so reviewers see what didn't pass and why. Reaching this step with
+  STATUS: BLOCKED means the user explicitly chose 'Proceed anyway' at the Step 4B
+  checkpoint.)
 - sources/working_references.md (references)
 
 Write {RUN_ROOT}/{PREFIX}-pr-description.md:
@@ -1207,26 +1228,29 @@ Present to user:
 | Category | Example | Action |
 |----------|---------|--------|
 | **Recoverable** | Test failure, lint error | ci-fixer handles automatically |
-| **Delegation** | Policy logic wrong | ci-fixer delegates to specialist agent |
+| **Policy ambiguity** | Test and implementation cite conflicting policy passages | ci-fixer resolves against the impl spec and cited sources, or reports BLOCKED |
 | **Missing coverage** | Requirement not implemented | Spawn rules-engineer to fill gap |
-| **Blocking** | GitHub API down, branch conflict | Stop and report to user |
+| **Blocking** | GitHub API down, branch owned by another worktree | Stop and report to user |
 
 ### Error Handling by Phase
 
 - **Phase 0 (Setup):** If agent fails, report error and STOP.
 - **Phase 1 (Consolidation):** If consolidator fails, report and STOP.
-- **Phase 2 (Scope):** User-driven — no error possible.
+- **Phase 2 (Scope):** Scope questions are user-driven. If issue/branch/draft-PR creation
+  (Step 2D) fails, report and STOP.
 - **Phase 3 (Implementation):** If agent fails, report which agent failed and wait for user.
 - **Phase 3E (Coverage):** If missing requirements, fix automatically then re-check.
-- **Phase 4 (Validation):** ci-fixer handles fixes. If ci-fixer fails 3 times, report and STOP.
+- **Phase 4 (Validation):** ci-fixer owns the targeted funnel (max 4 repair cycles). On
+  BLOCKED, stop at the Step 4B user checkpoint. A second quick-audit failure is also a
+  BLOCKED gate.
 - **Phase 5-7:** Continue unless blocking error.
 
 ### Escalation Path
 
-1. Agent encounters error — Log and attempt fix if recoverable
-2. Fix fails — ci-fixer delegates to specialist agent
-3. Delegation fails — Report to user and STOP
-4. Never proceed to next phase with unresolved blocking errors
+1. Agent encounters error — log and attempt fix if recoverable
+2. Fix fails or evidence is ambiguous — classify BLOCKED with root cause
+3. BLOCKED gate — stop at the user checkpoint; proceed only with explicit user consent
+4. Never proceed to the next phase with an unresolved blocking error
 
 ---
 
@@ -1248,14 +1272,14 @@ Present to user:
 
 **Execution Flow (CONTINUOUS except at Phase 2 checkpoint):**
 
-0. **Phase 0**: Parse, clean up, spawn issue-manager + document-collector in parallel
+0. **Phase 0**: Parse, initialize or resume the run, spawn document-collector (research only — no GitHub writes)
 1. **Phase 1**: Spawn consolidator to produce impl-spec, requirements-checklist, scope-summary
-2. **Phase 2**: **USER CHECKPOINT** — present requirements, wait for scope approval
-3. **Phase 3**: Implementation (parameters → variables+tests in parallel → edge cases → coverage check)
-4. **Phase 4**: Validation (validator → ci-fixer → quick-audit → push)
-5. **Phase 5**: Format, push, PR description
-6. **Phase 6**: Review-fix loop (up to 3 rounds of /review-program → fix → re-review)
-7. **Phase 7**: Lessons learned, final summary, **WORKFLOW COMPLETE**
+2. **Phase 2**: **USER CHECKPOINT** — present requirements, wait for scope approval; then create issue, branch, and draft PR (Step 2D)
+3. **Phase 3**: Implementation (parameters → variables + implementation manifest → tests incl. edge cases → coverage check)
+4. **Phase 4**: Validation gates (validator → ci-fixer targeted funnel → quick audit)
+5. **Phase 5**: Format, changelog, single commit/push, PR description
+6. **Phase 6**: Review-fix loop (one full /review-program, then incremental re-reviews; max 3 rounds)
+7. **Phase 7**: Final summary, **WORKFLOW COMPLETE**
 
 **CRITICAL RULES:**
 - Run all phases continuously without waiting for user input (EXCEPT Phase 2)
