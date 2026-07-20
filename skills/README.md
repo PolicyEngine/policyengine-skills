@@ -74,9 +74,7 @@ skill's `SKILL.md` is the cross-client launcher: Claude Code gives a skill prece
 over a same-named command, so the skill is the entry point on both surfaces.
 `references/claude-launcher.md` carries the Claude-only role/agent mapping, and the
 matching file in `targets/claude/commands/` is a compatibility stub for older Claude
-Code versions. Edit the canonical file, never a launcher, to change behavior;
-`tests/test_workflow_contracts.py` enforces the split. (encode-policy-v2 still carries
-the pre-consolidation layout and migrates in its own PR.)
+Code versions. Edit the canonical file, never a launcher, to change behavior.
 
 | Skill | What it carries |
 |---|---|
