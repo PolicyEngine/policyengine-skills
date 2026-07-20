@@ -14,9 +14,9 @@ Use this skill for PolicyEngine-specific PR reviews even when the user starts fr
 Treat the text after `$review-program` or `/review` as the command arguments when available:
 
 ```text
-$review-program PR_NUMBER_OR_SEARCH [PDF_URL] [--local] [--local-diff] [--full]
+$review-program [PR_NUMBER_OR_SEARCH] [PDF_URL] [--local] [--local-diff] [--full]
   [--skip-pdf] [--600dpi] [--resume] [--incremental REPORT]
-/review PR_NUMBER_OR_SEARCH [PDF_URL] [--local] [--local-diff] [--full]
+/review [PR_NUMBER_OR_SEARCH] [PDF_URL] [--local] [--local-diff] [--full]
   [--skip-pdf] [--600dpi] [--resume] [--incremental REPORT]
 ```
 
@@ -30,6 +30,9 @@ Mandatory completion gate:
 
 Operational rules:
 
+- Resolve the target PR first. If no PR number or search text was supplied, ask the user
+  for a PR number or title. Do not ask which program to review; infer program context from
+  the selected PR's diff.
 - Read-only mode: do not edit source files or change the user's branch.
 - Derive the worktree-scoped `RUN_ROOT` exactly as specified in `workflow.md`. Never use
   process-global `/tmp/{PREFIX}-...` paths.

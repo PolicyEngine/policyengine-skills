@@ -56,11 +56,20 @@ if [ "$RESUME" != "true" ] && [ -z "$INCREMENTAL_REPORT" ]; then
 fi
 ```
 
-Resolve the PR number directly if numeric, otherwise with:
+Resolve the target PR before gathering context:
+
+- if `PR_ARG` is numeric, use it directly
+- if `PR_ARG` contains search text, resolve it with:
 
 ```bash
 gh pr list --search "$PR_ARG" --json number,title --jq '.[0].number'
 ```
+
+- if `PR_ARG` is omitted, ask the user for a PR number or title and wait for the answer
+
+Ask for the PR, not the program. Infer the state and program from the selected PR's diff in
+Phase 1. If search text returns no PR, report that clearly and ask the user for another PR
+number or title.
 
 ## Phase 1: PR Context
 

@@ -51,7 +51,7 @@ description: Review any PR — code validation + PDF audit in one pass (read-onl
 ## Arguments
 
 `$ARGUMENTS` should contain:
-- **PR number** (required) — e.g., `7130`
+- **PR number or search text** (optional — prompts if omitted) — e.g., `7130` or `"Arkansas TANF"`
 - **PDF URL** (optional) — link to the official source PDF. If omitted, auto-discovered.
 - **Options**:
   - `--local` — show findings locally only, skip GitHub posting
@@ -153,14 +153,15 @@ if [[ "$PR_ARG" =~ ^[0-9]+$ ]]; then
 # Otherwise, search for PR by description/title
 else
     PR_NUMBER=$(gh pr list --search "$PR_ARG" --json number,title --jq '.[0].number')
-    if [ -z "$PR_NUMBER" ]; then
-        echo "No PR found matching: $PR_ARG"
-        exit 1
-    fi
 fi
 ```
 
+**If the search returns no PR**: report that clearly and ask the user for another PR
+number or title — do not guess or stop.
+
 **If no PR argument provided**: Use `AskUserQuestion` to ask for the PR number or title.
+Ask for the PR, not the program — the state and program are inferred from the selected
+PR's diff in Phase 1.
 
 ### Step 0B: Determine Posting Mode
 
