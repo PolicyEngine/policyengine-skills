@@ -239,7 +239,8 @@ or stage it (`git status --short -- sources/working_references.md` to confirm).
 - stage ONLY files in the approved fix plan plus formatting/changelog changes; confirm
   `sources/` is not staged
 - commit: `Fix issues from review: {brief summary}`
-- resolve the PR's actual base branch with `gh pr view`, fetch it from upstream, and
+- resolve the PR's actual base branch with `gh pr view`, fetch it from the PR's base
+  repository by URL (`PR_URL%/pull/*` — not a named remote, which may be a fork), and
   rebase the commit on it — never guess main/master; if the rebase changes program files
   or hits conflicts, rerun the targeted test manifest after resolving
 - push

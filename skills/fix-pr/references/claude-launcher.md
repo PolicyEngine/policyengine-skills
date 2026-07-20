@@ -15,8 +15,13 @@ operations onto Claude Code mechanics and adds nothing else.
   `RUN_ROOT`/`WORKTREE_ID`/`PREFIX` values, the file paths it reads and writes, and —
   for fix roles — "fix ONLY the issues assigned to you in the fix plan" plus "DO NOT
   commit; fix-pusher handles all commits". Include `Load skills:` lines naming the
-  role's skills from the canonical Roles table (prefix plugin skills with `complete:`,
-  e.g. `complete:policyengine-model-development`).
+  role's skills from the canonical Roles table.
+- **Namespacing** → plugin agents and skills are namespaced by the *installed plugin*
+  (e.g. `complete:country-models:rules-engineer` under the complete bundle, but a
+  different prefix under other bundles). Resolve every agent and skill name in this
+  file against the session's available lists by suffix match — never assume a specific
+  plugin prefix. If a specialized agent is not installed, fall back to
+  `general-purpose` and put the role's full task spec and skills in the prompt.
 - **"Concurrently"** (evidence extractors) → spawn all in a single message with
   `run_in_background: true`; wait for the batch.
 - **Coordinator context protection** → you are the coordinator in the canonical
@@ -26,14 +31,16 @@ operations onto Claude Code mechanics and adds nothing else.
 
 ## Role → agent type
 
-| Canonical role | subagent_type |
+Agent names below are unprefixed; resolve them per the namespacing rule above.
+
+| Canonical role | Agent |
 |---|---|
 | context-gatherer | `general-purpose` |
 | evidence-extractor-{N} | `general-purpose` |
-| fix-parameters | `complete:country-models:rules-engineer` |
-| fix-variables | `complete:country-models:rules-engineer` |
-| fix-tests | `complete:country-models:edge-case-generator` |
-| fix-ci | `complete:country-models:ci-fixer` |
-| fix-verifier | `complete:country-models:implementation-validator` |
-| fix-pusher | `complete:country-models:pr-pusher` |
+| fix-parameters | `rules-engineer` |
+| fix-variables | `rules-engineer` |
+| fix-tests | `edge-case-generator` |
+| fix-ci | `ci-fixer` |
+| fix-verifier | `implementation-validator` |
+| fix-pusher | `pr-pusher` |
 | comment-writer | `general-purpose` |

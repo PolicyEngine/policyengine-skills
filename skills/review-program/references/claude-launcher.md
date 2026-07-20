@@ -16,8 +16,13 @@ abstract operations onto Claude Code mechanics and adds nothing else.
   and a prompt containing: the role's task spec from the canonical workflow, the
   concrete `RUN_ROOT`/`WORKTREE_ID`/`PREFIX` values, the file paths it reads and
   writes, and the canonical completion-contract DONE line. Include `Load skills:` lines
-  naming the role's skills from the canonical Roles table (prefix plugin skills with
-  `complete:`, e.g. `complete:policyengine-model-development`).
+  naming the role's skills from the canonical Roles table.
+- **Namespacing** → plugin agents and skills are namespaced by the *installed plugin*
+  (e.g. `complete:country-models:rules-engineer` under the complete bundle, but a
+  different prefix under other bundles). Resolve every agent and skill name in this
+  file against the session's available lists by suffix match — never assume a specific
+  plugin prefix. If a specialized agent is not installed, fall back to
+  `general-purpose` and put the role's full task spec and skills in the prompt.
 - **"Concurrently"** → spawn all agents of the batch in a single message. The harness
   notifies you as each background agent completes; wait for the whole batch, never
   poll. Apply the canonical stalled-delegate fallback.
@@ -27,14 +32,16 @@ abstract operations onto Claude Code mechanics and adds nothing else.
 
 ## Role → agent type
 
-| Canonical role | subagent_type |
+Agent names below are unprefixed; resolve them per the namespacing rule above.
+
+| Canonical role | Agent |
 |---|---|
 | context-analyzer | `general-purpose` (needs Write) |
-| pdf-collector | `complete:country-models:document-collector` |
+| pdf-collector | `document-collector` |
 | file-lister | `general-purpose` (needs Write) |
-| regulatory-reviewer | `complete:country-models:program-reviewer` |
-| reference-checker | `complete:reference-validator` |
-| code-validator | `complete:country-models:implementation-validator` (Mode B — read-only code-pattern audit; do NOT run its structural-fix phases) |
-| edge-case-checker | `complete:country-models:edge-case-generator` |
+| regulatory-reviewer | `program-reviewer` |
+| reference-checker | `reference-validator` |
+| code-validator | `implementation-validator` (Mode B — read-only code-pattern audit; do NOT run its structural-fix phases) |
+| edge-case-checker | `edge-case-generator` |
 | pdf-audit-{topic}, verifier-* | `general-purpose` (need Bash for pdftoppm + Read for PNGs) |
 | consolidator | `general-purpose` (foreground) |

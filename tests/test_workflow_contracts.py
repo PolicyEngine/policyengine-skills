@@ -128,6 +128,36 @@ def test_codex_skill_bodies_avoid_claude_tokens() -> None:
             )
 
 
+def required_agents(name: str) -> set[str]:
+    """Unprefixed specialized agent names from the Claude adapter's role table."""
+    adapter = (SKILLS / name / "references" / "claude-launcher.md").read_text()
+    table = adapter.split("## Role → agent type", 1)[1]
+    agents = set()
+    for row in re.finditer(r"^\|[^|]+\|\s*`([a-z0-9-]+)`", table, re.M):
+        if row.group(1) != "general-purpose":
+            agents.add(row.group(1))
+    return agents
+
+
+def test_bundles_ship_the_agents_behind_every_workflow_skill() -> None:
+    # Agent names in claude-launcher.md are unprefixed and resolved by suffix at
+    # runtime, so any bundle that ships a consolidated workflow skill must also ship
+    # an agent file for every specialized agent the adapter names.
+    for name in CONSOLIDATED:
+        needed = required_agents(name)
+        assert needed, f"{name}: no specialized agents parsed from claude-launcher.md"
+        for bundle_path in sorted(BUNDLES.glob("*.json")):
+            bundle = json.loads(bundle_path.read_text())
+            if f"./skills/{name}" not in bundle.get("skills", []):
+                continue
+            shipped = {Path(a).stem for a in bundle.get("agents", [])}
+            missing = needed - shipped
+            assert not missing, (
+                f"{bundle_path.name} ships skills/{name} but lacks agents: "
+                f"{sorted(missing)}"
+            )
+
+
 def test_bundles_ship_the_skill_behind_every_thin_command() -> None:
     # Generic closure rule: if a bundle includes commands/<name>.md and skills/<name>
     # exists in the repo, the bundle must also include that skill — the thin command

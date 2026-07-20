@@ -138,6 +138,10 @@ Ask for the PR, not the program. Infer the state and program from the selected P
 in Phase 1. If search text returns no PR, report that clearly and ask the user for
 another PR number or title — do not guess or stop.
 
+In fork-based checkouts, make sure `gh` targets the PR's base repository (confirm with
+`gh repo set-default --view`, or pass `--repo OWNER/REPO`) so PR numbers and searches
+resolve against the right repo, not the fork.
+
 **Posting mode**: if `--local` or `--local-diff` is set, run local-only. Otherwise ask
 the user whether to post findings to GitHub when complete (default: post).
 
@@ -151,14 +155,18 @@ gh pr checks $PR_NUMBER
 ```
 
 **Never check out the PR.** Fetch refs and compute an explicit merge-base from captured
-SHAs, not from remote-tracking refs (which may be stale under non-standard remote
-configs or shallow clones):
+SHAs. Fetch from the PR's base repository by URL — not from a named remote: in
+fork-based checkouts `origin` is often the fork, where `pull/N/head` refs do not exist
+and the base branch may be stale. The PR URL identifies the base repository
+authoritatively:
 
 ```bash
-BASE_BRANCH=$(gh pr view $PR_NUMBER --json baseRefName --jq '.baseRefName')
-git fetch origin "$BASE_BRANCH"
+PR_URL=$(gh pr view "$PR_NUMBER" --json url --jq '.url')
+BASE_REPO_URL=${PR_URL%/pull/*}
+BASE_BRANCH=$(gh pr view "$PR_NUMBER" --json baseRefName --jq '.baseRefName')
+git fetch "$BASE_REPO_URL" "$BASE_BRANCH"
 BASE_SHA=$(git rev-parse FETCH_HEAD)
-git fetch origin "pull/$PR_NUMBER/head"
+git fetch "$BASE_REPO_URL" "pull/$PR_NUMBER/head"
 PR_HEAD=$(git rev-parse FETCH_HEAD)
 MERGE_BASE=$(git merge-base "$BASE_SHA" "$PR_HEAD")
 BEHIND=$(git rev-list --count "$PR_HEAD..$BASE_SHA")

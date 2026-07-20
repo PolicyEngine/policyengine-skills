@@ -39,6 +39,11 @@
   ],
   "agents": [
     "./agents/app/component-test-writer.md",
-    "./agents/app/multizone-validator.md"
+    "./agents/app/multizone-validator.md",
+    "./agents/country-models/ci-fixer.md",
+    "./agents/country-models/edge-case-generator.md",
+    "./agents/country-models/implementation-validator.md",
+    "./agents/country-models/pr-pusher.md",
+    "./agents/country-models/rules-engineer.md"
   ]
 }
