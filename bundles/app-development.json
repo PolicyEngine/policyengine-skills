@@ -21,11 +21,13 @@
   "skills": [
     "./skills/policyengine-app",
     "./skills/policyengine-tools",
+    "./skills/policyengine-model-development",
     "./skills/policyengine-us",
     "./skills/policyengine-uk",
     "./skills/policyengine-design",
     "./skills/policyengine-standards",
-    "./skills/policyengine-writing"
+    "./skills/policyengine-writing",
+    "./skills/fix-pr"
   ],
   "commands": [
     "./commands/create-new-component.md",
@@ -38,6 +40,12 @@
   ],
   "agents": [
     "./agents/app/component-test-writer.md",
-    "./agents/app/multizone-validator.md"
+    "./agents/app/multizone-validator.md",
+    "./agents/country-models/ci-fixer.md",
+    "./agents/country-models/edge-case-generator.md",
+    "./agents/country-models/implementation-validator.md",
+    "./agents/country-models/pr-pusher.md",
+    "./agents/country-models/rules-engineer.md",
+    "./agents/country-models/test-creator.md"
   ]
 }

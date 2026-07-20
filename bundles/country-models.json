@@ -25,7 +25,10 @@
     "./skills/policyengine-model-development",
     "./skills/policyengine-data",
     "./skills/policyengine-standards",
-    "./skills/policyengine-writing"
+    "./skills/policyengine-writing",
+    "./skills/encode-policy-v2",
+    "./skills/review-program",
+    "./skills/fix-pr"
   ],
   "commands": [
     "./commands/backdate-program.md",
@@ -46,6 +49,7 @@
     "./agents/country-models/program-reviewer.md",
     "./agents/country-models/rules-engineer.md",
     "./agents/country-models/structural-implementer.md",
-    "./agents/country-models/test-creator.md"
+    "./agents/country-models/test-creator.md",
+    "./agents/reference-validator.md"
   ]
 }

@@ -1,6 +1,6 @@
 # When to use what
 
-The PolicyEngine plugin ships ~23 slash commands, ~33 agents, and 23 skills (consolidated from 53 in the July 2026 rebuild). Most days you'll only use 3-5 of them. This guide maps common work to the right entry point.
+The PolicyEngine plugin ships ~23 slash commands, ~33 agents, and 23 skills (20 knowledge skills plus the three workflow skills, consolidated from 53 in the July 2026 rebuild). The `/encode-policy-v2`, `/review-program`, and `/fix-pr` entries are skill-backed: each name resolves to a skill whose `references/workflow.md` is the canonical definition, and the same-named commands are compatibility stubs. Most days you'll only use 3-5 entry points. This guide maps common work to the right one.
 
 ## Quick decision matrix
 
@@ -114,8 +114,7 @@ These get pulled in automatically by their trigger keywords, but useful to know 
 
 ```
 1. Load context: mention the state and program in your first message so
-   policyengine-us + policyengine-variable-patterns + policyengine-parameter-patterns
-   get auto-triggered
+   policyengine-us + policyengine-model-development get auto-triggered
 2. /encode-policy-v2 "state XX, program YY"
 3. /review-program to catch validator issues
 4. /fix-pr for the review comments
@@ -176,5 +175,4 @@ Most gaps identified in the initial pass were filled in a follow-up PR. Remainin
 - `/text-to-reform` — Stage 1+2 of `/analyze-policy` as a standalone
 - `/prior-analysis` — wraps `scripts/analyses_kb.py` search
 - `/prior-scores` — wraps `prior-scores-finder` agent + scorekeepers registry
-- `/encode-policy-v2` vs `/encode-reform` boundary clarified with pre-flight check
 - `/create-dashboard` vs `/new-tool` boundary clarified in each command's description
