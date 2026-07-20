@@ -2,7 +2,7 @@
 name: issue-manager
 description: Finds or creates GitHub issues for program implementations
 tools: Bash, Grep
-model: opus
+model: inherit
 ---
 
 ## Thinking Mode
@@ -48,16 +48,22 @@ gh issue list --state open --search "in:title <state> energy assistance"
 
 ### Step 2.5: Evaluate Found Issues
 
+**If the invoking prompt already names the issue to use** (a prior user decision) → skip
+the search decision and use it.
+
 **If NO issues found** → Proceed to Step 3 (create new issue) and continue workflow autonomously.
 
-**If issues ARE found** → STOP and present to user for decision.
+**If issues ARE found** → you run as a background delegate and cannot ask the user. STOP
+and return the candidates to the invoking coordinator (see the Step 5 `DECISION_NEEDED`
+format); the coordinator asks the user and re-invokes you with the decision.
 
 ```bash
 # For each found issue, read its details
 gh issue view <issue-number> --repo PolicyEngine/policyengine-us
 ```
 
-**Present to user:**
+**Candidate summary to return** (one block per issue — number, title, status, last
+activity, brief scope summary):
 ```
 ## Found Existing Issue(s)
 
@@ -70,17 +76,10 @@ gh issue view <issue-number> --repo PolicyEngine/policyengine-us
 - **Status:** Open
 - **Last activity:** 2024-02-15
 - **Summary:** [Brief description of what the issue covers]
-
----
-**Options:**
-1. Use Issue #5678
-2. Use Issue #1234
-3. Create a NEW issue (ignore existing)
-
-Which would you like? Or say "continue" to create new.
 ```
 
-**Wait for user response before proceeding.**
+Return this via the Step 5 `DECISION_NEEDED` format and finish — do not pick a candidate
+yourself and do not create anything until re-invoked with the decision.
 
 ### Step 3: Create Issue (If None Found or User Chooses New)
 ```bash
@@ -174,9 +173,13 @@ gh issue edit <issue-number> --add-label "implementation-tracking"
 gh pr list --state open --search "in:title <state> <program>"
 ```
 
+**If the invoking prompt already names the PR to use** → skip the search decision and
+use it.
+
 **If NO PRs found** → Proceed to Step 4 (create new PR) and continue workflow autonomously.
 
-**If PRs ARE found** → STOP and present to user for decision.
+**If PRs ARE found** → STOP and return the candidates to the invoking coordinator via the
+Step 5 `DECISION_NEEDED` format; the coordinator asks the user and re-invokes you.
 
 ```bash
 # For each found PR, read its details and files
@@ -184,7 +187,8 @@ gh pr view <pr-number> --repo PolicyEngine/policyengine-us
 gh pr diff <pr-number> --repo PolicyEngine/policyengine-us --stat
 ```
 
-**Present to user:**
+**Candidate summary to return** (one block per PR — number, title, status, last
+activity, file counts, brief scope summary):
 ```
 ## Found Existing PR(s)
 
@@ -199,17 +203,10 @@ gh pr diff <pr-number> --repo PolicyEngine/policyengine-us --stat
 - **Last activity:** 2024-02-15
 - **Files:** 12 files (parameters, variables, tests)
 - **Summary:** [Brief description of what the PR covers]
-
----
-**Options:**
-1. Continue on PR #5678
-2. Continue on PR #1234
-3. Create a NEW PR (ignore existing)
-
-Which would you like? Or say "continue" to create new.
 ```
 
-**Wait for user response before proceeding.**
+Return this via the Step 5 `DECISION_NEEDED` format and finish — do not pick a candidate
+yourself and do not create anything until re-invoked with the decision.
 
 ### Step 4: Create Draft PR (If None Found or User Chooses New)
 
@@ -275,13 +272,20 @@ fi
 
 ### Step 5: Return Issue and PR Information
 
-Return a structured response:
+When candidates need a user decision, return this instead of proceeding:
+
+```text
+DECISION_NEEDED: <issues | prs>
+<candidate summary blocks from Step 2.5 / 3.5>
+```
+
+Otherwise return the completed result:
 
 ```text
 ISSUE_FOUND: <true/false>
 ISSUE_NUMBER: <number>
 ISSUE_URL: https://github.com/PolicyEngine/policyengine-us/issues/<number>
-ISSUE_ACTION: <"found_existing" | "created_new">
+ISSUE_ACTION: <"found_existing" | "created_new" | "user_selected">
 PR_NUMBER: <number-if-created>
 PR_URL: <url-if-created>
 BRANCH: <state-code>-<program>

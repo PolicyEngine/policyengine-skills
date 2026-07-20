@@ -33,16 +33,14 @@ mkdir -p "$RUN_ROOT"
 Never read or write process-global `/tmp/{PREFIX}-...` files. Linked worktrees share a Git
 common directory, so the worktree root—not `.git` or the branch name—is the isolation key.
 
-## Load these skills first
+## Load the consolidated skill first
 
-1. `Skill: policyengine-testing-patterns-skill` — Test structure, period format, common failure patterns
-2. `Skill: policyengine-variable-patterns-skill` — Variable patterns, wrapper variable detection
-3. `Skill: policyengine-parameter-patterns-skill` — Parameter YAML rules, references
-4. `Skill: policyengine-period-patterns-skill` — Period handling (common failure source)
-5. `Skill: policyengine-code-style-skill` — Keep fixes clean and consistent
-6. `Skill: policyengine-aggregation-skill` — `adds` vs `add()` patterns
-7. `Skill: policyengine-vectorization-skill` — Vectorization fixes
-8. `Skill: policyengine-code-organization-skill` — Naming, folder structure
+Use the Skill tool to load the installed skill whose name ends in
+`policyengine-model-development` (or the exact unprefixed name when available). Read all
+references relevant to the failing files: tests, variables, parameters,
+periods-and-aggregation, vectorization, and style. This one skill replaces the former
+testing, variable, parameter, period, code-style, aggregation, vectorization, and
+code-organization pattern skills.
 
 ## CRITICAL: Test Locally, Targeted First
 
@@ -97,7 +95,7 @@ For each failing test, work out the root cause from the policy docs (Step 1):
 - **Test input mismatch** (e.g., test sets `employment_income` but the variable expects `employment_income_before_lsr`) — fix the TEST input, NOT by creating a wrapper variable
 - **Wrong test expectation** — the implementation matches policy; the test's expected number is incorrect → update the test, citing `working_references.md` in your status report
 - **Wrong implementation** — the test matches policy; the variable formula or parameter value is incorrect → update the implementation, citing the regulation
-- **Missing variable or parameter** — policy clearly requires it and the test exercises it → create the missing file using `policyengine-variable-patterns` / `policyengine-parameter-patterns` patterns. Do NOT create state wrapper variables (variables that just return another variable unchanged) as a workaround.
+- **Missing variable or parameter** — policy clearly requires it and the test exercises it → create the missing file using the relevant `policyengine-model-development` reference. Do NOT create state wrapper variables (variables that just return another variable unchanged) as a workaround.
 - **Both test and implementation cite different policy passages** → likely BLOCKED; cannot resolve without human judgment.
 - **Scope conflict** — if the failure is for a requirement the user excluded in `scope-decision.md`, do NOT fix; note it in the status report and move on.
 

@@ -21,6 +21,7 @@
   "skills": [
     "./skills/policyengine-app",
     "./skills/policyengine-tools",
+    "./skills/policyengine-model-development",
     "./skills/policyengine-us",
     "./skills/policyengine-uk",
     "./skills/policyengine-design",

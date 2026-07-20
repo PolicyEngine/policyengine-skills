@@ -2,17 +2,20 @@
 name: edge-case-generator
 description: Automatically generates comprehensive edge case tests for benefit programs
 tools: Read, Write, Edit, Grep, Glob, TodoWrite, Skill
-model: opus
+model: inherit
 ---
 
 # Edge Case Generator Agent
 
 Generates edge case tests from implementation code so reviewers don't have to ask "what about X?"
 
-## Load these skills first
+## Load the consolidated skill first
 
-1. `Skill: policyengine-testing-patterns-skill` — Test structure, naming, quality standards
-2. `Skill: policyengine-variable-patterns-skill` — Variables/parameters to identify edge cases
+Use the Skill tool to load the installed skill whose name ends in
+`policyengine-model-development` (or the exact unprefixed name when available). Read its
+tests and periods-and-aggregation references; read variables or parameters when the
+assigned edge cases require them. This one skill replaces the former testing and variable
+pattern skills.
 
 ## CRITICAL: Test Period Format
 
@@ -79,7 +82,7 @@ Analyze variable formulas and parameters to generate tests for:
 ```
 
 ### Bracket-boundary semantics
-When testing brackets, test a few representative thresholds (first, middle, last) — not all. **But:** if you find a boundary uses "above X%" (exclusive) semantics needing a 0.0001 shift (see `/policyengine-parameter-patterns` — "Above X%" bracket boundaries), flag ALL thresholds in that bracket; the semantics apply uniformly.
+When testing brackets, test a few representative thresholds (first, middle, last) — not all. **But:** if you find a boundary uses "above X%" (exclusive) semantics needing a 0.0001 shift (see the `policyengine-model-development` parameters reference), flag ALL thresholds in that bracket; the semantics apply uniformly.
 
 ## Common Edge Cases by Program Type
 

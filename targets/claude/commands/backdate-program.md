@@ -61,14 +61,28 @@ Coordinate a multi-agent workflow to add historical date entries, fix reference 
 
 ### Step 0A: Parse Arguments & Clean Up
 
+**Derive the worktree-safe runtime root first** — all runtime files live under it, never
+under process-global `/tmp` paths, so concurrent worktrees cannot collide:
+```bash
+WORKTREE_ROOT=$(git rev-parse --show-toplevel)
+WORKTREE_ID=$(printf '%s' "$WORKTREE_ROOT" | git hash-object --stdin | cut -c1-12)
+RUN_ROOT="/tmp/policyengine-command-runs/$WORKTREE_ID"
+mkdir -p "$RUN_ROOT"
+```
+
+Substitute the concrete `{RUN_ROOT}` value into every agent prompt. Before any branch
+operation, inspect `git worktree list --porcelain`; if the working branch is checked out
+in another worktree, stop and report that path — never use `--ignore-other-worktrees`.
+
 **Clean up leftover files from previous runs** (prevents stale data from confusing agents):
 ```bash
 # Clean /backdate-program files (use {st}-{prog} prefix after parsing)
-rm -f /tmp/{st}-{prog}-*.md
-# Derive PREFIX for reading /review-program output files (Phase 6)
+rm -f "$RUN_ROOT"/{st}-{prog}-*.md
+# Derive PREFIX for reading the review-program output files (Phase 6) — that workflow
+# names its files from the current branch, under the same RUN_ROOT
 PREFIX=$(git branch --show-current | tr '/' '-')
 PREFIX=${PREFIX:-review-program}
-# Note: /review-program's own Step 0A handles its file cleanup
+# Note: review-program's own Phase 0 handles its file cleanup
 ```
 
 ```
@@ -114,7 +128,7 @@ run_in_background: true
 
 "Inventory {STATE} {PROGRAM} parameter and variable files. Write TWO files:
 
-1. FULL inventory for agents: /tmp/{st}-{prog}-inventory.md
+1. FULL inventory for agents: {RUN_ROOT}/{st}-{prog}-inventory.md
    - List of parameter YAML files (full paths)
    - Earliest date entry in each file
    - YAML structure pattern (family-size breakdown vs scalar vs scale)
@@ -122,7 +136,7 @@ run_in_background: true
    - List of test .yaml files (full paths)
    No line limit — agents need the complete picture.
 
-2. SHORT summary for orchestrator: /tmp/{st}-{prog}-inventory-summary.md (MAX 10 LINES)
+2. SHORT summary for orchestrator: {RUN_ROOT}/{st}-{prog}-inventory-summary.md (MAX 10 LINES)
    - Parameter files: {count}
    - Variable files: {count}
    - Test files: {count}
@@ -133,7 +147,7 @@ run_in_background: true
 
 **After both agents complete**:
 
-- Read ONLY `/tmp/{st}-{prog}-inventory-summary.md` (max 10 lines) — just counts and the program path
+- Read ONLY `{RUN_ROOT}/{st}-{prog}-inventory-summary.md` (max 10 lines) — just counts and the program path
 - Store from issue-manager:
   - **ISSUE_NUMBER** — referenced in commit messages, changelog, and final report
   - **PR_NUMBER** — used by `/review-program` in Phase 6, and by `pr-pusher` in Phase 7
@@ -208,7 +222,7 @@ research agents → self-map sections in their page range → extract values →
 ```
 
 **Agent prompts must include:**
-- The inventory file path: `/tmp/{st}-{prog}-inventory.md`
+- The inventory file path: `{RUN_ROOT}/{st}-{prog}-inventory.md`
 - PDF rendering DPI: `{DPI}` (pass `pdftoppm -png -r {DPI}` to prep agents)
 - HISTORICAL ERA AWARENESS: check for predecessor program values (AFDC→TANF, FSP→SNAP)
 - Use Wayback Machine for archived sources
@@ -232,21 +246,21 @@ research agents → self-map sections in their page range → extract values →
 When you receive a message from the discovery agent with a PDF URL:
 
 1. Download:
-   curl -L -o /tmp/{st}-{prog}-{doc_id}.pdf '[URL]'
+   curl -L -o {RUN_ROOT}/{st}-{prog}-{doc_id}.pdf '[URL]'
 
 2. Get page count:
-   pdfinfo /tmp/{st}-{prog}-{doc_id}.pdf | grep Pages
+   pdfinfo {RUN_ROOT}/{st}-{prog}-{doc_id}.pdf | grep Pages
 
 3. Render at {DPI} DPI:
-   pdftoppm -png -r {DPI} /tmp/{st}-{prog}-{doc_id}.pdf /tmp/{st}-{prog}-{doc_id}-page
+   pdftoppm -png -r {DPI} {RUN_ROOT}/{st}-{prog}-{doc_id}.pdf {RUN_ROOT}/{st}-{prog}-{doc_id}-page
 
 4. Quick TOC hint (ONLY first 5 pages — do NOT read more):
-   pdftotext -f 1 -l 5 /tmp/{st}-{prog}-{doc_id}.pdf - | head -80
+   pdftotext -f 1 -l 5 {RUN_ROOT}/{st}-{prog}-{doc_id}.pdf - | head -80
 
 5. Message Main Claude (NOT research agents) with:
    - PDF file path
    - Total page count
-   - Screenshot path pattern (e.g., /tmp/{st}-{prog}-{doc_id}-page-*.png)
+   - Screenshot path pattern (e.g., {RUN_ROOT}/{st}-{prog}-{doc_id}-page-*.png)
    - TOC hint (the first ~80 lines of text, if a table of contents was found)
    - Page offset if obvious from the first few pages (e.g., cover page before page 1)
 
@@ -285,7 +299,7 @@ Main Claude will decide how many research agents to spawn based on page count."
 ```
 "You are extracting {PROGRAM} parameter values from a PDF for {STATE}.
 
-Your assigned page range: pages {START}-{END} of /tmp/{st}-{prog}-{doc_id}-page-*.png
+Your assigned page range: pages {START}-{END} of {RUN_ROOT}/{st}-{prog}-{doc_id}-page-*.png
 TOC hint from prep agent (first 5 pages only): {TOC_HINT_OR_'None available'}
 
 STEP 1 — SELF-MAP (do this first):
@@ -308,7 +322,7 @@ For EVERY parameter value you find, record:
 - Exact quote or table header that confirms the value
 
 STEP 3 — CROSS-REFERENCE:
-Read the existing repo parameter files listed in /tmp/{st}-{prog}-inventory.md.
+Read the existing repo parameter files listed in {RUN_ROOT}/{st}-{prog}-inventory.md.
 For each repo parameter, note whether you found a corresponding value in your pages.
 If not found, note 'NOT FOUND IN MY PAGE RANGE' (another agent may have it).
 
@@ -345,21 +359,21 @@ subagent_type: "general-purpose", team_name: "{st}-{prog}-backdate", name: "cons
 
 "Merge all research findings for {STATE} {PROGRAM} backdating.
 1. Read ALL task findings from task list (TaskList + TaskGet)
-2. Read inventory at /tmp/{st}-{prog}-inventory.md
+2. Read inventory at {RUN_ROOT}/{st}-{prog}-inventory.md
 3. Read existing parameter YAML files listed in inventory
 4. Read sources/working_references.md from document-collector
-5. Merge into FINAL IMPLEMENTATION SPEC: /tmp/{st}-{prog}-impl-spec.md
+5. Merge into FINAL IMPLEMENTATION SPEC: {RUN_ROOT}/{st}-{prog}-impl-spec.md
    - For EACH parameter file: exact date entries to add, with values + PDF citations
    - Reconcile conflicts (later documents supersede earlier)
    - Reconcile secondary source discrepancies (primary sources win)
    - Categorize: Tier A (YAML backdating), Tier B (new params), Tier C (formula changes)
    - Flag duplicate values (same value at multiple dates — only keep earliest)
-5. Write SHORT summary (max 20 lines): /tmp/{st}-{prog}-impl-summary.md"
+5. Write SHORT summary (max 20 lines): {RUN_ROOT}/{st}-{prog}-impl-summary.md"
 ```
 
 ### Regulatory Checkpoint 1
 
-Read ONLY `/tmp/{st}-{prog}-impl-summary.md`. Present a brief overview:
+Read ONLY `{RUN_ROOT}/{st}-{prog}-impl-summary.md`. Present a brief overview:
 
 ```
 ## {STATE_FULL} {PROGRAM} — Research Complete
@@ -444,7 +458,7 @@ The `reference-validator` agent is purpose-built for this — it validates that 
 5. INSTRUCTION PAGE vs PDF PAGE: Verify #page=XX is the file page, not the printed
    page number. Render the page and confirm content matches.
 6. HISTORICAL PLAN COVERAGE: Check for refs to ALL relevant plan periods.
-Write findings to /tmp/{st}-{prog}-ref-audit.md."
+Write findings to {RUN_ROOT}/{st}-{prog}-ref-audit.md."
 ```
 
 ### Formula Reviewer
@@ -466,14 +480,14 @@ The `program-reviewer` agent is purpose-built for this — it researches regulat
 3. REDUNDANT LOGIC: Flag mathematically unnecessary operations.
 4. HARDCODED COMMENTS: Flag comments with specific numbers (e.g., '92%', '171% FPG').
 5. ERA HANDLING: Verify formula uses parameter-driven branching, NOT year-checks.
-Read impl spec at /tmp/{st}-{prog}-impl-spec.md for regulatory context.
-Write findings to /tmp/{st}-{prog}-formula-audit.md.
-Write SHORT summary (max 15 lines) to /tmp/{st}-{prog}-phase2-summary.md."
+Read impl spec at {RUN_ROOT}/{st}-{prog}-impl-spec.md for regulatory context.
+Write findings to {RUN_ROOT}/{st}-{prog}-formula-audit.md.
+Write SHORT summary (max 15 lines) to {RUN_ROOT}/{st}-{prog}-phase2-summary.md."
 ```
 
 ### Regulatory Checkpoint 2
 
-Read ONLY `/tmp/{st}-{prog}-phase2-summary.md`. Present a brief overview:
+Read ONLY `{RUN_ROOT}/{st}-{prog}-phase2-summary.md`. Present a brief overview:
 
 ```
 ## Audit Results
@@ -544,9 +558,10 @@ The `rules-engineer` agent designs and modifies parameter structures with proper
 **Instructions:**
 ```
 "Add historical date entries to {STATE} {PROGRAM} parameter files AND apply reference fixes.
-Load skills: /policyengine-parameter-patterns, /policyengine-period-patterns.
-Read impl spec at /tmp/{st}-{prog}-impl-spec.md (parameter values to add).
-Read ref audit at /tmp/{st}-{prog}-ref-audit.md (reference fixes to apply).
+Load the consolidated policyengine-model-development skill (resolve its installed name
+by suffix) and read its parameters and periods-and-aggregation references.
+Read impl spec at {RUN_ROOT}/{st}-{prog}-impl-spec.md (parameter values to add).
+Read ref audit at {RUN_ROOT}/{st}-{prog}-ref-audit.md (reference fixes to apply).
 
 
 RULES:
@@ -618,9 +633,10 @@ The `rules-engineer` agent implements government benefit program rules with zero
 **Instructions:**
 ```
 "Apply formula fixes for {STATE} {PROGRAM} identified in the formula audit.
-Load skills: /policyengine-variable-patterns, /policyengine-code-style,
-  /policyengine-parameter-patterns, /policyengine-period-patterns, /policyengine-vectorization.
-Read formula audit at /tmp/{st}-{prog}-formula-audit.md.
+Load the consolidated policyengine-model-development skill (resolve its installed name
+by suffix) and read its variables, style, parameters, periods-and-aggregation, and
+vectorization references.
+Read formula audit at {RUN_ROOT}/{st}-{prog}-formula-audit.md.
 
 
 REUSE EXISTING VARIABLES AND PARAMETERS:
@@ -702,9 +718,10 @@ The `test-creator` agent creates comprehensive integration tests ensuring realis
 **Instructions:**
 ```
 "Add tests for {STATE} {PROGRAM} backdating.
-Load skills: /policyengine-testing-patterns, /policyengine-period-patterns.
-Read impl spec at /tmp/{st}-{prog}-impl-spec.md.
-Read existing test files listed in /tmp/{st}-{prog}-inventory.md.
+Load the consolidated policyengine-model-development skill (resolve its installed name
+by suffix) and read its tests and periods-and-aggregation references.
+Read impl spec at {RUN_ROOT}/{st}-{prog}-impl-spec.md.
+Read existing test files listed in {RUN_ROOT}/{st}-{prog}-inventory.md.
 
 
 COVERAGE REQUIREMENTS:
@@ -731,7 +748,8 @@ The `edge-case-generator` analyzes the variables and parameters to automatically
 **Instructions:**
 ```
 "Generate edge case tests for {STATE} {PROGRAM}.
-Load skills: /policyengine-testing-patterns, /policyengine-period-patterns.
+Load the consolidated policyengine-model-development skill (resolve its installed name
+by suffix) and read its tests and periods-and-aggregation references.
 Analyze variables and parameters in the program folder.
 
 
@@ -752,8 +770,9 @@ Focus on:
 subagent_type: "complete:country-models:implementation-validator"
 
 "Validate {STATE} {PROGRAM} implementation for PolicyEngine standards compliance.
-Load skills: /policyengine-variable-patterns, /policyengine-parameter-patterns,
-  /policyengine-code-style, /policyengine-period-patterns.
+Load the consolidated policyengine-model-development skill (resolve its installed name
+by suffix) and read its variables, parameters, style, and periods-and-aggregation
+references.
 Check naming conventions, folder structure, parameter formatting, variable code style.
 Boolean toggle date alignment: when a boolean parameter (in_effect, regional_in_effect,
 flat_applies) changes value at date D, verify that ALL parameters it gates have entries
@@ -762,8 +781,8 @@ may be incorrect. Flag as CRITICAL.
 Duplicate variable detection: if any new variable was created for a common concept (FPG,
 SMI, gross income, enrollment status), Grep the codebase to check if an existing variable
 already covers it. PolicyEngine-US has hundreds of reusable variables. Flag duplicates.
-Files to validate: parameter and variable files listed in /tmp/{st}-{prog}-inventory.md
-Write findings to /tmp/{st}-{prog}-impl-validation.md."
+Files to validate: parameter and variable files listed in {RUN_ROOT}/{st}-{prog}-inventory.md
+Write findings to {RUN_ROOT}/{st}-{prog}-impl-validation.md."
 ```
 
 ### Step 5B: CI Fixer
@@ -784,7 +803,7 @@ name: "quick-auditor"
 
 "Review git diff of changes. Check for: hard-coded values to pass tests,
 year-check conditionals (period.start.year), altered parameter values.
-Write SHORT report (max 15 lines) to /tmp/{st}-{prog}-checkpoint.md: PASS/FAIL + issues."
+Write SHORT report (max 15 lines) to {RUN_ROOT}/{st}-{prog}-checkpoint.md: PASS/FAIL + issues."
 ```
 
 Read ONLY the checkpoint file.
@@ -857,7 +876,7 @@ Invoke the `review-program` skill in local-only mode with `--full`. On **round 1
 
 ### Step 6B: Check Results
 
-Read `/tmp/{PREFIX}-review-summary.md` (max 20 lines). Check:
+Read `{RUN_ROOT}/{PREFIX}-review-summary.md` (max 20 lines). Check:
 - **Critical issue count** — the number that matters
 - **Recommended severity** — APPROVE means zero critical issues
 
@@ -893,10 +912,11 @@ subagent_type: "complete:country-models:rules-engineer",
   team_name: "{st}-{prog}-backdate", name: "review-fixer-{ROUND}"
 
 "Fix the critical issues from the /review-program review (round {ROUND}).
-Read the full review report at /tmp/{PREFIX}-review-full-report.md.
+Read the full review report at {RUN_ROOT}/{PREFIX}-review-full-report.md.
 Focus ONLY on items marked CRITICAL — do not change anything else.
-Load skills: /policyengine-variable-patterns, /policyengine-code-style,
-  /policyengine-parameter-patterns, /policyengine-period-patterns, /policyengine-vectorization.
+Load the consolidated policyengine-model-development skill (resolve its installed name
+by suffix) and read its variables, style, parameters, periods-and-aggregation, and
+vectorization references.
 Apply fixes. Run make format.
 
 REUSE EXISTING VARIABLES: Before creating any non-program-specific variable, Grep the
@@ -904,10 +924,10 @@ codebase first. PolicyEngine-US likely already has it (fpg, smi, tanf_fpg, ssi, 
 
 
 LEARN FROM PREVIOUS ROUNDS:
-If /tmp/{st}-{prog}-checklist.md exists, read it FIRST. It contains issues
+If {RUN_ROOT}/{st}-{prog}-checklist.md exists, read it FIRST. It contains issues
 found and fixed in previous rounds. Do NOT reintroduce any of those patterns.
 
-AFTER fixing, APPEND your fixes to /tmp/{st}-{prog}-checklist.md:
+AFTER fixing, APPEND your fixes to {RUN_ROOT}/{st}-{prog}-checklist.md:
 Format each line as:
 - [ROUND {ROUND}] [{CATEGORY}] {file}:{line} — {what was wrong} → {what you changed}
 
@@ -984,15 +1004,15 @@ subagent_type: "general-purpose",
 
 "Finalize {STATE} {PROGRAM} backdating report.
 1. Read all findings from task list
-2. Read the last /review-program summary at /tmp/{PREFIX}-review-summary.md
-3. Read the impl spec summary at /tmp/{st}-{prog}-impl-summary.md
-4. Write SHORT final report (max 25 lines) to /tmp/{st}-{prog}-final-report.md:
+2. Read the last /review-program summary at {RUN_ROOT}/{PREFIX}-review-summary.md
+3. Read the impl spec summary at {RUN_ROOT}/{st}-{prog}-impl-summary.md
+4. Write SHORT final report (max 25 lines) to {RUN_ROOT}/{st}-{prog}-final-report.md:
    - Total parameters verified, date entries added
    - Reference fixes applied, formula improvements made
    - Review-fix loop rounds completed, remaining issues (if any)
    - Issue #{ISSUE_NUMBER}, PR #{PR_NUMBER}
-5. Write FULL detailed report to /tmp/{st}-{prog}-full-audit.md (archival)
-6. Write PR description to /tmp/{st}-{prog}-pr-description.md using this format:
+5. Write FULL detailed report to {RUN_ROOT}/{st}-{prog}-full-audit.md (archival)
+6. Write PR description to {RUN_ROOT}/{st}-{prog}-pr-description.md using this format:
 
    ## Summary
    Backdates {STATE_FULL} {PROGRAM} parameters to {TARGET_YEAR} and improves code quality.
@@ -1032,12 +1052,12 @@ subagent_type: "general-purpose",
 After the reporter completes, Main Claude updates the PR description using `--body-file` (no need to read the file into context):
 
 ```bash
-gh pr edit $PR_NUMBER --body-file /tmp/{st}-{prog}-pr-description.md
+gh pr edit $PR_NUMBER --body-file {RUN_ROOT}/{st}-{prog}-pr-description.md
 ```
 
 ### Step 7D: Present Summary
 
-Read ONLY `/tmp/{st}-{prog}-final-report.md`. Present to user:
+Read ONLY `{RUN_ROOT}/{st}-{prog}-final-report.md`. Present to user:
 - Total parameters verified
 - Date entries added
 - Reference fixes applied
@@ -1089,19 +1109,19 @@ Present to user:
 
 | File | Written By | Read By | Size |
 |------|-----------|---------|------|
-| `/tmp/{st}-{prog}-inventory.md` | inventory (Phase 0) | Agents only | Full |
-| `/tmp/{st}-{prog}-inventory-summary.md` | inventory (Phase 0) | Main Claude | Short (≤10 lines) |
+| `{RUN_ROOT}/{st}-{prog}-inventory.md` | inventory (Phase 0) | Agents only | Full |
+| `{RUN_ROOT}/{st}-{prog}-inventory-summary.md` | inventory (Phase 0) | Main Claude | Short (≤10 lines) |
 | `sources/working_references.md` | document-collector (Phase 0E) | Consolidator | Full |
-| `/tmp/{st}-{prog}-impl-spec.md` | Consolidator (Phase 1) | Impl agents, test agents | Full |
-| `/tmp/{st}-{prog}-impl-summary.md` | Consolidator (Phase 1) | Main Claude | Short |
-| `/tmp/{st}-{prog}-ref-audit.md` | reference-validator (Phase 2) | rules-engineer | Full |
-| `/tmp/{st}-{prog}-formula-audit.md` | program-reviewer (Phase 2) | rules-engineer | Full |
-| `/tmp/{st}-{prog}-phase2-summary.md` | program-reviewer (Phase 2) | Main Claude | Short |
-| `/tmp/{st}-{prog}-checkpoint.md` | quick-auditor (Phase 5) | Main Claude | Short |
-| `/tmp/{st}-{prog}-final-report.md` | Reporter (Phase 7) | Main Claude | Short |
-| `/tmp/{st}-{prog}-pr-description.md` | Reporter (Phase 7) | gh pr edit --body-file | Full |
-| `/tmp/{st}-{prog}-full-audit.md` | Reporter (Phase 7) | Archival only | Full |
-| `/tmp/{st}-{prog}-checklist.md` | review-fixer (Phase 6) | Fix agents (next round) | Full |
+| `{RUN_ROOT}/{st}-{prog}-impl-spec.md` | Consolidator (Phase 1) | Impl agents, test agents | Full |
+| `{RUN_ROOT}/{st}-{prog}-impl-summary.md` | Consolidator (Phase 1) | Main Claude | Short |
+| `{RUN_ROOT}/{st}-{prog}-ref-audit.md` | reference-validator (Phase 2) | rules-engineer | Full |
+| `{RUN_ROOT}/{st}-{prog}-formula-audit.md` | program-reviewer (Phase 2) | rules-engineer | Full |
+| `{RUN_ROOT}/{st}-{prog}-phase2-summary.md` | program-reviewer (Phase 2) | Main Claude | Short |
+| `{RUN_ROOT}/{st}-{prog}-checkpoint.md` | quick-auditor (Phase 5) | Main Claude | Short |
+| `{RUN_ROOT}/{st}-{prog}-final-report.md` | Reporter (Phase 7) | Main Claude | Short |
+| `{RUN_ROOT}/{st}-{prog}-pr-description.md` | Reporter (Phase 7) | gh pr edit --body-file | Full |
+| `{RUN_ROOT}/{st}-{prog}-full-audit.md` | Reporter (Phase 7) | Archival only | Full |
+| `{RUN_ROOT}/{st}-{prog}-checklist.md` | review-fixer (Phase 6) | Fix agents (next round) | Full |
 
 **Main Claude reads ONLY "Short" files. Never read "Full" files.**
 

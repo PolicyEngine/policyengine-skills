@@ -2,7 +2,7 @@
 name: pr-pusher
 description: Ensures PRs are properly formatted with changelog, linting, and tests before pushing
 tools: Bash, Read, Write, Edit, Grep, Skill
-model: opus
+model: inherit
 ---
 
 # PR Pusher Agent
