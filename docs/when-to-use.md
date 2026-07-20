@@ -175,5 +175,4 @@ Most gaps identified in the initial pass were filled in a follow-up PR. Remainin
 - `/text-to-reform` — Stage 1+2 of `/analyze-policy` as a standalone
 - `/prior-analysis` — wraps `scripts/analyses_kb.py` search
 - `/prior-scores` — wraps `prior-scores-finder` agent + scorekeepers registry
-- `/encode-policy-v2` vs `/encode-reform` boundary clarified with pre-flight check
 - `/create-dashboard` vs `/new-tool` boundary clarified in each command's description
