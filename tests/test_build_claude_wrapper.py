@@ -36,8 +36,10 @@ def test_build_claude_wrapper(tmp_path: Path) -> None:
 
     for plugin in manifest["plugins"]:
         assert plugin.get("source") == "./", f"{plugin['name']} missing source=./"
-        assert "hooks" not in plugin or plugin["hooks"] is not None, (
-            f"{plugin['name']} has hooks: null"
+        assert "hooks" not in plugin, (
+            f"{plugin['name']} has a hooks entry; Claude Code rejects both hooks: null "
+            "and file-path strings in marketplace entries - hooks/hooks.json at the "
+            "plugin root is auto-loaded instead"
         )
 
     assert (output_dir / "skills" / "policyengine" / "SKILL.md").exists()

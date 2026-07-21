@@ -2,7 +2,7 @@
   "name": "app-development",
   "description": "React app development - app-v2, standalone tools, Vercel deployment, and PolicyEngine-specific patterns",
   "category": "development",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "keywords": [
     "react",
     "frontend",
