@@ -25,11 +25,14 @@ def load_bundles(source_root: Path) -> list[dict]:
 
 
 def normalize_plugin(bundle: dict) -> dict:
-    # Claude Code 2.1.89+ requires `source` on every plugin and rejects `hooks: null`.
+    # Claude Code 2.1.89+ requires `source` on every plugin and rejects `hooks: null`;
+    # newer versions also reject the file-path string form for `hooks` in marketplace
+    # entries. Every plugin's source is the wrapper root, which ships hooks/hooks.json
+    # at the location Claude Code auto-loads, so marketplace entries carry no `hooks`
+    # key at all. The bundle-level `hooks` field remains as validated intent only.
     plugin = dict(bundle)
     plugin.setdefault("source", "./")
-    if plugin.get("hooks") is None:
-        plugin.pop("hooks", None)
+    plugin.pop("hooks", None)
     return plugin
 
 
