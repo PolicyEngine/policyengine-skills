@@ -10,8 +10,7 @@ Deploy a completed PolicyEngine dashboard to production. Run this AFTER merging 
 
 ## Skills Used
 
-- **policyengine-vercel-deployment-skill** — Frontend deployment (all dashboards)
-- **policyengine-modal-deployment-skill** — Backend deployment (only if `custom-backend` pattern)
+- **policyengine-tools** — Vercel frontend deployment (all dashboards) and Modal backend deployment (only if `custom-backend` pattern)
 
 ## Step 1: Verify Prerequisites
 
@@ -74,7 +73,7 @@ Spawn the `multizone-validator` agent with `TARGET_PATH=.` (current dashboard re
 
 **Only if `data_pattern: custom-backend`.** If `api-v2-alpha`, skip to Step 4.
 
-See `policyengine-modal-deployment-skill` for the full Modal deployment reference.
+See the `policyengine-tools` skill (Pattern C: Modal gateway + worker + polling) for the full Modal deployment reference.
 
 ### 3a. Authentication check (human gate)
 
@@ -156,7 +155,7 @@ curl -s -X POST https://policyengine--DASHBOARD_NAME-calculate.modal.run \
   -d '{"test": true}'
 ```
 
-**If deploy fails:** Report error and STOP. See the `policyengine-modal-deployment-skill` troubleshooting table.
+**If deploy fails:** Report error and STOP. See the `policyengine-tools` skill's Modal deployment guidance.
 
 ### 3e. Set API URL in Vercel
 
@@ -169,7 +168,7 @@ vercel env add NEXT_PUBLIC_API_URL production
 
 ## Step 4: Deploy Frontend to Vercel
 
-See `policyengine-vercel-deployment-skill` for the full Vercel deployment reference.
+See the `policyengine-tools` skill ("Deployment gotchas") for the full Vercel deployment reference.
 
 ```bash
 # Link to Vercel under PolicyEngine team (if not already linked)
@@ -229,7 +228,7 @@ Add these entries to `rewrites().beforeFiles` in `website/next.config.ts` (use `
 { source: '/_zones/<dashboard.name>/:path*', destination: 'https://<VERCEL_PRODUCTION_URL>/_zones/<dashboard.name>/:path*' },
 ```
 
-Skip the asset rewrite only if the zone does not set `assetPrefix`. For root-served zones (no `basePath`), keep the route rewrites but map destinations to the zone root instead: `<zone_path>` → `https://<VERCEL_PRODUCTION_URL>` and `<zone_path>/:path*` → `https://<VERCEL_PRODUCTION_URL>/:path*`. See `policyengine-interactive-tools-skill` for the two valid patterns: path-mounted and root-served.
+Skip the asset rewrite only if the zone does not set `assetPrefix`. For root-served zones (no `basePath`), keep the route rewrites but map destinations to the zone root instead: `<zone_path>` → `https://<VERCEL_PRODUCTION_URL>` and `<zone_path>/:path*` → `https://<VERCEL_PRODUCTION_URL>/:path*`. See the `policyengine-tools` skill for the two valid patterns: path-mounted and root-served.
 
 ### 5c. Add apps.json entry (only if `embedding.register_in_apps_json: true`)
 
@@ -330,9 +329,9 @@ Present deployment summary to the user:
 
 | Issue | Fix | Reference |
 |-------|-----|-----------|
-| Vercel deploy fails | Check `vercel.json` config, ensure project builds | `policyengine-vercel-deployment-skill` |
-| Modal deploy fails | Check Python deps, Modal auth, function timeouts | `policyengine-modal-deployment-skill` |
-| Wrong Modal workspace | `modal profile activate policyengine` | `policyengine-modal-deployment-skill` |
-| 404 on Vercel URL | Wait 30s for propagation, check Vercel dashboard | `policyengine-vercel-deployment-skill` |
-| API returns errors | Check Modal logs: `modal app logs DASHBOARD_NAME` | `policyengine-modal-deployment-skill` |
-| Hash sync broken | Check postMessage calls in embedding.ts | `policyengine-interactive-tools-skill` |
+| Vercel deploy fails | Check `vercel.json` config, ensure project builds | `policyengine-tools` |
+| Modal deploy fails | Check Python deps, Modal auth, function timeouts | `policyengine-tools` |
+| Wrong Modal workspace | `modal profile activate policyengine` | `policyengine-tools` |
+| 404 on Vercel URL | Wait 30s for propagation, check Vercel dashboard | `policyengine-tools` |
+| API returns errors | Check Modal logs: `modal app logs DASHBOARD_NAME` | `policyengine-tools` |
+| Hash sync broken | Check postMessage calls in embedding.ts | `policyengine-tools` |
