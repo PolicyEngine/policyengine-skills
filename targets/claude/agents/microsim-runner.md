@@ -230,7 +230,8 @@ If a 10-year cost is required, run all 10 years via `run_horizon(policy_id, base
 
 ## Process — Local path
 
-Load the `policyengine` skill for current import patterns and certified dataset names. The canonical local entry point is the top-level `policyengine` package pinned to the certified Populace bundle — **never** `from policyengine_us import Microsimulation` (unmanaged) or a bare `from policyengine import Microsimulation` (that class does not exist).
+<!-- stale-ok -->
+Load the `policyengine` skill for current import patterns and certified dataset names. The canonical local entry point is the top-level `policyengine` package (latest, `>=5.0.1`) pinned to the certified Populace bundle — **never** `from policyengine_us import Microsimulation` (unmanaged; deprecated for analysis) or a bare `from policyengine import Microsimulation` (that class does not exist).
 
 Baseline-vs-reform economy analysis (budget, poverty, deciles, inequality in one pass):
 

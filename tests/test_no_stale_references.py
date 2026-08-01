@@ -53,6 +53,12 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
         re.compile(r"(?<!uv )\bpip install\b"),
         "use uv pip install / uv run per repo standards",
     ),
+    (
+        re.compile(r"from policyengine_(us|uk) import [^\n]*\bMicrosimulation\b"),
+        "direct country-package Microsimulation is deprecated for analysis "
+        "(2026-08-01); use pe.{us,uk}.managed_microsimulation() from "
+        "policyengine>=5.0.1 — deliberate deprecation notes take <!-- stale-ok -->",
+    ),
 ]
 
 SCAN_DIRS = ["skills", "targets", "docs", "bundles", "presets"]
