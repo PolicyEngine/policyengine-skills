@@ -174,9 +174,10 @@ def compute_statewide(params: dict) -> dict:
 ```
 
 Society-wide endpoints in `simulation.py` compute through the managed path — `import
-policyengine as pe; sim = pe.us.managed_microsimulation(reform=...)` (same MicroSeries
-`.calc()` surface, provenance on `sim.policyengine_bundle`) — never a directly-imported
-country-package `Microsimulation`, whose default dataset can lag the certified bundle.
+policyengine as pe; sim = pe.us.managed_microsimulation(reform=...)` (same weighted
+MicroSeries surface: `.calc()` US / `.calculate()` UK; provenance on
+`sim.policyengine_bundle`) — never a directly-imported country-package `Microsimulation`,
+whose default dataset can lag the certified bundle.
 Household-level endpoints may use `from policyengine_us import Simulation`. Pre-cache the
 certified dataset by constructing the managed microsim inside `snapshot_models()` (UK builds
 need `HUGGING_FACE_TOKEN` — private dataset repo). Details: the `policyengine` skill.

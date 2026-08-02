@@ -11,7 +11,7 @@ Runs a single reform through PolicyEngine and returns structured impact results.
 
 **Two execution paths** — pick based on environment:
 1. **API path (default, no install required):** call `api.policyengine.org`.
-2. **Local path (heavy, more flexible):** install the `policyengine` package (latest, `>=5.0.1`) and run via `pe.{us,uk}.managed_microsimulation()`.
+2. **Local path (heavy, more flexible):** install the `policyengine` package (latest, `>=5.0.1`) and run through its managed `pe.{us,uk}` surfaces (see "Process — Local path").
 
 ## Inputs
 

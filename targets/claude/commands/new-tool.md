@@ -19,7 +19,7 @@ Ask the user for:
 3. **Data pattern** — how the tool gets model results:
    - **A) Precomputed** — Static JSON or CSV shipped with the app (best for finite parameter spaces)
    - **B) PolicyEngine API** — Direct calls to `api.policyengine.org/us/calculate` (best for household calculators)
-   - **C) Custom Modal API** — Python serverless function with the top-level `policyengine[us|uk]` package (best when main API doesn't support needed variables/reforms)
+   - **C) Custom Modal API** — Python serverless function with the top-level `policyengine[us]` / `policyengine[uk]` package (best when main API doesn't support needed variables/reforms)
 4. **Brief description** of what the tool calculates
 
 ## Step 2: Create the project

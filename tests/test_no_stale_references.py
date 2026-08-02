@@ -9,8 +9,12 @@ only for analysis.
 Known residual limits of the Microsimulation guard (kept narrow on purpose so
 prose that merely *names* the class — e.g. "a bare ``Microsimulation()``" —
 does not trip it): aliased constructors (``import policyengine_us as x;
-x.Microsimulation()``) and ``import *`` forms are not caught. Reviewers own
-those; the corpus tests below pin exactly what is and is not detected.
+x.Microsimulation()``), ``import *`` forms, and a qualified constructor whose
+dot is split across lines are not caught. Reviewers own those; the corpus
+tests below pin exactly what is and is not detected. Same-line, paren-wrapped
+multiline, and backslash-continued imports ARE caught, as is the
+module-qualified constructor; ``policyengine_us_data`` and other
+underscore-suffixed sibling packages are excluded by a word boundary.
 """
 
 from __future__ import annotations
@@ -71,27 +75,29 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
         "use uv pip install / uv run per repo standards",
     ),
     (
-        # same-line import, tolerant of extra whitespace and submodule paths
-        # (from policyengine_us.microsimulation import Microsimulation)
-        re.compile(
-            r"from\s+policyengine_(us|uk)[\w.]*\s+import[^\n]*\bMicrosimulation\b"
-        ),
-        MICROSIM_REASON,
-    ),
-    (
-        # module-qualified constructor: policyengine_us.Microsimulation(...)
-        re.compile(r"policyengine_(us|uk)\s*\.\s*Microsimulation\b"),
+        # module-qualified constructor: policyengine_us.Microsimulation(...).
+        # \b keeps policyengine_us_data and other sibling packages out.
+        re.compile(r"policyengine_(us|uk)\b\s*\.\s*Microsimulation\b"),
         MICROSIM_REASON,
     ),
 ]
 
-# (pattern, reason) — matched against whole-file text, for forms a line scan
-# cannot see (paren-wrapped multiline imports). ``[^)]*`` crosses newlines but
-# cannot run past the closing paren, so unrelated later text stays unmatched.
+# (pattern, reason) — matched against whole-file text, for import statements
+# whose logical line a per-line scan cannot see. ``(?:[^\n\\]|\\\n)*`` walks a
+# logical line: any char except newline/backslash, or a backslash-newline
+# continuation — so same-line AND backslash-continued imports both match, while
+# a plain newline still terminates the search. ``[^)]*`` in the paren form
+# crosses newlines but cannot run past the closing paren.
 FORBIDDEN_MULTILINE: list[tuple[re.Pattern[str], str]] = [
     (
         re.compile(
-            r"from\s+policyengine_(us|uk)[\w.]*\s+import\s*\([^)]*\bMicrosimulation\b"
+            r"from\s+policyengine_(us|uk)\b[\w.]*(?:[^\n\\]|\\\n)*\bMicrosimulation\b"
+        ),
+        MICROSIM_REASON,
+    ),
+    (
+        re.compile(
+            r"from\s+policyengine_(us|uk)\b[\w.]*\s+import\s*\([^)]*\bMicrosimulation\b"
         ),
         MICROSIM_REASON,
     ),
@@ -161,6 +167,9 @@ MICROSIM_BANNED_SAMPLES = [
     "sim = policyengine_uk . Microsimulation(reform=reform)",
     "from policyengine_us import (\n    Microsimulation,\n)",
     "from policyengine_uk import (\n    Simulation,\n    Microsimulation,\n)",
+    "from policyengine_us import \\\n    Microsimulation",
+    "from policyengine_uk \\\n    import Microsimulation",
+    "from policyengine_us import Simulation, \\\n    Microsimulation",
 ]
 
 MICROSIM_ALLOWED_SAMPLES = [
@@ -169,6 +178,8 @@ MICROSIM_ALLOWED_SAMPLES = [
     "from policyengine_us import Simulation",
     "from policyengine_uk import CountryTaxBenefitSystem",
     "from policyengine_us import (\n    Simulation,\n    CountryTaxBenefitSystem,\n)",
+    "from policyengine_us import \\\n    Simulation",
+    "from policyengine_us_data import Microsimulation",
     "a bare `Microsimulation()` is already post-July-2025 UC law",
     "The country-package `Microsimulation(reform=...)` accepts either form",
     "<!-- stale-ok -->\nfrom policyengine_us import Microsimulation  # deprecation note",
