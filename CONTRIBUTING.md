@@ -46,7 +46,8 @@ See [skills/README.md](skills/README.md) for the full list. The load-bearing one
    `<!-- verify: slow -->` marks population-scale examples (run at authoring time
    and via `PE_SKILLS_RUN_SLOW=1 uv run pytest tests/test_skill_examples.py`).
 3. **Anti-rot lint**: `tests/test_no_stale_references.py` bans known-dead patterns.
-   Deliberate history notes take `<!-- stale-ok -->` on the preceding line.
+   Deliberate history notes — and explicitly-scoped engine-development examples of
+   patterns banned for analysis — take `<!-- stale-ok -->` on the preceding line.
 4. Descriptions stay ≤1024 characters (Codex hard limit).
 
 ## Testing

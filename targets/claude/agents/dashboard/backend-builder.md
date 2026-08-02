@@ -204,7 +204,7 @@ When `data_pattern: custom-modal`, build a two-layer architecture on Modal: a li
 |------|---------|---------------------|
 | `backend/_image_setup.py` | Standalone snapshot function — runs during image build | None (all inside function body) |
 | `backend/app.py` | Modal app + function decorators | Only `modal` |
-| `backend/simulation.py` | Pure business logic | `policyengine_us`/`_uk` (captured in image snapshot) |
+| `backend/simulation.py` | Pure business logic | top-level `policyengine` (population — managed path) + `policyengine_us`/`_uk` `Simulation` (household); captured in image snapshot |
 | `backend/modal_app.py` | Lightweight gateway (FastAPI) | `modal`, `fastapi`, `pydantic` |
 
 ### Step 1: Look Up the Latest policyengine Version

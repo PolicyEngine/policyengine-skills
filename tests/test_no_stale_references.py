@@ -2,7 +2,15 @@
 
 Each entry pairs a regex with the reason it is banned. A line may opt out by
 placing an HTML comment marker ``<!-- stale-ok -->`` on the line immediately
-before it (for deliberate "this is the superseded thing" history notes).
+before it — for deliberate "this is the superseded thing" history notes, and
+for explicitly-scoped engine-development examples of patterns that are banned
+only for analysis.
+
+Known residual limits of the Microsimulation guard (kept narrow on purpose so
+prose that merely *names* the class — e.g. "a bare ``Microsimulation()``" —
+does not trip it): aliased constructors (``import policyengine_us as x;
+x.Microsimulation()``) and ``import *`` forms are not caught. Reviewers own
+those; the corpus tests below pin exactly what is and is not detected.
 """
 
 from __future__ import annotations
@@ -10,9 +18,18 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# (pattern, reason)
+MICROSIM_REASON = (
+    "direct country-package Microsimulation is deprecated for analysis "
+    "(2026-08-01); use pe.{us,uk}.managed_microsimulation() from "
+    "policyengine>=5.0.1 — deliberate deprecation notes and explicitly-scoped "
+    "engine-development examples take <!-- stale-ok -->"
+)
+
+# (pattern, reason) — matched line by line
 FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
     (
         re.compile(r"hf://policyengine/policyengine-us-data"),
@@ -54,15 +71,34 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
         "use uv pip install / uv run per repo standards",
     ),
     (
-        re.compile(r"from policyengine_(us|uk) import [^\n]*\bMicrosimulation\b"),
-        "direct country-package Microsimulation is deprecated for analysis "
-        "(2026-08-01); use pe.{us,uk}.managed_microsimulation() from "
-        "policyengine>=5.0.1 — deliberate deprecation notes take <!-- stale-ok -->",
+        # same-line import, tolerant of extra whitespace and submodule paths
+        # (from policyengine_us.microsimulation import Microsimulation)
+        re.compile(
+            r"from\s+policyengine_(us|uk)[\w.]*\s+import[^\n]*\bMicrosimulation\b"
+        ),
+        MICROSIM_REASON,
+    ),
+    (
+        # module-qualified constructor: policyengine_us.Microsimulation(...)
+        re.compile(r"policyengine_(us|uk)\s*\.\s*Microsimulation\b"),
+        MICROSIM_REASON,
+    ),
+]
+
+# (pattern, reason) — matched against whole-file text, for forms a line scan
+# cannot see (paren-wrapped multiline imports). ``[^)]*`` crosses newlines but
+# cannot run past the closing paren, so unrelated later text stays unmatched.
+FORBIDDEN_MULTILINE: list[tuple[re.Pattern[str], str]] = [
+    (
+        re.compile(
+            r"from\s+policyengine_(us|uk)[\w.]*\s+import\s*\([^)]*\bMicrosimulation\b"
+        ),
+        MICROSIM_REASON,
     ),
 ]
 
 SCAN_DIRS = ["skills", "targets", "docs", "bundles", "presets"]
-SCAN_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".py", ".sh", ".html"}
+SCAN_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".py", ".sh", ".html", ".ipynb"}
 STALE_OK = "<!-- stale-ok -->"
 
 
@@ -76,16 +112,76 @@ def iter_scan_files():
                 yield path
 
 
+def scan_text(text: str) -> list[tuple[int, str, str]]:
+    """Return (lineno, pattern, reason) violations in ``text``, honoring stale-ok."""
+    lines = text.splitlines()
+
+    def exempt(lineno: int) -> bool:
+        prev = lines[lineno - 2] if lineno >= 2 else ""
+        line = lines[lineno - 1] if lineno - 1 < len(lines) else ""
+        return STALE_OK in prev or STALE_OK in line
+
+    found: dict[tuple[int, str], str] = {}
+    for lineno, line in enumerate(lines, start=1):
+        if exempt(lineno):
+            continue
+        for pattern, reason in FORBIDDEN:
+            if pattern.search(line):
+                found.setdefault((lineno, pattern.pattern), reason)
+    for pattern, reason in FORBIDDEN_MULTILINE:
+        for match in pattern.finditer(text):
+            lineno = text.count("\n", 0, match.start()) + 1
+            if exempt(lineno):
+                continue
+            found.setdefault((lineno, pattern.pattern), reason)
+    return [(lineno, pat, reason) for (lineno, pat), reason in sorted(found.items())]
+
+
 def test_no_stale_references() -> None:
     violations: list[str] = []
     for path in iter_scan_files():
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-        for lineno, line in enumerate(lines, start=1):
-            prev = lines[lineno - 2] if lineno >= 2 else ""
-            if STALE_OK in prev or STALE_OK in line:
-                continue
-            for pattern, reason in FORBIDDEN:
-                if pattern.search(line):
-                    rel = path.relative_to(REPO_ROOT)
-                    violations.append(f"{rel}:{lineno}: {pattern.pattern!r} — {reason}")
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for lineno, pattern, reason in scan_text(text):
+            rel = path.relative_to(REPO_ROOT)
+            violations.append(f"{rel}:{lineno}: {pattern!r} — {reason}")
     assert not violations, "Stale references found:\n" + "\n".join(violations)
+
+
+# --- Corpus for the Microsimulation guard -----------------------------------
+# Pins the guard's behavior: every banned spelling below must trip it, every
+# allowed spelling must pass. Extend both lists when the patterns change.
+
+MICROSIM_BANNED_SAMPLES = [
+    "from policyengine_us import Microsimulation",
+    "from policyengine_uk import Microsimulation",
+    "from policyengine_us import Simulation, Microsimulation",
+    "from  policyengine_us  import  Microsimulation",
+    "from policyengine_us.microsimulation import Microsimulation",
+    "sim = policyengine_us.Microsimulation()",
+    "sim = policyengine_uk . Microsimulation(reform=reform)",
+    "from policyengine_us import (\n    Microsimulation,\n)",
+    "from policyengine_uk import (\n    Simulation,\n    Microsimulation,\n)",
+]
+
+MICROSIM_ALLOWED_SAMPLES = [
+    "sim = pe.us.managed_microsimulation()",
+    "sim = pe.uk.managed_microsimulation(reform=reform)",
+    "from policyengine_us import Simulation",
+    "from policyengine_uk import CountryTaxBenefitSystem",
+    "from policyengine_us import (\n    Simulation,\n    CountryTaxBenefitSystem,\n)",
+    "a bare `Microsimulation()` is already post-July-2025 UC law",
+    "The country-package `Microsimulation(reform=...)` accepts either form",
+    "<!-- stale-ok -->\nfrom policyengine_us import Microsimulation  # deprecation note",
+]
+
+
+@pytest.mark.parametrize("sample", MICROSIM_BANNED_SAMPLES)
+def test_microsim_guard_catches(sample: str) -> None:
+    hits = [reason for _, _, reason in scan_text(sample) if reason == MICROSIM_REASON]
+    assert hits, f"guard missed banned spelling: {sample!r}"
+
+
+@pytest.mark.parametrize("sample", MICROSIM_ALLOWED_SAMPLES)
+def test_microsim_guard_allows(sample: str) -> None:
+    hits = [reason for _, _, reason in scan_text(sample) if reason == MICROSIM_REASON]
+    assert not hits, f"guard false-positived on allowed spelling: {sample!r}"
