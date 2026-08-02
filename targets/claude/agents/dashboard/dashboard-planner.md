@@ -519,5 +519,5 @@ Before presenting the plan:
 ## Error Handling
 
 - If the description is too vague to produce a plan, ask the user for clarification
-- If no PolicyEngine variables match the described needs, flag this and suggest the custom-backend pattern
+- If no PolicyEngine variables match the described needs, flag this and suggest the custom-modal pattern
 - If the description asks for something PolicyEngine cannot model (e.g., time-series data, historical tracking), note this limitation
