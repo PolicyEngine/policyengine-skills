@@ -78,8 +78,9 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
         "deprecated package; new work consumes @policyengine/ui-kit",
     ),
     (
-        re.compile(r"(?<!uv )\bpip install\b"),
-        "use uv pip install / uv run per repo standards",
+        re.compile(r"\b[a-z0-9][a-z0-9-]*-skill\b", re.IGNORECASE),
+        "pre-rebuild skill naming (e.g. policyengine-us-skill); current skills "
+        "use the short directory name in skills/ (e.g. policyengine-us)",
     ),
     (
         # module-qualified constructor: policyengine_us.Microsimulation(...).
@@ -226,4 +227,86 @@ def test_microsim_guard_known_misses(sample: str) -> None:
     assert not hits, (
         f"guard now catches {sample!r} — move it from MICROSIM_KNOWN_MISSES "
         "to MICROSIM_BANNED_SAMPLES to record the improvement"
+    )
+
+
+SKILLS_DIR = REPO_ROOT / "skills"
+
+# `Skill: <name>` load instructions in agent/command files. Plugin-qualified
+# names (`Skill: plugin:name`) resolve outside this repo and are skipped.
+SKILL_INVOCATION = re.compile(r"\bSkill: ([a-z0-9][a-z0-9_:-]*)")
+
+# skills/<path> references (prose, code, bundle manifests). The lookbehind
+# keeps this from matching inside longer tokens such as
+# `policyengine-skills/main/...` URLs.
+SKILLS_PATH = re.compile(r"(?<![A-Za-z0-9-])skills/([A-Za-z0-9_{}./-]+)")
+
+# Directory-name expansions for templated paths like
+# skills/policyengine-{country}/. NOTE: the /analyze-policy --country flag value
+# `ca` maps to the DIRECTORY `policyengine-canada`; command files must spell
+# that mapping out explicitly instead of relying on the template (see
+# analyze-policy.md), because flag vocabulary and directory names differ.
+COUNTRY_EXPANSIONS = ("us", "uk", "canada")
+
+
+def existing_skill_names() -> set[str]:
+    return {p.name for p in SKILLS_DIR.iterdir() if p.is_dir()}
+
+
+def iter_lines_with_stale_ok():
+    for path in iter_scan_files():
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        for lineno, line in enumerate(lines, start=1):
+            prev = lines[lineno - 2] if lineno >= 2 else ""
+            if STALE_OK in prev or STALE_OK in line:
+                continue
+            yield path, lineno, line
+
+
+def test_skill_invocations_resolve() -> None:
+    """Every `Skill: <name>` load instruction names a directory in skills/."""
+    known = existing_skill_names()
+    violations: list[str] = []
+    for path, lineno, line in iter_lines_with_stale_ok():
+        for name in SKILL_INVOCATION.findall(line):
+            name = name.rstrip(":-")
+            if ":" in name:
+                continue
+            if name not in known:
+                rel = path.relative_to(REPO_ROOT)
+                violations.append(
+                    f"{rel}:{lineno}: `Skill: {name}` — no skills/{name}/ directory"
+                )
+    assert not violations, (
+        "Skill load instructions referencing nonexistent skills:\n"
+        + "\n".join(violations)
+    )
+
+
+def test_referenced_skills_paths_exist() -> None:
+    """Every skills/... path referenced anywhere resolves inside this repo."""
+    violations: list[str] = []
+    for path, lineno, line in iter_lines_with_stale_ok():
+        for match in SKILLS_PATH.finditer(line):
+            ref = match.group(1).rstrip("./")
+            if "{country}" in ref:
+                candidates = [ref.replace("{country}", c) for c in COUNTRY_EXPANSIONS]
+            elif "{" in ref:
+                rel = path.relative_to(REPO_ROOT)
+                violations.append(
+                    f"{rel}:{lineno}: skills/{ref} — unknown template "
+                    "placeholder (only {country} is expandable)"
+                )
+                continue
+            else:
+                candidates = [ref]
+            for candidate in candidates:
+                if not (SKILLS_DIR / candidate).exists():
+                    rel = path.relative_to(REPO_ROOT)
+                    violations.append(
+                        f"{rel}:{lineno}: skills/{ref} — skills/{candidate} does not exist"
+                    )
+                    break
+    assert not violations, (
+        "References to nonexistent skills/ paths:\n" + "\n".join(violations)
     )
