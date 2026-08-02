@@ -6,15 +6,22 @@ before it — for deliberate "this is the superseded thing" history notes, and
 for explicitly-scoped engine-development examples of patterns that are banned
 only for analysis.
 
-Known residual limits of the Microsimulation guard (kept narrow on purpose so
-prose that merely *names* the class — e.g. "a bare ``Microsimulation()``" —
-does not trip it): aliased constructors (``import policyengine_us as x;
-x.Microsimulation()``), ``import *`` forms, and a qualified constructor whose
-dot is split across lines are not caught. Reviewers own those; the corpus
-tests below pin exactly what is and is not detected. Same-line, paren-wrapped
-multiline, and backslash-continued imports ARE caught, as is the
-module-qualified constructor; ``policyengine_us_data`` and other
-underscore-suffixed sibling packages are excluded by a word boundary.
+The Microsimulation guard is kept narrow on purpose so prose that merely
+*names* the class — e.g. "a bare ``Microsimulation()``" — does not trip it.
+
+Caught: same-line imports, paren-wrapped multiline imports, backslash
+continuations occurring after ``import``, and same-line module-qualified
+constructors. Word boundaries on both sides of the package name keep sibling
+packages (``policyengine_us_data``) and prefixed identifiers
+(``notpolicyengine_us``) clean.
+
+Documented residual misses — pinned by ``MICROSIM_KNOWN_MISSES`` below, and
+reviewer territory until then: backslash continuations *before* ``import``,
+hybrid backslash-then-paren imports, aliased constructors
+(``import policyengine_us as x; x.Microsimulation()``), ``import *`` forms,
+and qualified constructors whose dot is split across lines. If the guard is
+ever tightened, move the newly-caught spelling from ``MICROSIM_KNOWN_MISSES``
+to ``MICROSIM_BANNED_SAMPLES`` to record the improvement.
 """
 
 from __future__ import annotations
@@ -76,8 +83,9 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
     ),
     (
         # module-qualified constructor: policyengine_us.Microsimulation(...).
-        # \b keeps policyengine_us_data and other sibling packages out.
-        re.compile(r"policyengine_(us|uk)\b\s*\.\s*Microsimulation\b"),
+        # (?<!\w) rejects prefixed identifiers (notpolicyengine_us.…); \b keeps
+        # policyengine_us_data and other sibling packages out.
+        re.compile(r"(?<!\w)policyengine_(us|uk)\b\s*\.\s*Microsimulation\b"),
         MICROSIM_REASON,
     ),
 ]
@@ -180,9 +188,22 @@ MICROSIM_ALLOWED_SAMPLES = [
     "from policyengine_us import (\n    Simulation,\n    CountryTaxBenefitSystem,\n)",
     "from policyengine_us import \\\n    Simulation",
     "from policyengine_us_data import Microsimulation",
+    "the notpolicyengine_us.Microsimulation identifier is unrelated",
     "a bare `Microsimulation()` is already post-July-2025 UC law",
     "The country-package `Microsimulation(reform=...)` accepts either form",
     "<!-- stale-ok -->\nfrom policyengine_us import Microsimulation  # deprecation note",
+]
+
+# Spellings that SHOULD be banned but deliberately evade the current patterns
+# (regex reach vs false-positive trade-off — see module docstring). Pinned so
+# the guard's blind spots are explicit; a tightening that catches one should
+# move it to MICROSIM_BANNED_SAMPLES.
+MICROSIM_KNOWN_MISSES = [
+    "from policyengine_us \\\n    import (\n    Microsimulation,\n)",
+    "from \\\n    policyengine_us import Microsimulation",
+    "import policyengine_us as pe_us\nsim = pe_us.Microsimulation()",
+    "from policyengine_us import *\nsim = Microsimulation()",
+    "sim = policyengine_us.\\\n    Microsimulation()",
 ]
 
 
@@ -196,3 +217,13 @@ def test_microsim_guard_catches(sample: str) -> None:
 def test_microsim_guard_allows(sample: str) -> None:
     hits = [reason for _, _, reason in scan_text(sample) if reason == MICROSIM_REASON]
     assert not hits, f"guard false-positived on allowed spelling: {sample!r}"
+
+
+@pytest.mark.parametrize("sample", MICROSIM_KNOWN_MISSES)
+def test_microsim_guard_known_misses(sample: str) -> None:
+    """Pins the guard's documented blind spots (they are misses, not features)."""
+    hits = [reason for _, _, reason in scan_text(sample) if reason == MICROSIM_REASON]
+    assert not hits, (
+        f"guard now catches {sample!r} — move it from MICROSIM_KNOWN_MISSES "
+        "to MICROSIM_BANNED_SAMPLES to record the improvement"
+    )
