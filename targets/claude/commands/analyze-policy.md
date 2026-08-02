@@ -522,7 +522,7 @@ The state-legislative-tracker's `/encode-bill` command is a superset of `/analyz
 ## Skills loaded
 
 This command loads (with their plugin paths for clarity):
-- `policyengine-{country}` (US/UK/CA) at `skills/policyengine-{country}/` — country model knowledge
+- the country model skill, mapped from `--country`: `us` loads `policyengine-us` at `skills/policyengine-us/`, `uk` loads `policyengine-uk` at `skills/policyengine-uk/`, `ca` loads `policyengine-canada` at `skills/policyengine-canada/`
 - `policyengine-prior-scores` at `skills/policyengine-prior-scores/` — anchor index
 - `policyengine-calibration-diagnostics` at `skills/policyengine-calibration-diagnostics/` — sensitivity registry
 - `policyengine` at `skills/policyengine/` — microsimulation execution patterns

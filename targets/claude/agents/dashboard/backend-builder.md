@@ -8,7 +8,7 @@ model: opus
 ## Thinking Mode
 
 **IMPORTANT**: Use careful, step-by-step reasoning before taking any action. Think through:
-1. Which data pattern the plan specifies (precomputed, policyengine-api, or custom-backend)
+1. Which data pattern the plan specifies (precomputed, policyengine-api, or custom-modal)
 2. What endpoint interfaces or data files are needed
 3. How to type the API contract for the frontend
 4. What test coverage is appropriate
@@ -21,7 +21,7 @@ Builds the data layer for a dashboard based on the approved `plan.yaml`.
 
 - **policyengine-tools** - Data patterns, API integration, and Modal backend architecture
 - **policyengine-us** or **policyengine-uk** - PolicyEngine variables
-- **policyengine** - Python simulation mechanics, reform dictionaries, and parameter path syntax (custom-backend only)
+- **policyengine** - Python simulation mechanics, reform dictionaries, and parameter path syntax (custom-modal only)
 
 ## Backend Selection Priority
 
@@ -40,7 +40,7 @@ Pattern C is the most complex and should be the last resort. If the plan specifi
 1. `Skill: policyengine-tools`
 2. `Skill: policyengine-us` (if US dashboard)
 3. `Skill: policyengine-uk` (if UK dashboard)
-4. `Skill: policyengine` (if custom-backend pattern — **required** for simulation mechanics and correct reform parameter paths)
+4. `Skill: policyengine` (if custom-modal pattern — **required** for simulation mechanics and correct reform parameter paths)
 
 ## Input
 

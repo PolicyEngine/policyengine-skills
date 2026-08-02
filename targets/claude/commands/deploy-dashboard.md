@@ -10,7 +10,7 @@ Deploy a completed PolicyEngine dashboard to production. Run this AFTER merging 
 
 ## Skills Used
 
-- **policyengine-tools** — Vercel frontend deployment (all dashboards) and Modal backend deployment (only if `custom-backend` pattern)
+- **policyengine-tools** — Vercel frontend deployment (all dashboards) and Modal backend deployment (only if `custom-modal` pattern)
 
 ## Step 1: Verify Prerequisites
 
@@ -45,7 +45,7 @@ cat plan.yaml
 Extract:
 - `dashboard.name` — for Vercel project and Modal app names
 - `dashboard.zone_path` — for multi-zone host rewrite verification
-- `data_pattern` — determines if Modal deploy is needed (`custom-backend` vs `api-v2-alpha`)
+- `data_pattern` — determines if Modal deploy is needed (`custom-modal` needs it; `precomputed`, `precomputed-csv`, and `policyengine-api` do not)
 - `tech_stack.framework` — should be `react-nextjs` (env var prefix: `NEXT_PUBLIC_*`)
 - `embedding.register_in_apps_json` — determines if apps.json update is needed
 - `embedding.slug` — the URL slug for policyengine.org
@@ -69,9 +69,9 @@ Spawn the `multizone-validator` agent with `TARGET_PATH=.` (current dashboard re
 
 **Do NOT stop if host rewrites are missing.** For a brand-new dashboard, the host can't have rewrites yet because Vercel hasn't assigned a production URL. Step 5 handles adding them **after** the first deploy captures the URL.
 
-## Step 3: Deploy Backend (if custom-backend)
+## Step 3: Deploy Backend (if custom-modal)
 
-**Only if `data_pattern: custom-backend`.** If `api-v2-alpha`, skip to Step 4.
+**Only if `data_pattern: custom-modal`.** For every other pattern, skip to Step 4.
 
 See the `policyengine-tools` skill (Pattern C: Modal gateway + worker + polling) for the full Modal deployment reference.
 

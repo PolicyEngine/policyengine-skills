@@ -78,7 +78,7 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
         "deprecated package; new work consumes @policyengine/ui-kit",
     ),
     (
-        re.compile(r"\b[a-z0-9][a-z0-9-]*-skill\b"),
+        re.compile(r"\b[a-z0-9][a-z0-9-]*-skill\b", re.IGNORECASE),
         "pre-rebuild skill naming (e.g. policyengine-us-skill); current skills "
         "use the short directory name in skills/ (e.g. policyengine-us)",
     ),
@@ -234,14 +234,18 @@ SKILLS_DIR = REPO_ROOT / "skills"
 
 # `Skill: <name>` load instructions in agent/command files. Plugin-qualified
 # names (`Skill: plugin:name`) resolve outside this repo and are skipped.
-SKILL_INVOCATION = re.compile(r"\bSkill: ([a-z0-9][a-z0-9:-]*)")
+SKILL_INVOCATION = re.compile(r"\bSkill: ([a-z0-9][a-z0-9_:-]*)")
 
 # skills/<path> references (prose, code, bundle manifests). The lookbehind
 # keeps this from matching inside longer tokens such as
 # `policyengine-skills/main/...` URLs.
 SKILLS_PATH = re.compile(r"(?<![A-Za-z0-9-])skills/([A-Za-z0-9_{}./-]+)")
 
-# The one placeholder used by templated paths like skills/policyengine-{country}/.
+# Directory-name expansions for templated paths like
+# skills/policyengine-{country}/. NOTE: the /analyze-policy --country flag value
+# `ca` maps to the DIRECTORY `policyengine-canada`; command files must spell
+# that mapping out explicitly instead of relying on the template (see
+# analyze-policy.md), because flag vocabulary and directory names differ.
 COUNTRY_EXPANSIONS = ("us", "uk", "canada")
 
 
@@ -288,7 +292,12 @@ def test_referenced_skills_paths_exist() -> None:
             if "{country}" in ref:
                 candidates = [ref.replace("{country}", c) for c in COUNTRY_EXPANSIONS]
             elif "{" in ref:
-                continue  # unknown template — nothing to resolve
+                rel = path.relative_to(REPO_ROOT)
+                violations.append(
+                    f"{rel}:{lineno}: skills/{ref} — unknown template "
+                    "placeholder (only {country} is expandable)"
+                )
+                continue
             else:
                 candidates = [ref]
             for candidate in candidates:
