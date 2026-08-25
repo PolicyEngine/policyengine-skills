@@ -127,7 +127,7 @@ report-logger) gains an extra "Also queue…?" line:
 Where should this analysis go?
 
 [x] Local archive
-[ ] GitHub issue: PolicyEngine/policyengine-us-data
+[ ] GitHub issue: PolicyEngine/microcosm
 [ ] Also queue: /encode-policy-v2 (this reform's structural provisions)
 [ ] Also queue: /generate-content (blog draft from the analysis)
 [ ] Also queue: /review-program on the parameter files this reform touches
@@ -139,7 +139,7 @@ Verdict → follow-up mapping:
 |---|---|
 | `PASS` | `/generate-content` → blog post draft |
 | `PASS-WITH-NOTES` / `PASS-WITH-CORROBORATION` | `/generate-content` → blog post draft (with notes/caveats section) |
-| `INVESTIGATE` | already handled: GH issue in `policyengine-{country}-data` |
+| `INVESTIGATE` | already handled: GH issue in the country's data repo (`us` → `PolicyEngine/microcosm`; others → `policyengine-{country}-data`) |
 | `structural` | `/encode-policy-v2` → scaffold the required model extension |
 | `not-possible` | none |
 | `deployed-model-lag` | re-run scheduled for next release (cron-style: after the next `uv pip install -U policyengine-{country}`) |

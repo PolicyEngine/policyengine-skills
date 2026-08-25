@@ -4,7 +4,8 @@ Pre-2026-07-02, report-logger hardcoded `policyengine-us-data` for
 INVESTIGATE-verdict issue routing and `policyengine-us` for structural.
 UK/CA reforms would route to the wrong repo.
 
-The fix: parameterize issue destinations by the reform's jurisdiction.country.
+The fix: select issue destinations by the reform's jurisdiction.country,
+including the US data repo's move to `PolicyEngine/microcosm`.
 """
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ def resolve_issue_repo(verdict: str, country: str) -> str | None:
     """
     country_repo_map = {"us": "policyengine-us", "uk": "policyengine-uk", "ca": "policyengine-canada"}
     country_data_repo_map = {
-        "us": "policyengine-us-data",
+        "us": "microcosm",
         "uk": "policyengine-uk-data",
         "ca": "policyengine-canada-data",
     }
@@ -28,7 +29,7 @@ def resolve_issue_repo(verdict: str, country: str) -> str | None:
 
 
 def test_us_investigate_routes_correctly():
-    assert resolve_issue_repo("INVESTIGATE", "us") == "PolicyEngine/policyengine-us-data"
+    assert resolve_issue_repo("INVESTIGATE", "us") == "PolicyEngine/microcosm"
 
 
 def test_us_structural_routes_correctly():

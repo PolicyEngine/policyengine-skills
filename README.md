@@ -15,7 +15,7 @@ The public Claude marketplace repo stays at `PolicyEngine/policyengine-claude`, 
 
 Skills teach the current stack: the `policyengine` package
 (`pe.us.calculate_household`, population `Simulation`, `economic_impact_analysis`)
-over certified Populace datasets. Code examples marked `<!-- verify -->` are
+over certified Microcosm datasets. Code examples marked `<!-- verify -->` are
 executed in CI against the latest release, and an anti-rot lint bans the stale
 patterns (archived dataset URIs, deleted APIs) that degraded the previous catalog.
 
