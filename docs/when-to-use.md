@@ -85,7 +85,7 @@ These get pulled in automatically by their trigger keywords, but useful to know 
 - `policyengine-model-development` — the consolidated engineering skill; its references/ cover variables, parameters, periods, vectorization, tests, and in-model reforms
 
 **Data pipeline / calibration**:
-- `policyengine-data` — the Populace stack: certified releases, local-area filtering, fit/calibrate/L0
+- `policyengine-data` — the Microcosm stack: certified releases, local-area filtering, fit/calibrate/L0
 - `policyengine-calibration-diagnostics` — deviation-signature → calibration-lever registry
 
 **Frontend / dashboards**:

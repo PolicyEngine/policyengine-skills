@@ -9,6 +9,10 @@ only for analysis.
 The Microsimulation guard is kept narrow on purpose so prose that merely
 *names* the class — e.g. "a bare ``Microsimulation()``" — does not trip it.
 
+The product-name guard is span-based: frozen dataset IDs and machine surfaces
+are explicitly allowlisted without exempting stale prose elsewhere on the same
+line. Dated analyses and the dataset-naming regression corpus remain verbatim.
+
 Caught: same-line imports, paren-wrapped multiline imports, backslash
 continuations occurring after ``import``, and same-line module-qualified
 constructors. Word boundaries on both sides of the package name keep sibling
@@ -70,7 +74,7 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
     ),
     (
         re.compile(r"\benhanced_cps_2024\b|\benhanced_frs_2023_24\b"),
-        "superseded by Populace datasets (populace_us_2024 / populace_uk_2023); "
+        "superseded by Microcosm datasets (populace_us_2024 / populace_uk_2023); "
         "mark deliberate history notes with <!-- stale-ok -->",
     ),
     (
@@ -116,6 +120,95 @@ SCAN_DIRS = ["skills", "targets", "docs", "bundles", "presets"]
 SCAN_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".py", ".sh", ".html", ".ipynb"}
 STALE_OK = "<!-- stale-ok -->"
 
+STALE_PRODUCT_REASON = (
+    "Populace and Ledger were renamed on 2026-08-07; use Microcosm and Chronicle "
+    "in prose. Frozen identifiers require an explicit allowlist entry."
+)
+STALE_PRODUCT_NAME = re.compile(
+    r"(?<![A-Za-z])(?:populace|ledger)(?![A-Za-z])",
+    re.IGNORECASE,
+)
+
+# A stale-name match is allowed only when its exact span falls inside one of
+# these frozen machine surfaces. Do not add bare ``populace-data`` here: only
+# the certified bundle's versioned legacy dist name is frozen; current shard
+# teaching must say ``microcosm-data``.
+FROZEN_PRODUCT_SPANS = (
+    re.compile(r"\bpopulace_us_2024[A-Za-z0-9_]*\b"),
+    re.compile(r"\bpopulace_uk_2023\b"),
+    re.compile(r"\bpopulace-(?:us-2024|uk-2023)\b"),
+    re.compile(
+        r"policyengine/populace-(?:us(?:-staging)?|uk-private|"
+        r"be-(?:\*|[A-Za-z0-9][A-Za-z0-9-]*))"
+        r"(?![A-Za-z0-9_-])"
+    ),
+    re.compile(r"\bPOPULACE_(?:[A-Z0-9_]+|\*)(?![A-Za-z0-9_*-])"),
+    re.compile(r"--ledger-[a-z0-9-]+(?![A-Za-z0-9_-])"),
+    re.compile(r"\bledger_(?:[A-Za-z0-9_]+|\*)(?![A-Za-z0-9_*-])"),
+    re.compile(r"#populace(?:-(?:us|uk))?(?![A-Za-z0-9_-])"),
+    re.compile(r"Microcosm \(formerly Populace\)"),
+    re.compile(
+        r"(?:https://calibration-diagnostics\.vercel\.app)?"
+        r"/calibration/dashboard/(?:api/)?populace(?![A-Za-z0-9_-])"
+    ),
+    re.compile(r"\bpopulace-data\b`?(?:==|\s+)0\.1\.0(?![A-Za-z0-9_.-])"),
+    re.compile(
+        r"data_package\.name\s*=\s*[\"']populace-data[\"']"
+    ),
+)
+
+PRODUCT_SCAN_DIRS = [*SCAN_DIRS, "scripts", "dashboard/src", "tests"]
+PRODUCT_SCAN_SUFFIXES = SCAN_SUFFIXES | {".ts", ".tsx", ".js", ".jsx"}
+PRODUCT_SCAN_ROOT_FILES = ["README.md"]
+PRODUCT_SCAN_EXCLUDED = {
+    "analyses",  # dated records are frozen verbatim
+    "dashboard/src/data/manifest.json",  # generated from the source files
+    "tests/pipeline/test_dataset_naming.py",  # frozen dataset-name pins
+    "tests/test_no_stale_references.py",  # guard patterns and corpus
+}
+
+# Exact lowercase bookkeeping phrases. Uppercase Ledger remains forbidden so
+# the branded product cannot slip through these path-scoped exceptions.
+PATH_GENERIC_LEDGER_SPANS: dict[str, tuple[re.Pattern[str], ...]] = {
+    "skills/encode-policy-v2/references/workflow.md": (
+        re.compile(r"\brun ledger[.,]"),
+        re.compile(r"\bFresh/resume ledger$"),
+        re.compile(r"\bphase ledger\."),
+        re.compile(r"\bthe ledger proves\b"),
+        re.compile(r"\bin the ledger[.;]"),
+        re.compile(r"\bledger:"),
+        re.compile(r"\bShort ledger\s*\|"),
+    ),
+    "skills/review-program/references/workflow.md": (
+        re.compile(r"\bcompleted ledger with\b"),
+        re.compile(r"\brun-state ledger \(for metrics\)"),
+        re.compile(r"^\s*ledger\)\."),
+    ),
+    "targets/claude/agents/calibration-diagnostics.md": (
+        re.compile(r"\bledger metadata\b"),
+    ),
+}
+
+# Exact compatibility/search literals that are machine surfaces but do not
+# belong to a broader frozen identifier family.
+PATH_FROZEN_PRODUCT_SPANS: dict[str, tuple[re.Pattern[str], ...]] = {
+    "scripts/functional_tags.json": (
+        re.compile(r"data:populace(?![A-Za-z0-9_-])"),
+    ),
+    "skills/policyengine-data/SKILL.md": (
+        re.compile(r"[\"']populace[\"']\s+in\s+DEFAULT_DATASET"),
+    ),
+    "skills/policyengine/SKILL.md": (
+        re.compile(r"\.startswith\([\"']populace_us[\"']\)"),
+    ),
+    "skills/policyengine-uk/SKILL.md": (
+        re.compile(r"\bpopulace_uk(?![A-Za-z0-9_-])"),
+    ),
+    "targets/claude/agents/microsim-runner.md": (
+        re.compile(r"[\"']populace[\"']\s+in\s+data_version"),
+    ),
+}
+
 
 def iter_scan_files():
     for dirname in SCAN_DIRS:
@@ -125,6 +218,56 @@ def iter_scan_files():
         for path in sorted(base.rglob("*")):
             if path.is_file() and path.suffix in SCAN_SUFFIXES:
                 yield path
+
+
+def iter_product_scan_files():
+    """Yield source files whose prose and machine surfaces teach product names."""
+    yielded: set[Path] = set()
+    for relpath in PRODUCT_SCAN_ROOT_FILES:
+        path = REPO_ROOT / relpath
+        if path.is_file():
+            yielded.add(path)
+            yield path
+    for dirname in PRODUCT_SCAN_DIRS:
+        base = REPO_ROOT / dirname
+        if not base.exists():
+            continue
+        for path in sorted(base.rglob("*")):
+            if not path.is_file() or path.suffix not in PRODUCT_SCAN_SUFFIXES:
+                continue
+            rel = path.relative_to(REPO_ROOT).as_posix()
+            if rel in PRODUCT_SCAN_EXCLUDED or any(
+                rel == excluded or rel.startswith(f"{excluded}/")
+                for excluded in PRODUCT_SCAN_EXCLUDED
+            ):
+                continue
+            if path not in yielded:
+                yielded.add(path)
+                yield path
+
+
+def frozen_product_spans(line: str, relpath: str) -> list[tuple[int, int]]:
+    patterns = [
+        *FROZEN_PRODUCT_SPANS,
+        *PATH_FROZEN_PRODUCT_SPANS.get(relpath, ()),
+        *PATH_GENERIC_LEDGER_SPANS.get(relpath, ()),
+    ]
+    return [match.span() for pattern in patterns for match in pattern.finditer(line)]
+
+
+def scan_stale_product_names(
+    text: str,
+    relpath: str = "README.md",
+) -> list[tuple[int, str]]:
+    """Return stale product-name tokens not contained by a frozen span."""
+    found: list[tuple[int, str]] = []
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        allowed = frozen_product_spans(line, relpath)
+        for match in STALE_PRODUCT_NAME.finditer(line):
+            if any(start <= match.start() and match.end() <= end for start, end in allowed):
+                continue
+            found.append((lineno, match.group()))
+    return found
 
 
 def scan_text(text: str) -> list[tuple[int, str, str]]:
@@ -160,6 +303,133 @@ def test_no_stale_references() -> None:
             rel = path.relative_to(REPO_ROOT)
             violations.append(f"{rel}:{lineno}: {pattern!r} — {reason}")
     assert not violations, "Stale references found:\n" + "\n".join(violations)
+
+
+def test_no_stale_product_names() -> None:
+    violations: list[str] = []
+    for path in iter_product_scan_files():
+        rel = path.relative_to(REPO_ROOT).as_posix()
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for lineno, token in scan_stale_product_names(text, rel):
+            violations.append(f"{rel}:{lineno}: {token!r} — {STALE_PRODUCT_REASON}")
+    assert not violations, "Stale product names found:\n" + "\n".join(violations)
+
+
+# --- Corpus for the product-name guard --------------------------------------
+
+STALE_PRODUCT_BANNED_SAMPLES = [
+    ("The Populace stack builds the data.", 1),
+    ("Check the populace release before scoring.", 1),
+    ("Facts are Ledger's lane.", 1),
+    ("Route work to PolicyEngine/populace.", 1),
+    ("Use the ~/PolicyEngine/populace mirror.", 1),
+    ("Install populace-frame and import populace.fit.", 2),
+    ("See https://populace.dev.", 1),
+    ("Populace uses populace_us_2024.", 1),
+    ("Populace_US_2024 is not a frozen identifier.", 1),
+    ("Populace-us-2024-deadbeef is not a frozen identifier.", 1),
+    ("--Ledger-facts is not the frozen lowercase flag.", 1),
+    ("#populace-new is not a frozen Slack channel.", 1),
+    ("#populace-us-extra is not a frozen Slack channel.", 1),
+    ("#populace_new is not a frozen Slack channel.", 1),
+    ("policyengine/populace-us_extra is not a frozen dataset ID.", 1),
+    ("--ledger-facts_extra is not a frozen CLI flag.", 1),
+    ("/calibration/dashboard/api/populace2 is not a live route.", 1),
+    ("/calibration/dashboard/populace-old is not a live route.", 1),
+    ("POPULACE_TOKEN-extra is not a frozen environment token.", 1),
+    ("ledger_facts-extra is not a frozen field name.", 1),
+]
+
+STALE_PRODUCT_PATH_BANNED_SAMPLES = [
+    (
+        "scripts/functional_tags.json",
+        '"role": "data:populace-old"',
+    ),
+    (
+        "skills/encode-policy-v2/references/workflow.md",
+        "the ledger product uploads facts",
+    ),
+    (
+        "skills/policyengine-uk/SKILL.md",
+        "populace_uk-old",
+    ),
+]
+
+STALE_PRODUCT_ALLOWED_SAMPLES = [
+    ("README.md", "Microcosm (formerly Populace)"),
+    ("README.md", "populace_us_2024_acs_local"),
+    ("README.md", "populace_uk_2023"),
+    ("README.md", "populace-us-2024-<sha>-<ts>"),
+    ("README.md", "populace-uk-2023-dd68c73-..."),
+    ("README.md", "policyengine/populace-us"),
+    ("README.md", "policyengine/populace-us-staging"),
+    ("README.md", "policyengine/populace-uk-private"),
+    ("README.md", "policyengine/populace-be-*"),
+    ("README.md", "POPULACE_TOKEN"),
+    ("README.md", "POPULACE_*"),
+    ("README.md", "--ledger-facts"),
+    ("README.md", "ledger_facts"),
+    ("README.md", "ledger_*"),
+    ("README.md", "#populace #populace-us #populace-uk"),
+    (
+        "README.md",
+        "https://calibration-diagnostics.vercel.app/calibration/dashboard/api/populace",
+    ),
+    ("README.md", "/calibration/dashboard/populace"),
+    ("README.md", "populace-data==0.1.0"),
+    ("README.md", "`populace-data` 0.1.0"),
+    ("README.md", 'data_package.name="populace-data"'),
+    ("README.md", "knowledgeRoles"),
+    (
+        "skills/encode-policy-v2/references/workflow.md",
+        "record the reason in the run ledger. Use a short phase ledger.",
+    ),
+    (
+        "skills/review-program/references/workflow.md",
+        "read the run-state ledger (for metrics)",
+    ),
+    (
+        "targets/claude/agents/calibration-diagnostics.md",
+        "the packet includes ledger metadata",
+    ),
+    ("scripts/functional_tags.json", '"role": "data:populace"'),
+    (
+        "skills/policyengine-data/SKILL.md",
+        '`test_microsim.py` asserts `"populace" in DEFAULT_DATASET`',
+    ),
+    (
+        "skills/policyengine/SKILL.md",
+        'assert value.startswith("populace_us")',
+    ),
+    ("skills/policyengine-uk/SKILL.md", "Triggers: populace_uk"),
+    (
+        "targets/claude/agents/microsim-runner.md",
+        '"populace" in data_version',
+    ),
+]
+
+
+@pytest.mark.parametrize(("sample", "expected_hits"), STALE_PRODUCT_BANNED_SAMPLES)
+def test_product_name_guard_catches(sample: str, expected_hits: int) -> None:
+    hits = scan_stale_product_names(sample)
+    assert len(hits) == expected_hits, (
+        f"guard found {len(hits)} stale names, expected {expected_hits}: {sample!r}"
+    )
+
+
+@pytest.mark.parametrize(("relpath", "sample"), STALE_PRODUCT_PATH_BANNED_SAMPLES)
+def test_product_name_guard_keeps_path_exceptions_tight(
+    relpath: str,
+    sample: str,
+) -> None:
+    hits = scan_stale_product_names(sample, relpath)
+    assert len(hits) == 1, f"path exception hid stale product prose: {sample!r}"
+
+
+@pytest.mark.parametrize(("relpath", "sample"), STALE_PRODUCT_ALLOWED_SAMPLES)
+def test_product_name_guard_allows(relpath: str, sample: str) -> None:
+    hits = scan_stale_product_names(sample, relpath)
+    assert not hits, f"guard false-positived on frozen spelling: {sample!r}"
 
 
 # --- Corpus for the Microsimulation guard -----------------------------------

@@ -4,7 +4,7 @@
     {
       "id": "policyengine",
       "role": "analysis:python",
-      "summary": "Canonical Python interface: household calculations, population microsimulation, reform scoring, regional breakdowns via the policyengine package and Populace datasets.",
+      "summary": "Canonical Python interface: household calculations, population microsimulation, reform scoring, regional breakdowns via the policyengine package and Microcosm datasets.",
       "scope_repos": [
         "policyengine.py"
       ],
@@ -79,9 +79,9 @@
     {
       "id": "policyengine-data",
       "role": "data:populace",
-      "summary": "The Populace data stack: certified releases, dataset names, local-area filtering, fit/calibrate/L0 concepts.",
+      "summary": "The Microcosm data stack: certified releases, dataset names, local-area filtering, fit/calibrate/L0 concepts.",
       "scope_repos": [
-        "populace"
+        "microcosm"
       ],
       "supersedes": [
         "policyengine-us-data",
@@ -97,7 +97,7 @@
       "role": "data:diagnostics",
       "summary": "Sensitivity registry mapping simulation-vs-benchmark deviations to likely calibration levers.",
       "scope_repos": [
-        "populace"
+        "microcosm"
       ],
       "supersedes": []
     },
@@ -612,7 +612,7 @@
       "role": "analysis:calibration-diagnostics",
       "summary": "Stage-6 diagnostic \u2014 hypothesizes which calibration targets are driving a microsim mismatch.",
       "scope_repos": [
-        "policyengine-us-data",
+        "microcosm",
         "policyengine-uk-data",
         "calibration-diagnostics"
       ]

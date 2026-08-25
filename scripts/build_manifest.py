@@ -877,7 +877,7 @@ def owner_for_artifact(art: Artifact) -> str:
     if art.category in {"data-science", "data"} or scope & {
         "policyengine-us-data",
         "policyengine-uk-data",
-        "populace",
+        "microcosm",
         "microdf",
         "microimpute",
         "microcalibrate",

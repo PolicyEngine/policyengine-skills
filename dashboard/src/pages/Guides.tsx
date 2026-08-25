@@ -74,7 +74,7 @@ function ReformPipelineGuide() {
             <strong>Score &amp; verify.</strong> Runs <code>/analyze-policy</code> inline:
             bill text → provisions → parameter mapping → prior anchors → microsim →
             comparison against external benchmarks (JCT, CBO, CRFB, TPC, TF) → the
-            data-calibration check (is the populace release well-calibrated for this
+            data-calibration check (is the Microcosm release well-calibrated for this
             reform's variables?). Yields a verdict — see the /analyze-policy guide.
           </li>
           <li>
