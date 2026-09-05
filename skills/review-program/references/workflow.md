@@ -204,6 +204,10 @@ These searches consume the same two-batch limit and acquisition budget below; st
 the fact is established. If no bounded search route is available or the budget expires,
 record the missing check instead of treating the search as completed.
 
+For SSA indexed amounts, a blocked SSA page is a reason to switch to the official annual
+COLA notice in the Federal Register/govinfo, not to try several neighboring SSA URLs.
+An HTTP 200 response containing an access challenge is not usable source evidence.
+
 Read searchable text with physical page boundaries first. Use contents/headings and
 cross-references to locate all provisions relevant to changed behavior, including
 exceptions, effective dates and footnotes; do not stop at a matching number. Visually
@@ -282,12 +286,31 @@ and its evidence rather than running it twice. If execution is unavailable, reco
 unexecuted check and the limits of the code trace. Passing intermediate tests alone does
 not establish that the newly eligible population receives the benefit.
 
+When a limit or assessment unit changes, compare the legal unit with both the income
+aggregation and the final eligibility unit. A test described as separate filing must
+actually use separate tax units. For newly added expected amounts, derive the calculation
+from the specific source steps; an existing helper's output is not an independent oracle.
+Distinguish an unchanged formula defect from a new test that codifies it.
+
+For direct model diagnostics, batch cases in one process and use the optional
+period-aware helper in [automation.md](automation.md#model-diagnostics). It records explicit
+input periods and named in-memory controls. An annual total and a monthly amount are
+different inputs; do not silently convert one into the other. Check setup errors before
+using results, and report exploratory calculations separately from passing assertions.
+
 Each reported defect needs: file:line, triggering case/year, expected versus observed
 behavior, evidence, and why this diff introduces/exposes it (or why it is in requested
 full-audit scope). A value mismatch must be source-supported and output-relevant. Reuse
 facts already established by either reviewer; do not re-open a page or launch a task
 just because an intermediate report contains a flag. Distinguish defects, optional
 improvements, and evidence gaps. Missing coverage is not proof of incorrect behavior.
+
+A reproduction must describe a plausible, internally consistent case and a source-backed
+expected result. Restoring an old formula or forcing a flag can isolate a code change;
+an output difference alone does not establish which outcome is correct. State material
+unmodeled conditions explicitly. In particular, stopping SSI cash does not establish
+that a qualifying disability ended. Discard or correct invalid scenarios before counting
+findings; do not add a default validation agent for this check.
 
 Keep role reports ready for direct consolidation: status; findings with location,
 trigger, expected/observed outcome, impact and source/reproduction links; material gaps;
@@ -321,16 +344,20 @@ The coordinator writes both canonical outputs (required for existing callers):
 `{RUN_ROOT}/{PREFIX}-review-full-report.md` and
 `{RUN_ROOT}/{PREFIX}-review-summary.md`. No separate consolidation agent.
 
-Assemble the full report from the strongest existing finding text: deduplicate, attach
-complementary evidence and reconcile severity/status instead of rewriting each role's
-investigation. Write shared PR metadata, source inventory, validation and timing totals
-once. Keep the final report self-contained for assessing each finding; link detailed logs
-and diagnostic scripts rather than copying them. Local artifact links supplement, not
-replace, the trigger, result and any required primary-source citation in a posted finding.
-Derive the short summary from this same finding list and counts; do not write another
-narrative review. Keep the run state to phase/status updates and artifact pointers, not
-copies of the final reports. Consolidation should not trigger new research unless Phase 5
-identified a material uncertainty.
+Select the strongest existing finding sections, deduplicate and reconcile severity/status.
+Attach complementary evidence to the selected section once where needed; the coordinator
+can merge that text without restarting a reviewer. Use the bundled
+[report assembler](automation.md#report-assembly) to copy the selected sections into both
+canonical reports and derive counts/severity from one list; do not hand-write a new
+consolidation script per PR. Its small input records shared metadata, role completion,
+finding selectors, gaps, actual validation and measured timings once. Review the generated
+result for substantive accuracy; the helper checks artifacts, not legal conclusions.
+If the helper is unavailable, assemble the same outputs directly with these contracts.
+
+Keep each finding self-contained; link detailed diagnostics rather than copying them.
+Local artifact links supplement, not replace, the trigger, result and primary-source
+citation. Keep the run state to phase/status updates and artifact pointers. Consolidation
+should not trigger new research unless Phase 5 identified a material uncertainty.
 
 Preserve stable finding IDs C1/C2, A1/A2 and S1/S2. Incremental reviews mark prior findings
 RESOLVED, STILL OPEN or UNVERIFIED (retain their previous severity until adjudicated),
@@ -384,6 +411,14 @@ criticals and at most minor suggestions. The summary stays concise (target 20 li
 review status, still-open critical count, other counts, material gaps, actual validation,
 metrics and full report path. Report gaps even if the critical count is zero. Output-file
 existence alone is not a clean-review gate for a calling encoding workflow.
+
+For timed runs, distinguish setup, overlapping role wall time and consolidation/cleanup;
+do not add concurrent role durations. Record CLI wall time separately from test-reported
+time, and source acquisition window separately from time inside network calls. These
+differences are not pure import or network-latency measurements. A few diagnosed cases
+do not establish review recall; record confirmed misses or false positives without
+claiming all defects were found. After cleanup, finalize timings and rerun the assembler
+with the same selectors if needed; this is bookkeeping, not a new review pass.
 
 ## Phase 7: Display or post and clean up
 
