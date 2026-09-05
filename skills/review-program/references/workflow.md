@@ -21,12 +21,17 @@ existing authorization or an explicit posting decision after the report is ready
 A reviewer writes its assigned report and returns
 `DONE — wrote {path} ({confirmed findings}; {material evidence gaps}; {elapsed})`.
 Wait for completion notifications; do not infer completion merely from a file's existence.
-Reviewers report their current stage at least every two minutes. Use bounded waits; if
-a role makes no observable progress for five minutes, interrupt it instead of waiting
-indefinitely. A live progress update can justify continued analysis, not an unbounded
-external call. On a failed/stalled role, recover its usable work and retry the missing task once or
-complete it directly. If it cannot be finished, consolidate a PARTIAL review with the
-missing checks identified. Never keep waiting indefinitely for an optional source search.
+Each reviewer appends `<UTC time> <stage>` to `{RUN_ROOT}/{PREFIX}-review-progress-{role}.log`
+at every stage change and at least every two minutes of work; that log is the only file
+the coordinator watches. The coordinator checks the other roles' logs whenever a sibling
+completes and, while waiting, may watch a log's modification time with a bounded
+file-watch; it never reads a partial report. Silence longer than five minutes means
+send the role one "finalize now with what you have" message; silence for two more
+minutes means stop the role, recover its usable work, and retry the missing task once or
+complete it directly. A live progress update can justify continued analysis, not an
+unbounded external call. If the work cannot be finished, consolidate a PARTIAL review
+with the missing checks identified. Never keep waiting indefinitely for an optional
+source search.
 
 If delegation is unavailable, execute the roles directly with the same scope and outputs.
 An encoding implementation still needs an independent review context; reuse raw sources,
@@ -112,6 +117,8 @@ URL identifies the base repository authoritatively:
 
 ```bash
 set -euo pipefail
+: "${BASE_REPO:?resolve OWNER/REPO in Phase 0 before capture}"
+: "${PR_NUMBER:?resolve the PR number in Phase 0 before capture}"
 bounded() {
   python3 "$REVIEW_SKILL_ROOT/scripts/run_bounded.py" --seconds 60 "$@"
 }
@@ -167,8 +174,13 @@ changes invalidate evidence for the affected behavior; they do not require a who
 restart. If the impact cannot be bounded, expand scope explicitly. Preserve prior IDs.
 If `--full` expands beyond the prior verified scope, review that additional scope too.
 
-The coordinator reads the diff and records a concise scope brief in the run state:
-changed paths, program/year, affected behavior, needed sources and selected roles.
+Dispatch the reviewers as soon as the snapshot exists; do not hold them for a scope
+brief. Each reviewer derives scope from the diff, PR body and snapshot itself. The
+coordinator then reads the diff and records a concise scope brief in the run state:
+changed paths, program/year, affected behavior, needed sources, selected roles and at
+most five concrete questions to verify (for example a helper's tie-breaking semantics,
+a gate that might not apply, a downstream consumer). Send those questions to the running
+reviewers as one follow-up message; keep the brief under a minute of coordinator time.
 Unchanged code may be read to trace impact. Newly activated parameter values and formulas
 are in scope. Unrelated historical values and already-dead code are not audit targets
 unless `--full` was requested; note an incidental issue for follow-up without researching
@@ -204,9 +216,10 @@ These searches consume the same two-batch limit and acquisition budget below; st
 the fact is established. If no bounded search route is available or the budget expires,
 record the missing check instead of treating the search as completed.
 
-For SSA indexed amounts, a blocked SSA page is a reason to switch to the official annual
-COLA notice in the Federal Register/govinfo, not to try several neighboring SSA URLs.
-An HTTP 200 response containing an access challenge is not usable source evidence.
+When an agency page is blocked, switch to the publication of record for that value (the
+Federal Register or govinfo notice, the statute, the state register), not to several
+neighboring URLs on the same host. An HTTP 200 response containing an access challenge
+or bot check is not usable source evidence.
 
 Read searchable text with physical page boundaries first. Use contents/headings and
 cross-references to locate all provisions relevant to changed behavior, including
@@ -219,9 +232,17 @@ were checked. There is no requirement to render every page or split agents by pa
 PDF citations use physical file pages (`#page=XX`), not printed numbers; inspect a cited
 page when the locator or its evidence is uncertain. Single-page PDFs need no fragment.
 
-Start a shared acquisition timer at the first new external search/fetch. Within
+Read extracts selectively: locate the relevant provisions with `grep -n` and read a
+bounded window around each hit rather than printing whole documents into context; a
+manual section rarely needs more than a few dozen lines. Reviewer context is finite, and
+whole-document reads of two or three manuals can consume most of it.
+
+Start a shared acquisition timer at the first new external search/fetch. Fetch every
+known URL in one parallel bounded batch before reading any of them. Within
 `--source-budget`, use at most two targeted search batches per material evidence gap and
-two fetch attempts per URL. On repeated blocking, 429 or an unrecoverable error, stop
+two fetch attempts per URL; the second attempt must use a different route (a browser
+user agent, the agency's alternate host, or a read-only text proxy), never a repeat of
+the same request. On repeated blocking, 429 or an unrecoverable error, stop
 that route without backoff loops. Use an already-available authoritative alternative if
 it establishes the fact. No optional second-source hunt for a confirmed fact; seek more
 evidence when sources conflict, authority is insufficient or changed behavior remains
@@ -244,14 +265,20 @@ never wait through minute-long backoff sleeps or keep a reviewer alive for an op
 
 For policy changes, run these two roles concurrently. For pure infrastructure/API/frontend,
 run code-reviewer only. Mixed PRs get both with their respective scopes. Split further
-only when the diff has independent large components; state why, partition ownership and
-avoid reading the same whole program in every role. Do not spawn nested reviewers.
-Load only references needed for the actual task, not every model-development document.
+when the diff has independent large components, or when a role's inputs would exceed
+its context: as a working threshold, more than about 800 diff lines or more than ten
+sources for one role. Split the policy reviewer by source group and the code reviewer
+by variable group; state why, partition ownership and avoid reading the same whole
+program in every role. Do not spawn nested reviewers.
+Load only references needed for the actual task, not every model-development document;
+read a reference's relevant section, not the whole reference set.
 When policy review is inapplicable, the coordinator writes an empty version-1 source
 manifest and records why source checking was not requested.
 
-Pass the exact diff/snapshot paths, scope brief, current/prior artifacts, source budget,
-role contract and output paths. Caller role contracts take precedence over a specialized
+Pass the exact diff/snapshot paths, PR body, current/prior artifacts, source budget,
+role contract, progress-log path and output paths; send the scope brief's questions as a
+follow-up message once written (a runtime that cannot message a running role includes
+the brief at dispatch instead, still capped at a minute). Caller role contracts take precedence over a specialized
 agent's broader standalone routine; launchers should avoid such extra routines by default.
 
 ## Phase 4: Review and substantiate findings
@@ -263,8 +290,10 @@ Combine value corroboration, citation checks and code-path verification in this 
 there is no separate PDF auditor, reference checker or mandatory citation verifier.
 
 Code reviewer: inspect behavior, entity/period/vectorization correctness and meaningful
-coverage. Trace suspicious cases through dependencies. Run changed tests together once
-using an available environment, plus directly relevant regression tests or a small
+coverage. Trace suspicious cases through dependencies. Run the changed tests and the
+directly relevant regression tests in one runner invocation (pass every path to the same
+command; each invocation pays the model's import cost), writing full output to a log
+under `RUN_ROOT` and reading back only the summary line and failures. Add a small
 reproduction when useful. If the environment is unavailable, report tests NOT RUN; do
 not install dependencies or repeat a broad suite just to produce a review. Existing CI
 and local tests are separate evidence. Reuse a test result only for unchanged tested
@@ -275,10 +304,12 @@ would install/sync dependencies. Confirm imports resolve to the snapshot. Set
 `PYTHONDONTWRITEBYTECODE=1` and direct pytest's cache to an assigned path under `RUN_ROOT`
 (for example, `-o cache_dir="$RUN_ROOT/$PREFIX-review-pytest-cache"`).
 
-When the diff makes a new population eligible, the code reviewer checks at least one
-newly eligible case through to the final benefit, subtraction or tax result. Use actual
-demographic/income inputs rather than forcing the eligibility flag or intermediate
-amount. An existing test can satisfy this when it exercises that complete path; otherwise
+When the diff changes who is eligible or how much they receive, the code reviewer checks
+affected cases through to the final benefit, subtraction or tax result: at least one case
+per household shape the changed tests use, plus one composition those tests do not cover
+(for example a second tax unit in the same SPM unit, a non-parent adult, or a swapped
+member order). Use actual demographic/income inputs rather than forcing the eligibility
+flag or intermediate amount. An existing test can satisfy this when it exercises that complete path; otherwise
 run a focused diagnostic in the available environment. Trace remaining age, entity and
 aggregation gates, including a risk of double-counting an existing benefit. The policy
 reviewer establishes that the scenario qualifies under the source; share one reproduction
@@ -308,13 +339,17 @@ improvements, and evidence gaps. Missing coverage is not proof of incorrect beha
 A reproduction must describe a plausible, internally consistent case and a source-backed
 expected result. Restoring an old formula or forcing a flag can isolate a code change;
 an output difference alone does not establish which outcome is correct. State material
-unmodeled conditions explicitly. In particular, stopping SSI cash does not establish
-that a qualifying disability ended. Discard or correct invalid scenarios before counting
-findings; do not add a default validation agent for this check.
+unmodeled conditions explicitly; a change in benefit receipt does not by itself establish
+a change in the underlying status that qualified the person (for example, an SSI payment
+stopping does not show that a qualifying disability ended). Discard or correct invalid
+scenarios before counting findings; do not add a default validation agent for this check.
 
 Keep role reports ready for direct consolidation: status; findings with location,
 trigger, expected/observed outcome, impact and source/reproduction links; material gaps;
-and a short validation/timing block. Record commands, test counts, start/end times and
+and a short validation/timing block. A role's status is PARTIAL whenever its gap list is
+non-empty: an uncorroborated value-bearing entry (a parameter value whose cited source
+could not be fetched or read), a required check not executed, or a scenario it could not
+validate. Never write COMPLETE above a non-empty gap list. Record commands, test counts, start/end times and
 actual source/render counts once, with raw output in linked logs. Avoid full PR metadata,
 source inventories, investigation narratives and repeated scenario tables in each report.
 When both reviewers establish the same defect, share the finding text and add only the
@@ -325,8 +360,12 @@ more findings, not repeated boilerplate or invented statistics.
 ## Phase 5: Resolve material uncertainty
 
 The coordinator reads both reports and deduplicates before requesting any more work.
-Return a specific unresolved question to its original reviewer when that reviewer can
-answer from existing evidence. Use at most one additional independent adjudication batch
+Before consolidation it opens the evidence artifact of every CRITICAL once (the
+reproduction output or the quoted source lines) and confirms the trigger, the expected
+result and its source are all present; a CRITICAL whose evidence is missing, inconsistent
+or an output difference alone is marked UNVERIFIED, which keeps its severity and forces
+PARTIAL. Return a specific unresolved question to its original reviewer when that
+reviewer can answer from existing evidence. Use at most one additional independent adjudication batch
 for materially conflicting findings or uncertain high-impact claims; batch related items
 by topic, not one agent per value. It uses the remaining acquisition budget, not a reset.
 Do not reconfirm findings with adequate source and code-path evidence, or investigate
@@ -407,18 +446,28 @@ tests or a lack of confirmed mismatches with complete source verification.
 
 Severity: REQUEST_CHANGES for confirmed criticals; COMMENT for nonblocking issues or
 PARTIAL reviews without confirmed criticals; APPROVE only for COMPLETE reviews with no
-criticals and at most minor suggestions. The summary stays concise (target 20 lines):
-review status, still-open critical count, other counts, material gaps, actual validation,
-metrics and full report path. Report gaps even if the critical count is zero. Output-file
+criticals and at most minor suggestions. The summary stays concise (target 20 lines) and
+starts with three labeled lines that callers parse: `Review status: COMPLETE | PARTIAL`,
+`Review severity: ...` and `Still-open critical count: N`; then other counts, material
+gaps, actual validation, metrics and full report path. Report gaps even if the critical count is zero. Output-file
 existence alone is not a clean-review gate for a calling encoding workflow.
 
-For timed runs, distinguish setup, overlapping role wall time and consolidation/cleanup;
+For timed runs, record the canonical keys in the assembler's `timing` block so runs stay
+comparable: `setup_seconds` (capture through snapshot), `scope_seconds`,
+`parallel_review_seconds` (dispatch to last role completion), `policy_role_seconds`,
+`code_role_seconds`, `adjudication_seconds`, `consolidation_cleanup_seconds` and
+`elapsed_seconds`; distinguish setup, overlapping role wall time and consolidation/cleanup;
 do not add concurrent role durations. Record CLI wall time separately from test-reported
 time, and source acquisition window separately from time inside network calls. These
 differences are not pure import or network-latency measurements. A few diagnosed cases
 do not establish review recall; record confirmed misses or false positives without
 claiming all defects were found. After cleanup, finalize timings and rerun the assembler
 with the same selectors if needed; this is bookkeeping, not a new review pass.
+
+When maintaining this workflow, use [real PR benchmarks](benchmark.md) to assess review
+quality and runtime. Helper tests protect mechanical contracts only; their pass count
+does not validate findings, source interpretation, scenario plausibility or efficiency.
+Benchmarking is a maintainer activity, not an additional stage in every review.
 
 ## Phase 7: Display or post and clean up
 

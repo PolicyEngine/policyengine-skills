@@ -38,12 +38,19 @@ Update a role's finding in place to include complementary evidence before select
     }
   ],
   "gaps": [],
+  "notes": ["Observations that are neither defects nor gaps, for example a modeled default that masks the change."],
   "validation": "Actual tests, CI with checked head, source/render counts and limitations; link raw logs. Use NOT RUN when appropriate.",
   "timing": {"elapsed_seconds": 589.24, "setup_seconds": 29.57}
 }
 ```
 
-Replace example data with measured values; omit `timing` when not measured. Keep
+Replace example data with measured values; omit `timing` when not measured. When
+present, `timing` uses the canonical keys from workflow Phase 6 (`setup_seconds`,
+`scope_seconds`, `parallel_review_seconds`, `policy_role_seconds`, `code_role_seconds`,
+`adjudication_seconds`, `consolidation_cleanup_seconds`, `elapsed_seconds`) and must
+include `elapsed_seconds`. `notes` is optional, renders under a Notes heading, and never
+affects status or severity. The summary begins with `Review status`, `Review severity`
+and `Still-open critical count` lines for calling workflows. Keep
 `validation` concise so the summary remains short. Paths are absolute or relative to
 `RUN_ROOT`, including local links inside the selected Markdown. Both canonical reports
 remain in that directory. Role status is `DONE` or `PARTIAL`; a failed role must have its

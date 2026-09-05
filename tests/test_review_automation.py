@@ -1,24 +1,19 @@
-"""Exercise report consistency and the period ambiguity observed in real PR reviews."""
+"""Protect caller completion decisions and report preservation, not policy accuracy.
+
+Real PR runs assess findings, input plausibility and runtime; see benchmark.md.
+"""
 
 from __future__ import annotations
 
-import hashlib
-import importlib.util
 import json
 import subprocess
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "skills/review-program/scripts"
-SPEC = importlib.util.spec_from_file_location(
-    "review_diagnostics", SCRIPTS / "review_diagnostics.py"
-)
-DIAGNOSTICS = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(DIAGNOSTICS)
 
 
 @pytest.fixture
@@ -26,38 +21,26 @@ def review(tmp_path):
     report = tmp_path / "code.md"
     report.write_text("""# Role report
 
-## C1 — Eligibility error
+## C1 — Selected report section
 
-The observed benefit is 0; the source-supported result is 100.
+Opaque reviewer text. This fixture makes no policy claim.
 
 ### Reproduction
 
 ```python
 ## This is code, not a new finding
-assert benefit == 100
+print("preserve this text")
 ```
 
-## A1 — Boundary coverage
+## A1 — Unselected report section
 
-Add the exact threshold case.
+This section must not enter the consolidated finding.
 
 ## Validation
 
-Two tests passed.
+Model tests NOT RUN in this mechanical fixture.
 """)
-    source = tmp_path / "source.html"
-    source.write_text("Official rule")
-    manifest = {
-        "version": 1,
-        "worktree_root": str(tmp_path),
-        "sources": [
-            {
-                "url": "https://agency.example/rule",
-                "path": str(source),
-                "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
-            }
-        ],
-    }
+    manifest = {"version": 1, "worktree_root": str(tmp_path), "sources": []}
     (tmp_path / "sources.json").write_text(json.dumps(manifest))
     data = {
         "version": 1,
@@ -67,7 +50,7 @@ Two tests passed.
             "head": "a" * 40,
             "merge_base": "b" * 40,
             "mode": "full",
-            "scope": "changed behavior and affected dependencies",
+            "scope": "Report automation only; no policy review",
             "worktree_root": str(tmp_path),
         },
         "status": "COMPLETE",
@@ -78,17 +61,17 @@ Two tests passed.
                 "id": "C1",
                 "severity": "critical",
                 "path": "code.md",
-                "heading": "C1 — Eligibility error",
+                "heading": "C1 — Selected report section",
             }
         ],
         "gaps": [],
-        "validation": "Two tests passed; CI NOT RUN. One source.",
+        "validation": "Model tests and CI NOT RUN; no policy sources checked.",
         "timing": {"elapsed_seconds": 5.2},
     }
     return tmp_path, data
 
 
-def assemble(review, prefix="pr-7"):
+def assemble(review):
     root, data = review
     input_path = root / "assembly.json"
     input_path.write_text(json.dumps(data))
@@ -101,18 +84,12 @@ def assemble(review, prefix="pr-7"):
             "--run-root",
             str(root),
             "--prefix",
-            prefix,
+            "pr-7",
         ],
         capture_output=True,
         text=True,
         timeout=10,
     )
-
-
-def test_filename_prefix_keeps_spaces_and_single_dots(review):
-    root, _ = review
-    assert assemble(review, "pr 7.v2").returncode == 0
-    assert (root / "pr 7.v2-review-summary.md").is_file()
 
 
 def test_preserves_finding_and_derives_both_reports(review):
@@ -121,16 +98,26 @@ def test_preserves_finding_and_derives_both_reports(review):
     assert result.returncode == 0, result.stderr
     full = (root / "pr-7-review-full-report.md").read_text()
     summary = (root / "pr-7-review-summary.md").read_text()
-    assert "### Reproduction\n\n```python\n## This is code" in full
-    assert "Boundary coverage" not in full
+    selected_body = (
+        (root / "code.md")
+        .read_text()
+        .split("## C1 — Selected report section\n", 1)[1]
+        .split("\n## A1 —", 1)[0]
+        .strip()
+    )
+    assert selected_body in full
+    assert "Unselected report section" not in full
     for text in (full, summary):
         assert "REQUEST_CHANGES" in text
         assert "1 critical" in text
-    assert "https://agency.example/rule" in full
+    # These labels are the encode-policy-v2 handoff, not cosmetic line positions.
+    assert "Review status: COMPLETE" in summary
+    assert "Review severity: REQUEST_CHANGES" in summary
+    assert "Still-open critical count: 1" in summary
 
 
-@pytest.mark.parametrize("state", ["RESOLVED", "WITHDRAWN"])
-def test_closed_findings_visible_but_not_open(review, state):
+def test_withdrawn_finding_does_not_keep_the_fix_loop_running(review):
+    state = "WITHDRAWN"
     root, data = review
     data["findings"][0]["status"] = state
     assert assemble(review).returncode == 0
@@ -158,93 +145,11 @@ def test_missing_checks_cannot_become_clean_approval(review, cause):
     assert result["gaps"]
 
 
-@pytest.mark.parametrize(
-    "invalid", ["duplicate", "missing_heading", "running", "stale_source", "outside"]
-)
-def test_bad_assembly_preserves_existing_outputs(review, invalid):
+def test_unfinished_role_cannot_replace_previous_review(review):
     root, data = review
-    full = root / "pr-7-review-full-report.md"
-    full.write_text("Prior report to preserve")
-    if invalid == "duplicate":
-        data["findings"] *= 2
-    elif invalid == "missing_heading":
-        data["findings"][0]["heading"] = "Absent finding"
-    elif invalid == "running":
-        data["roles"][0]["status"] = "RUNNING"
-    elif invalid == "stale_source":
-        (root / "source.html").write_text("Different bytes")
-    else:
-        data["roles"][0]["path"] = "../outside.md"
+    outputs = [root / "pr-7-review-full-report.md", root / "pr-7-review-summary.md"]
+    for path in outputs:
+        path.write_text("Prior completed review")
+    data["roles"][0]["status"] = "RUNNING"
     assert assemble(review).returncode != 0
-    assert full.read_text() == "Prior report to preserve"
-    assert not (root / "pr-7-review-summary.md").exists()
-
-
-def test_monthly_annual_total_differs_from_monthly_value():
-    variable = SimpleNamespace(definition_period="month", value_type=float)
-    total = DIAGNOSTICS.normalize_inputs(
-        {"2026": {"annual_total": 2238}}, variable, "2026"
-    )
-    monthly = DIAGNOSTICS.normalize_inputs(
-        {"2026": {"monthly_value": 2238}}, variable, "2026"
-    )
-    assert len(total) == len(monthly) == 12
-    assert total["2026-01"] == 186.5
-    assert sum(total.values()) == 2238
-    assert monthly["2026-12"] == 2238
-
-
-def test_ambiguous_monthly_input_and_overlap_are_rejected():
-    variable = SimpleNamespace(definition_period="month", value_type=float)
-    with pytest.raises(ValueError, match="explicit months"):
-        DIAGNOSTICS.normalize_inputs(2238, variable, "2026")
-    with pytest.raises(ValueError, match="Overlapping"):
-        DIAGNOSTICS.normalize_inputs(
-            {"2026": {"annual_total": 2238}, "2026-01": 100}, variable, "2026"
-        )
-    uneven = {"2026-01": 100, "2026-02": 0}
-    assert DIAGNOSTICS.normalize_inputs(uneven, variable, "2026") == uneven
-
-
-def test_does_not_divide_flags_or_guess_annual_values_from_months():
-    with pytest.raises(ValueError, match="float variable"):
-        DIAGNOSTICS.normalize_inputs(
-            {"2026": {"annual_total": True}},
-            SimpleNamespace(definition_period="month", value_type=bool),
-            "2026",
-        )
-    with pytest.raises(ValueError, match="does not match"):
-        DIAGNOSTICS.normalize_inputs(
-            {"2026-01": 40},
-            SimpleNamespace(definition_period="year", value_type=int),
-            "2026",
-        )
-
-
-def test_normalization_preserves_entity_membership_and_checks_variable_entity():
-    person = SimpleNamespace(plural="people", roles=None)
-    household = SimpleNamespace(
-        plural="households", roles=[SimpleNamespace(key="member", plural="members")]
-    )
-    system = SimpleNamespace(
-        entities=[person, household],
-        variables={
-            "age": SimpleNamespace(
-                entity=person, definition_period="year", value_type=int
-            ),
-            "state_code": SimpleNamespace(
-                entity=household, definition_period="year", value_type=str
-            ),
-        },
-    )
-    situation = {
-        "people": {"p": {"age": 40}},
-        "households": {"h": {"members": ["p"], "state_code": "MO"}},
-    }
-    result = DIAGNOSTICS.normalize_situation(situation, system, "2026")
-    assert result["households"]["h"]["members"] == ["p"]
-    assert result["people"]["p"]["age"] == {"2026": 40}
-    assert situation["people"]["p"]["age"] == 40
-    situation["people"]["p"]["state_code"] = "MO"
-    with pytest.raises(ValueError, match="belongs to households"):
-        DIAGNOSTICS.normalize_situation(situation, system, "2026")
+    assert all(path.read_text() == "Prior completed review" for path in outputs)

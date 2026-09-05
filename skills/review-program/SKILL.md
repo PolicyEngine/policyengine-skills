@@ -50,7 +50,9 @@ Delegation mapping (when subagent use is available and authorized):
   values and the role's task spec from the canonical workflow to every subagent; name
   the role's skills explicitly in the subagent prompt — do not assume a worker infers
   them from parent context.
-- Every subagent finishes by writing its assigned file and returning the one-line DONE
-  message from the canonical completion contract.
+- Every subagent appends progress lines to its canonical progress log while working and
+  finishes by writing its assigned file and returning the one-line DONE message from the
+  canonical completion contract. Dispatch reviewers before writing the scope brief when
+  the runtime can message a running worker; otherwise include a brief capped at one minute.
 - If subagents are unavailable or not authorized, execute the roles directly in phase
   order, preserving the same handoff files and read-only contract.

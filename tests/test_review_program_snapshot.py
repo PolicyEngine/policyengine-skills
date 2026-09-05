@@ -51,14 +51,14 @@ def checkout(tmp_path: Path) -> dict[str, str]:
     repo = tmp_path / "working repo"
     repo.mkdir()
     git(repo, "init", "-b", "main")
-    (repo / "policy.py").write_text("benefit = 0\n")
-    git(repo, "add", "policy.py")
+    (repo / "reviewed.txt").write_text("base\n")
+    git(repo, "add", "reviewed.txt")
     git(repo, "commit", "-m", "Base")
     git(repo, "checkout", "-b", "feature")
-    (repo / "policy.py").write_text("benefit = 100\n")
+    (repo / "reviewed.txt").write_text("remote-pr\n")
     git(repo, "commit", "-am", "Remote PR")
     remote_head = git(repo, "rev-parse", "HEAD")
-    (repo / "policy.py").write_text("benefit = 200\n")
+    (repo / "reviewed.txt").write_text("local-commit\n")
     git(repo, "commit", "-am", "Unpushed local commit")
     local_head = git(repo, "rev-parse", "HEAD")
 
@@ -124,11 +124,14 @@ def snapshot_path(result: subprocess.CompletedProcess[str]) -> Path:
 @pytest.mark.parametrize("local_diff", [False, True])
 def test_diff_and_snapshot_use_same_selected_commit(checkout, local_diff) -> None:
     repo = Path(checkout["WORKTREE_ROOT"])
-    (repo / "policy.py").write_text("benefit = 300\n")
-    git(repo, "add", "policy.py")
-    (repo / "policy.py").write_text("benefit = 999\n")
-    (repo / "local-only.py").write_text("untracked = True\n")
+    (repo / "reviewed.txt").write_text("staged\n")
+    git(repo, "add", "reviewed.txt")
+    (repo / "reviewed.txt").write_text("unstaged\n")
+    (repo / "local-only.txt").write_text("untracked\n")
     before = git(repo, "status", "--porcelain")
+    if local_diff:
+        # A local-diff review must not need the remote PR head at all.
+        git(Path(checkout["TEST_REMOTE_URL"]), "update-ref", "-d", "refs/pull/7/head")
 
     snapshot = snapshot_path(
         capture_and_snapshot(
@@ -138,37 +141,29 @@ def test_diff_and_snapshot_use_same_selected_commit(checkout, local_diff) -> Non
             }
         )
     )
-    expected = "200" if local_diff else "100"
+    expected = "local-commit" if local_diff else "remote-pr"
     expected_head = checkout["TEST_LOCAL_HEAD" if local_diff else "TEST_REMOTE_HEAD"]
     assert git(snapshot, "rev-parse", "HEAD") == expected_head
-    assert (snapshot / "policy.py").read_text() == f"benefit = {expected}\n"
-    assert not (snapshot / "local-only.py").exists()
+    assert (snapshot / "reviewed.txt").read_text() == f"{expected}\n"
+    assert not (snapshot / "local-only.txt").exists()
     diff = (Path(checkout["RUN_ROOT"]) / "test-program-review-diff.txt").read_text()
-    assert f"+benefit = {expected}\n" in diff
-    assert "999" not in diff and "300" not in diff and "local-only" not in diff
+    assert f"+{expected}\n" in diff
+    assert "unstaged" not in diff and "staged" not in diff and "local-only" not in diff
     assert git(repo, "status", "--porcelain") == before
     assert git(repo, "rev-parse", "HEAD") == checkout["TEST_LOCAL_HEAD"]
     assert git(repo, "branch", "--show-current") == "feature"
 
 
-@pytest.mark.parametrize("dirty", [False, True])
-def test_matching_head_still_gets_an_isolated_snapshot(checkout, dirty) -> None:
+def test_matching_dirty_head_still_gets_an_isolated_snapshot(checkout) -> None:
     repo = Path(checkout["WORKTREE_ROOT"])
     git(repo, "checkout", "--detach", checkout["TEST_REMOTE_HEAD"])
-    if dirty:
-        (repo / "policy.py").write_text("benefit = 999\n")
+    (repo / "reviewed.txt").write_text("unstaged\n")
     snapshot = snapshot_path(capture_and_snapshot(checkout))
     assert snapshot != repo
-    assert (snapshot / "policy.py").read_text() == "benefit = 100\n"
-    # Even a clean checkout can change after snapshot creation.
-    (repo / "policy.py").write_text("benefit = 888\n")
-    assert (snapshot / "policy.py").read_text() == "benefit = 100\n"
-
-
-def test_local_diff_does_not_require_remote_pr_head(checkout) -> None:
-    git(Path(checkout["TEST_REMOTE_URL"]), "update-ref", "-d", "refs/pull/7/head")
-    snapshot = snapshot_path(capture_and_snapshot({**checkout, "LOCAL_DIFF": "true"}))
-    assert git(snapshot, "rev-parse", "HEAD") == checkout["TEST_LOCAL_HEAD"]
+    assert (snapshot / "reviewed.txt").read_text() == "remote-pr\n"
+    # Further edits to the original checkout must not change the snapshot either.
+    (repo / "reviewed.txt").write_text("later-edit\n")
+    assert (snapshot / "reviewed.txt").read_text() == "remote-pr\n"
 
 
 @pytest.mark.parametrize("missing_ref", ["refs/pull/7/head", "refs/heads/main"])
@@ -192,13 +187,7 @@ def test_cleanup_removes_only_this_invocations_snapshot(checkout) -> None:
     assert Path(checkout["WORKTREE_ROOT"]).exists()
     assert (Path(checkout["RUN_ROOT"]) / "test-program-review-diff.txt").exists()
 
-
-def test_cleanup_preserves_unexpected_snapshot_changes(checkout) -> None:
-    snapshot = snapshot_path(capture_and_snapshot(checkout))
-    (snapshot / "keep.txt").write_text("Unexpected file\n")
-    result = shell(
-        block_after("Finally, on success or failure,"),
-        {**checkout, "SNAPSHOT": str(snapshot)},
-    )
-    assert result.returncode != 0
-    assert (snapshot / "keep.txt").read_text() == "Unexpected file\n"
+    # Cleanup must also refuse to delete unexpected files in its own snapshot.
+    refused = shell(cleanup, {**checkout, "SNAPSHOT": str(first)})
+    assert refused.returncode != 0
+    assert (first / "keep.txt").read_text() == "Earlier run's artifact\n"

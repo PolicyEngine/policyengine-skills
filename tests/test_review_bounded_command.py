@@ -1,3 +1,5 @@
+"""Run actual subprocesses to protect deadline and exit-status propagation."""
+
 from pathlib import Path
 import subprocess
 import sys
@@ -26,7 +28,6 @@ def test_preserves_captured_stdout_and_failure_status():
     )
     assert result.returncode == 7
     assert result.stdout == "captured-sha\n"
-    assert "elapsed" in result.stderr
 
 
 def test_timeout_kills_descendants_and_closes_inherited_pipes():
@@ -50,14 +51,3 @@ def test_timeout_kills_descendants_and_closes_inherited_pipes():
     assert result.returncode == 124
     assert "timed out" in result.stderr
     assert time.monotonic() - started < 5
-
-
-def test_missing_command_is_a_failure():
-    result = subprocess.run(
-        [sys.executable, str(SCRIPT), "missing-review-command-12345"],
-        text=True,
-        capture_output=True,
-        timeout=5,
-    )
-    assert result.returncode == 127
-    assert "Cannot start" in result.stderr

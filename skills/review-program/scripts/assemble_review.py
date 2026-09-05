@@ -90,6 +90,9 @@ def assemble(data: dict, root: Path, prefix: str) -> dict:
     gaps = list(data["gaps"])
     if any(not isinstance(gap, str) or not gap.strip() for gap in gaps):
         raise ValueError("Gaps must be nonempty descriptions")
+    notes = list(data.get("notes", []))
+    if any(not isinstance(note, str) or not note.strip() for note in notes):
+        raise ValueError("Notes must be nonempty descriptions")
     manifest = local_path(data["source_manifest"], root)
     evidence = check_manifest(manifest, Path(metadata["worktree_root"]), root)
     if evidence["rejected"] or evidence["discarded_derivatives"]:
@@ -159,6 +162,8 @@ def assemble(data: dict, root: Path, prefix: str) -> dict:
             "Provide actual validation results, including NOT RUN where applicable"
         )
     timing = data.get("timing", {})
+    if timing and "elapsed_seconds" not in timing:
+        raise ValueError("Measured timing must include elapsed_seconds")
     for name, value in timing.items():
         if type(value) not in (int, float) or not 0 <= value < float("inf"):
             raise ValueError(f"Invalid measured timing: {name}")
@@ -199,6 +204,8 @@ def assemble(data: dict, root: Path, prefix: str) -> dict:
     lines += ["", "## Evidence Gaps", ""] + (
         [f"- {gap}" for gap in gaps] or ["No material gaps reported."]
     )
+    if notes:
+        lines += ["", "## Notes", ""] + [f"- {note}" for note in notes]
     lines += [
         "",
         "## Validation Summary",
@@ -217,18 +224,22 @@ def assemble(data: dict, root: Path, prefix: str) -> dict:
     summary = [
         "# Review summary",
         "",
-        f"Status: {status}; {severity}.",
-        f"Reviewed head: {metadata['head']}.",
+        f"Review status: {status}",
+        f"Review severity: {severity}",
+        f"Still-open critical count: {counts['critical']}",
+        f"PR: {metadata['repository']}#{metadata['pr_number']}; reviewed head: {metadata['head']}.",
         f"Open findings: {counts['critical']} critical, {counts['should_address']} should address, {counts['suggestion']} suggestions.",
     ]
     summary += [f"- {f['id']} ({f['status']}): {f['title']}" for f in open_findings]
     summary += [f"- Evidence gap: {gap}" for gap in gaps]
+    summary += [f"- Note: {note}" for note in notes]
     summary += ["", validation, "", metrics, "", f"[Full report](<{full}>)"]
     result = {
         "status": status,
         "severity": severity,
         "counts": counts,
         "gaps": gaps,
+        "notes": notes,
         "finding_states": dict(Counter(f["status"] for f in findings)),
         "source_integrity": evidence,
         "timing": timing,
