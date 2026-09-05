@@ -72,6 +72,9 @@ def checkout(tmp_path: Path) -> dict[str, str]:
     gh.write_text(
         "#!/bin/sh\n"
         'case "$*" in\n'
+        '  "repo view "*"--json url"*) printf "%s\\n" "$TEST_REMOTE_URL" ;;\n'
+        '  "repo view "*"--json defaultBranchRef"*) printf "main\\n" ;;\n'
+        '  *"pr view local"*) exit 1 ;;\n'
         '  *"--json url"*) printf "%s/pull/7\\n" "$TEST_REMOTE_URL" ;;\n'
         '  *"--json baseRefName"*) printf "main\\n" ;;\n'
         "  *) exit 1 ;;\n"
@@ -121,8 +124,9 @@ def snapshot_path(result: subprocess.CompletedProcess[str]) -> Path:
     return Path(result.stdout.splitlines()[-1])
 
 
-@pytest.mark.parametrize("local_diff", [False, True])
-def test_diff_and_snapshot_use_same_selected_commit(checkout, local_diff) -> None:
+@pytest.mark.parametrize("mode", ["remote-pr", "local-with-pr", "local-without-pr"])
+def test_diff_and_snapshot_use_same_selected_commit(checkout, mode) -> None:
+    local_diff = mode != "remote-pr"
     repo = Path(checkout["WORKTREE_ROOT"])
     (repo / "reviewed.txt").write_text("staged\n")
     git(repo, "add", "reviewed.txt")
@@ -138,6 +142,7 @@ def test_diff_and_snapshot_use_same_selected_commit(checkout, local_diff) -> Non
             {
                 **checkout,
                 "LOCAL_DIFF": str(local_diff).lower(),
+                "PR_NUMBER": "local" if mode == "local-without-pr" else "7",
             }
         )
     )

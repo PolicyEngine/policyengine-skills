@@ -51,3 +51,35 @@ them; do not supply this evaluator table to a reviewer as an answer key.
 Reassembling #9379's saved report in approximately 0.05s validated the assembler's
 mechanics. It did not measure the time to choose findings or establish their correctness.
 The current local orchestration edits need their own real-run evidence.
+
+## MO LIHEAP workflow correction, September 2026
+
+The local encoding benchmark at `8a084efa3d948585786a4e13b368ac594942548c`
+used the PR #88 workflow plus local-diff and skill-loading changes. Its two reviews
+took approximately 30m21s and 26m06s after subtracting long event gaps correlated with
+machine sleep (actual wall times 78m09s and 42m39s). Individual reviewers took 9–14
+minutes; setup, staggered dispatch and roughly nine minutes of post-reviewer work
+accounted for the rest. These adjusted times are estimates, not active-compute measurements.
+
+The run exposed duplicate skill/command entrypoints, verbose report reconciliation,
+unverified applicant premises counted as critical, and ordinary limitations classified
+as missing required checks. The subsequent workflow correction has this bounded evidence:
+
+- A fresh native Claude entrypoint smoke test loaded both real skills and their canonical
+  paths in 23.8s, with no compatibility stub or recursive invocation.
+- Replaying the existing MO reports through the assembler took 0.05–0.08s and produced
+  a 20-line summary while preserving full evidence. Marking C3 UNVERIFIED excluded it
+  from `confirmed_critical_ids` without dropping it from total open findings.
+- A fresh context loaded review-program and model-development and evaluated C3 from
+  the existing claim, primary-source excerpt and recorded diagnostic inputs/outputs.
+  In 76.1s it rejected automatic repair because the applicant premise was unestablished.
+  It also volunteered unsupported side remarks about the senior branch and proposed
+  fallback. Those remarks were rejected, and the adjudication instruction was narrowed
+  afterwards. An earlier packet accidentally omitted relevant evidence and is excluded
+  from acceptance evidence.
+
+These checks validate entrypoint resolution, assembly mechanics and one bounded
+scenario decision. They do **not** establish full-review accuracy, successful parallel
+dispatch under load, or a new end-to-end runtime. The final narrowed adjudication wording
+and overall latency still need the next real-PR benchmark. Do not report replay time as
+review time or this scenario check as a third MO review.

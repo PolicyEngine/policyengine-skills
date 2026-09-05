@@ -5,10 +5,14 @@ to Claude Code; it adds no review stages or completion gates.
 
 - **Arguments**: preserve positional arguments and flags, including `--sources` and
   `--source-budget`, according to the canonical grammar.
+- **Entrypoint**: this workflow is registered as a skill, without a same-named command
+  stub. Check that Skill returns this entrypoint and resolve `REVIEW_SKILL_ROOT` from its
+  reported base directory. Pass that path to workers; never use a filesystem-wide search
+  or recursive Skill invocation to recover a compatibility stub.
 - **Questions**: use `AskUserQuestion` for missing/ambiguous PR identity or a posting
   decision. Honor decisions already provided; review can finish before asking to post.
 - **Delegation**: launch `general-purpose` agents for the canonical `policy-reviewer`
-  and `code-reviewer` together as soon as the snapshot exists, before writing the scope
+  and `code-reviewer` in one parallel tool batch as soon as the snapshot exists, before writing the scope
   brief; send the brief's questions afterwards with `SendMessage`. Use the active
   `Agent`/delegation tool's actual schema; do not pass `run_in_background` or `team_name`
   unless it supports them. Each prompt includes its full canonical task, exact
@@ -17,6 +21,11 @@ to Claude Code; it adds no review stages or completion gates.
   (grep extracts, one test invocation, summary-only test output) and `Load skills:`
   entries. Resolve installed skill names by suffix, never by assuming the `complete:`
   namespace.
+- **Model-development loading**: country-model reviewers invoke the resolved installed
+  skill with the `Skill` tool in their own context, then read the relevant references.
+  Require canonical `SKILLS_READY` evidence before accepting their work. A worker without
+  Skill access or the required installed skill returns `SKILLS_BLOCKED`; the skill list
+  in its prompt is not proof of loading.
 - **Agent contracts**: use these general-purpose agents rather than specialized
   document-collector/program-reviewer/validator agents whose standalone routines add
   overlapping work. Reviewers do not create nested teams or delegate verification.
@@ -27,7 +36,8 @@ to Claude Code; it adds no review stages or completion gates.
   bounded wait. Silence over five minutes: `SendMessage` the role "finalize now with what
   you have"; two more minutes: `TaskStop` it and apply the canonical recovery. Never treat
   a partial report as finished. The coordinator reads the reports and writes both final
-  outputs.
+  outputs. Use completion notifications; do not implement waits with multi-minute shell
+  sleeps. The liveness threshold is not the polling interval.
 - **Adjudication**: only for the specific material uncertainty allowed in Phase 5,
   launch a general-purpose agent with the remaining source budget and the disputed
   question. No automatic verifier per finding, source, page or parameter.

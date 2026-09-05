@@ -32,10 +32,7 @@
   ],
   "commands": [
     "./commands/backdate-program.md",
-    "./commands/encode-policy-v2.md",
     "./commands/encode-reform.md",
-    "./commands/review-program.md",
-    "./commands/fix-pr.md",
     "./commands/create-pr.md",
     "./commands/write-tests.md"
   ],

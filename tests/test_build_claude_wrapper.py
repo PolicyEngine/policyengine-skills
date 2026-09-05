@@ -35,6 +35,9 @@ def test_build_claude_wrapper(tmp_path: Path) -> None:
     assert len(manifest["plugins"]) == expected_plugins == 8
 
     for plugin in manifest["plugins"]:
+        skills = {Path(path).name for path in plugin.get("skills", [])}
+        commands = {Path(path).stem for path in plugin.get("commands", [])}
+        assert not skills & commands, "A compatibility command must not shadow a skill"
         assert plugin.get("source") == "./", f"{plugin['name']} missing source=./"
         assert "hooks" not in plugin, (
             f"{plugin['name']} has a hooks entry; Claude Code rejects both hooks: null "
@@ -45,6 +48,9 @@ def test_build_claude_wrapper(tmp_path: Path) -> None:
     assert (output_dir / "skills" / "policyengine" / "SKILL.md").exists()
     assert (output_dir / "skills" / "policyengine-us" / "SKILL.md").exists()
     assert (output_dir / "commands" / "create-pr.md").exists()
+    for name in ("encode-policy-v2", "review-program", "fix-pr"):
+        assert (output_dir / "skills" / name / "SKILL.md").is_file()
+        assert not (output_dir / "commands" / f"{name}.md").exists()
     assert (output_dir / "agents" / "country-models" / "rules-engineer.md").exists()
     assert (output_dir / "hooks" / "hooks.json").exists()
     assert (output_dir / "GENERATED_FROM").read_text().strip() == "test-sha"

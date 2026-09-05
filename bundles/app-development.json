@@ -32,7 +32,6 @@
   "commands": [
     "./commands/create-new-component.md",
     "./commands/create-pr.md",
-    "./commands/fix-pr.md",
     "./commands/new-tool.md",
     "./commands/audit-seo.md",
     "./commands/audit-multizone.md",

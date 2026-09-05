@@ -27,8 +27,7 @@
     "./skills/fix-pr"
   ],
   "commands": [
-    "./commands/create-pr.md",
-    "./commands/fix-pr.md"
+    "./commands/create-pr.md"
   ],
   "agents": [
     "./agents/country-models/ci-fixer.md",

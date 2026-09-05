@@ -1,6 +1,6 @@
 # When to use what
 
-The PolicyEngine plugin ships ~23 slash commands, ~33 agents, and 23 skills (20 knowledge skills plus the three workflow skills, consolidated from 53 in the July 2026 rebuild). The `/encode-policy-v2`, `/review-program`, and `/fix-pr` entries are skill-backed: each name resolves to a skill whose `references/workflow.md` is the canonical definition, and the same-named commands are compatibility stubs. Most days you'll only use 3-5 entry points. This guide maps common work to the right one.
+The PolicyEngine plugin ships 20 command files, 34 agents, and 23 skills (20 knowledge skills plus the three workflow skills, consolidated from 53 in the July 2026 rebuild). The `/encode-policy-v2`, `/review-program`, and `/fix-pr` entries are provided directly by skills: each name resolves to a skill whose `references/workflow.md` is the canonical definition, with no duplicate command stub. Most days you'll only use 3-5 entry points. This guide maps common work to the right one.
 
 ## Quick decision matrix
 
