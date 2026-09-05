@@ -12,11 +12,11 @@ The PolicyEngine plugin ships ~23 slash commands, ~33 agents, and 23 skills (20 
 | Convert a bill / URL / description into a reform-dict | `/text-to-reform` | Submit to PE API or pass to `/analyze-policy` |
 | Check whether we already analyzed this reform | `/prior-analysis` | Read the archived analysis or run fresh |
 | Consult external scorekeepers (JCT/CBO/OBR/IFS/CRFB/TPC/etc.) | `/prior-scores` | Cite in your writeup |
-| Implement a NEW state benefit program | `/encode-policy-v2` | `/review-program` → `/fix-pr` → `/create-pr` |
+| Implement a NEW state benefit program | `/encode-policy-v2` | Inspect its draft PR and included review; address remaining findings |
 | Implement a STRUCTURAL reform the model can't express as parameters | `/implement-structural` | `/review-program` → `/create-pr` |
 | Change parameters on an EXISTING program | `/encode-reform` | `/review-program` → `/create-pr` |
 | Backdate parameters to earlier years | `/backdate-program` | `/create-pr` |
-| Review a PR (code + PDF-cited values) | `/review-program` | `/fix-pr` if findings; else `/create-pr` |
+| Review a PR (code + PDF-cited values) | `/review-program` | `/fix-pr` for confirmed defects; supply evidence for unresolved checks |
 | Apply reviewer fixes to a PR | `/fix-pr` | `/create-pr` |
 | Turn a working branch into a PR | `/create-pr` | CI + review |
 | Verify state tax parameter values against official PDFs | `/audit-state-tax` | `/fix-pr` if drift found |
@@ -116,10 +116,18 @@ These get pulled in automatically by their trigger keywords, but useful to know 
 1. Load context: mention the state and program in your first message so
    policyengine-us + policyengine-model-development get auto-triggered
 2. /encode-policy-v2 "state XX, program YY"
-3. /review-program to catch validator issues
-4. /fix-pr for the review comments
-5. /create-pr — waits for CI, marks ready
+3. Read its final summary: encoding already creates a draft PR and includes review/fix rounds
+4. Address any remaining findings or evidence gaps; decide when the draft is ready
 ```
+
+`review-program` normally uses a policy/source reviewer and a code/test reviewer,
+scoped to changed behavior and affected dependencies. It reads PDF text first and
+inspects relevant pages visually. Use `--full` for an intentional whole-program audit,
+not as a routine follow-up to encoding. After fixes, use `--incremental REPORT`; unchanged
+source evidence is reused. `--sources MANIFEST` accepts the encoding source manifest,
+and `--source-budget MINUTES` controls new source searches (default 5; 0 is cached-only).
+Reports distinguish COMPLETE from PARTIAL: zero confirmed critical findings does not
+resolve missing material evidence. `--local` keeps the review off GitHub.
 
 ### "I want to build a dashboard for a specific reform question"
 
