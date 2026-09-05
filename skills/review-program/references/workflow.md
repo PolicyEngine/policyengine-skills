@@ -194,6 +194,16 @@ Validate originals by checksum and derivatives by their recorded hashes. A stale
 extract or page only invalidates that derivative: regenerate it from the valid original.
 A changed original invalidates its extracts/pages and dependent conclusions.
 
+For changed amounts, prioritize the cited source's exact year/table and official indexed-
+limit bulletins or forms. If a general landing page lacks the amount, use the available
+bounded search route for targeted official-domain queries: program + tax/benefit year +
+amount, then year + indexed limits/bulletin if needed. Search results are discovery aids;
+corroborate against the underlying primary document and its applicable year, units and
+filing/household category. Prefer this to following adjacent generic or older guidance.
+These searches consume the same two-batch limit and acquisition budget below; stop once
+the fact is established. If no bounded search route is available or the budget expires,
+record the missing check instead of treating the search as completed.
+
 Read searchable text with physical page boundaries first. Use contents/headings and
 cross-references to locate all provisions relevant to changed behavior, including
 exceptions, effective dates and footnotes; do not stop at a matching number. Visually
@@ -261,6 +271,17 @@ would install/sync dependencies. Confirm imports resolve to the snapshot. Set
 `PYTHONDONTWRITEBYTECODE=1` and direct pytest's cache to an assigned path under `RUN_ROOT`
 (for example, `-o cache_dir="$RUN_ROOT/$PREFIX-review-pytest-cache"`).
 
+When the diff makes a new population eligible, the code reviewer checks at least one
+newly eligible case through to the final benefit, subtraction or tax result. Use actual
+demographic/income inputs rather than forcing the eligibility flag or intermediate
+amount. An existing test can satisfy this when it exercises that complete path; otherwise
+run a focused diagnostic in the available environment. Trace remaining age, entity and
+aggregation gates, including a risk of double-counting an existing benefit. The policy
+reviewer establishes that the scenario qualifies under the source; share one reproduction
+and its evidence rather than running it twice. If execution is unavailable, record the
+unexecuted check and the limits of the code trace. Passing intermediate tests alone does
+not establish that the newly eligible population receives the benefit.
+
 Each reported defect needs: file:line, triggering case/year, expected versus observed
 behavior, evidence, and why this diff introduces/exposes it (or why it is in requested
 full-audit scope). A value mismatch must be source-supported and output-relevant. Reuse
@@ -268,10 +289,15 @@ facts already established by either reviewer; do not re-open a page or launch a 
 just because an intermediate report contains a flag. Distinguish defects, optional
 improvements, and evidence gaps. Missing coverage is not proof of incorrect behavior.
 
-Keep useful source locators, test commands/results and limitations in role reports.
-Summarize checked categories and counts where known; don't enumerate every matching cell
-or manufacture statistics. Record start/end times, source acquisitions, pages actually
-rendered/viewed and tests run. Finish once assigned checks are complete.
+Keep role reports ready for direct consolidation: status; findings with location,
+trigger, expected/observed outcome, impact and source/reproduction links; material gaps;
+and a short validation/timing block. Record commands, test counts, start/end times and
+actual source/render counts once, with raw output in linked logs. Avoid full PR metadata,
+source inventories, investigation narratives and repeated scenario tables in each report.
+When both reviewers establish the same defect, share the finding text and add only the
+other role's evidence or disagreement. Do not duplicate its missing integration test as
+a separate finding. Finish once assigned checks are complete; a larger diff can justify
+more findings, not repeated boilerplate or invented statistics.
 
 ## Phase 5: Resolve material uncertainty
 
@@ -294,6 +320,17 @@ limit: substantial implementation analysis may take longer than source acquisiti
 The coordinator writes both canonical outputs (required for existing callers):
 `{RUN_ROOT}/{PREFIX}-review-full-report.md` and
 `{RUN_ROOT}/{PREFIX}-review-summary.md`. No separate consolidation agent.
+
+Assemble the full report from the strongest existing finding text: deduplicate, attach
+complementary evidence and reconcile severity/status instead of rewriting each role's
+investigation. Write shared PR metadata, source inventory, validation and timing totals
+once. Keep the final report self-contained for assessing each finding; link detailed logs
+and diagnostic scripts rather than copying them. Local artifact links supplement, not
+replace, the trigger, result and any required primary-source citation in a posted finding.
+Derive the short summary from this same finding list and counts; do not write another
+narrative review. Keep the run state to phase/status updates and artifact pointers, not
+copies of the final reports. Consolidation should not trigger new research unless Phase 5
+identified a material uncertainty.
 
 Preserve stable finding IDs C1/C2, A1/A2 and S1/S2. Incremental reviews mark prior findings
 RESOLVED, STILL OPEN or UNVERIFIED (retain their previous severity until adjudicated),
