@@ -93,7 +93,8 @@ def test_every_recommended_command_is_mentioned() -> None:
 def test_no_broken_command_references() -> None:
     """Every /command reference in the guide must resolve to a real command."""
     guide_cmds = _slash_commands_in_guide()
-    catalog_cmds = _all_command_ids()
+    # Claude skills also expose slash commands; workflows need no duplicate command file.
+    catalog_cmds = _all_command_ids() | _all_skill_ids()
     # Filter for slash-command-looking tokens we intended as commands. Some
     # /... references in the guide are paths (e.g., `/tmp/...`) or URL paths.
     KNOWN_NON_COMMAND_PREFIXES = {

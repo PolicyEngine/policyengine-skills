@@ -28,6 +28,7 @@ def test_preserves_captured_stdout_and_failure_status():
     )
     assert result.returncode == 7
     assert result.stdout == "captured-sha\n"
+    assert "exit status 7" in result.stderr
 
 
 def test_timeout_kills_descendants_and_closes_inherited_pipes():
@@ -50,4 +51,5 @@ def test_timeout_kills_descendants_and_closes_inherited_pipes():
     )
     assert result.returncode == 124
     assert "timed out" in result.stderr
+    assert "exit status 124" in result.stderr
     assert time.monotonic() - started < 5

@@ -37,6 +37,13 @@ def normalize_plugin(bundle: dict) -> dict:
 
 
 def validate_bundle(source_root: Path, bundle_path: Path, bundle: dict) -> None:
+    skill_names = {Path(path).name for path in bundle.get("skills", [])}
+    command_names = {Path(path).stem for path in bundle.get("commands", [])}
+    collisions = skill_names & command_names
+    if collisions:
+        raise ValueError(
+            f"{bundle_path}: duplicate skill/command entrypoints: {sorted(collisions)}"
+        )
     for key in ("skills", "commands", "agents"):
         for rel_path in bundle.get(key, []):
             source_path = resolve_source_path(source_root, rel_path)

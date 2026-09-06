@@ -143,6 +143,8 @@ def test_missing_checks_cannot_become_clean_approval(review, cause):
     assert result["status"] == "PARTIAL"
     assert result["severity"] == "COMMENT"
     assert result["gaps"]
+    assert result["confirmed_critical_ids"] == []
+    assert result["confirmed_critical_count"] == 0
 
 
 def test_unfinished_role_cannot_replace_previous_review(review):
@@ -153,3 +155,60 @@ def test_unfinished_role_cannot_replace_previous_review(review):
     data["roles"][0]["status"] = "RUNNING"
     assert assemble(review).returncode != 0
     assert all(path.read_text() == "Prior completed review" for path in outputs)
+
+
+def test_carries_prior_ids_without_rewriting_and_allocates_new_ids(review):
+    root, data = review
+    prior = root / "prior.md"
+    prior.write_text("## C9 — Prior finding (OPEN)\n\nOriginal evidence.\n")
+    original_role = (root / "code.md").read_bytes()
+    data["prior_reports"] = ["prior.md"]
+    data["reserved_ids"] = ["C9", "C12"]  # C12 was withdrawn in the baseline.
+    data["findings"][0].pop("id")
+    data["findings"].append(
+        {
+            "id": "C9",
+            "severity": "critical",
+            "status": "UNVERIFIED",
+            "path": "prior.md",
+            "heading": "C9 — Prior finding (OPEN)",
+            "addendum": "Required scenario premise remains unresolved.",
+        }
+    )
+    assert assemble(review).returncode == 0
+    result = json.loads((root / "pr-7-review-result.json").read_text())
+    assert result["confirmed_critical_ids"] == ["C13"]
+    assert result["counts"]["critical"] == 2
+    assert result["status"] == "PARTIAL"
+    assert (root / "code.md").read_bytes() == original_role
+    assert prior.read_text() == "## C9 — Prior finding (OPEN)\n\nOriginal evidence.\n"
+    full = (root / "pr-7-review-full-report.md").read_text()
+    assert "C9 — Prior finding (UNVERIFIED)" in full
+    assert "Required scenario premise remains unresolved." in full
+
+
+def test_summary_stays_short_without_losing_full_report_evidence(review):
+    root, data = review
+    data["findings"] = []
+    data["notes"] = ["Reused passing tests at reviewed head."]
+    assert assemble(review).returncode == 0
+    assert (
+        json.loads((root / "pr-7-review-result.json").read_text())["status"]
+        == "COMPLETE"
+    )
+    data["findings"] = [
+        {
+            "severity": "suggestion",
+            "path": "code.md",
+            "heading": "C1 — Selected report section",
+        }
+        for _ in range(30)
+    ]
+    data["gaps"] = [f"Required unresolved check {i}" for i in range(10)]
+    data["validation"] = "Long validation log\n" * 100
+    assert assemble(review).returncode == 0
+    summary = (root / "pr-7-review-summary.md").read_text()
+    full = (root / "pr-7-review-full-report.md").read_text()
+    assert len(summary.splitlines()) <= 20
+    assert "S30" in full and "Required unresolved check 9" in full
+    assert data["validation"].strip() in full
