@@ -49,8 +49,13 @@ sync/install dependencies, or edit unowned files. The coordinator formats owned 
 once before validation and again only after subsequent edits require it.
 
 Each worker writes its required artifact and returns
-`DONE — wrote {artifact} ({status}; {elapsed})`. Send progress at stage changes and at
-least every two minutes. Use bounded waits and actual tool capabilities; do not require
+`DONE — wrote {artifact} ({status}; {elapsed})`. Each worker appends `<UTC time> <stage>`
+to `{RUN_ROOT}/{PREFIX}-encode-progress-{role}.log` at stage changes and at least every
+two minutes, and logs before starting a long generation step (for example a large
+parameter table) so a silent write is not mistaken for a stall; that log is the only
+file the coordinator watches. Workers do the assigned work themselves: no helper,
+explorer, verifier or nested worker agents, whose contexts would lack the loaded skills.
+Use bounded waits and actual tool capabilities; do not require
 particular team/message/monitor tools. Yield for completion notifications; never use
 five-minute shell sleeps. If polling is necessary, use interruptible waits of at most
 60 seconds and resume on completion. After five minutes without observable progress,
@@ -88,7 +93,8 @@ RUN_ROOT="/tmp/policyengine-command-runs/$WORKTREE_ID"
 mkdir -p "$RUN_ROOT"
 ```
 
-Record `BASE_REPO=PolicyEngine/policyengine-us`, its URL and default branch, current HEAD,
+Record `BASE_REPO=PolicyEngine/policyengine-us`, its URL and default branch (from the base
+repository's metadata, not the local clone's branch name), current HEAD,
 worktree root/ID, args, workflow revision/diff, branch and publication mode in
 `{RUN_ROOT}/{PREFIX}-encode-run-state.md`. Inspect status and worktree ownership before
 branch operations. Never force-checkout another worktree's branch, move its files, or
@@ -102,7 +108,8 @@ not unaffected research. A workflow-contract change requires reassessing old com
 markers; legacy role names alone do not establish that the new gates passed.
 
 Use the review-program skill's `scripts/run_bounded.py` for networked Git/GitHub commands
-with a 60-second deadline. Resolve that installed skill directory as `REVIEW_SKILL_ROOT`.
+with a 60-second deadline and for test-runner invocations with a 600-second deadline.
+Resolve that installed skill directory as `REVIEW_SKILL_ROOT`.
 A failed fetch/read is not an empty result; retry a transient setup failure once, then
 report the blocker. Scope GitHub reads/writes explicitly to `BASE_REPO`.
 
@@ -211,6 +218,13 @@ periods, inputs/parameters and requirement IDs. Verify names exist. Tell the tes
 when the contract is stable and explicitly identify later changes. Do not make it infer
 names from an informal coordinator summary.
 
+Whenever the coordinator briefs both owners on the same behavior, for initial work or a
+repair, it states each behavioral contract once in one shared contract block copied
+verbatim into both briefs: which variable owns which computation, where a deduction,
+cap or gate applies, and which public variables stay unchanged. Check that block against
+the existing helper contracts before sending it; two briefs written separately are how
+the owners end up building and testing different placements.
+
 ### 3B. Test owner
 
 The test-author reads the approved evidence and contract, and owns unit, boundary and
@@ -230,6 +244,12 @@ Write `{PREFIX}-test-manifest.md` with exact test paths/case names and requireme
 including directly affected existing regression tests. Do not change partner contract
 expectations just to make tests pass. Integration into `household_state_benefits.yaml`
 requires an explicit scope decision; do not silently enable it.
+
+Pin expectations only on the public variables named in the shared contract block, at
+the level where that block places each rule. If a case fails because the rule sits in a
+different variable than the brief said, report `CONTRACT MISMATCH` with the case names
+to the coordinator and stop; do not rerun the set, relocate cases or change values
+unprompted. The coordinator rules once and the affected owner applies the ruling.
 
 ### 3C. Coverage gate
 
@@ -265,6 +285,16 @@ then the same directory again solely to satisfy two stage names. Add an extra di
 pass only when it covers additional relevant tests. `--full-validation` adds one broader
 state/package suite, not one per repair cycle.
 
+The coordinator's invocation is the run of record. A worker may run its owned test files
+at most once per task as a self-check before reporting DONE, in one bounded invocation;
+it never loops over files one at a time, repeats an unchanged set to recover lost
+output, or runs another owner's files. Every invocation uses the bounded helper with a
+600-second deadline and a tool timeout above it, writes combined output to a log under
+RUN_ROOT, and reads back the summary line and failures. Do not pipe the runner through
+`tail`, detach it, or rely on a default two-minute tool limit; each loses the exit status
+and forces a repeat. Record the number of runner invocations and their total time in the
+CI status so repeated runs stay visible.
+
 Classify failures before editing: mechanical, implementation defect, test defect, policy
 ambiguity or environment. Send the affected items to their existing owner; never change
 expected values only to match output. Use at most two repair batches per validation phase;
@@ -275,9 +305,11 @@ not a reason to omit a necessary check.
 
 Record `{PREFIX}-ci-fixer-status.md`: PASS/BLOCKED, exact commands/paths, counts, tested
 HEAD plus working-file hashes, environment, elapsed time and unresolved causes. Reuse a
-passing result only while its code, parameter dependencies, tests and environment match.
-Formatting, conflict resolution and later fixes invalidate affected checks. Do not repeat
-unchanged successful tests in the pusher or reporting step.
+passing result while tested behavior, parameter dependencies, tests and environment match.
+Formatting-only changes do not invalidate a passing test result, even when file hashes
+change: record the formatter and updated hashes without rerunning tests. Behavior-changing
+edits or conflict resolutions invalidate affected checks. Do not repeat unchanged successful
+tests in the pusher or reporting step.
 
 For unresolved test failures, present causes and options together: guidance, stop, or an
 explicitly accepted known failure. Preserve such consent and describe accepted failures
@@ -327,6 +359,13 @@ worker capacity; don't inherit a summary-only restriction. Pass the resolved ins
 skill and checks its returned body, rather than searching for the plugin or reinvoking a
 same-named compatibility command.
 
+Keep this handoff mechanical: installed skill paths, arguments, captured head, approved
+scope, raw source manifest and runtime constraints. The review workflow supplies the
+roles' tasks. Do not compose another audit checklist or turn every encoder assumption
+into a mandatory review question. Pass a specific unresolved scope/source question when
+one actually exists. The fresh review coordinator loads model-development before any
+substantive country-model work, as do its reviewers.
+
 - Published work: `PR_NUMBER --local --prefix PREFIX --sources MANIFEST`.
 - Local-only work: `--local-diff --prefix PREFIX --sources MANIFEST` (no PR required).
 
@@ -335,7 +374,11 @@ follow-ups. Pass `--600dpi` only when requested. The review has its own bounded 
 budget; source reuse should avoid reacquiring unchanged material. A PARTIAL review does
 not automatically restart either research budget or become a successful encoding run.
 
-Read the summary, result JSON and relevant full findings. Use `confirmed_critical_ids`
+Review-program owns the review decision. The encode coordinator checks that the returned
+artifacts identify the intended head, include role completion/skill-load evidence, and
+state COMPLETE or PARTIAL. Read the summary, result JSON and the selected findings to
+route repairs; do not re-adjudicate them, fetch their sources again, rerun their
+diagnostics, or add a verification pass before dispatch. Use `confirmed_critical_ids`
 from `{PREFIX}-review-result.json` for repair dispatch, not `counts.critical` or the
 total still-open count, which can include UNVERIFIED claims. For an older report without
 that field, inspect finding states explicitly; missing metadata is not zero criticals.
@@ -348,12 +391,27 @@ question remains unresolved, report it without starting a speculative model repa
 repeating a full review. Do not widen the approved year/program scope to clear incidental
 historical observations.
 
+Do not start another fix/review round solely for noncritical findings. With zero confirmed
+criticals, return the completed review result and any PARTIAL gaps; additional work needs
+an explicit user request. The maximum round count is a ceiling, not a quota. Keep optional
+improvements visible rather than automatically extending the encoding run to clear them.
+
 Assign confirmed criticals to the existing implementer and/or test-author, only when that
-owner has actual work. Keep writes disjoint and share changed contracts; don't spawn an
-empty fixer merely to write NO-ISSUES. Track finding IDs and actions in
+owner has actual work. Keep writes disjoint and share changed contracts through the
+Phase 3A shared contract block, copied verbatim into both repair briefs; when the
+implementer's inspection changes a placement, it updates the implementation manifest and
+the test-author finalizes placement-sensitive cases only after that update. Don't spawn
+an empty fixer merely to write NO-ISSUES. Track finding IDs and actions in
 `{PREFIX}-checklist-{vars,tests}-rN.md`, only for participating owners; the coordinator merges
 these into `{PREFIX}-checklist.md`. Scope conflicts require an explicit decision, not a
 silent policy expansion.
+
+Pass each finding ID and its existing evidence to its fix owner without rewriting the
+review into another proof or a speculative replacement design. The owner inspects the
+affected code to implement the repair. If that reveals a concrete contradiction in the
+finding, return that ID and evidence to the review owner for one targeted resolution;
+neither the encoder nor fixer starts another general review. Test planning can overlap
+the repair when the changed contract is already specified.
 
 After the first repair batch, format changed owned paths, run the affected test set and
 structural checks once, update coverage/status/body, and commit a review-fix round. Apply
@@ -362,10 +420,12 @@ use the same local/published identity with `--incremental {PREFIX}-review-full-r
 which review-program preserves before replacing outputs. Recheck fixes, dependencies
 and unresolved findings, not every already-reviewed rule.
 
-If confirmed criticals remain after follow-up, ask whether to attempt one final fix
-round or stop with the remaining issues. Respect an existing decision. A final fix must
-receive a final incremental review. Maximum: three reviews, two review-fix rounds. No
-new default CI-fixer, pusher or reporting workers during these rounds.
+Maximum: two reviews and one intervening review-fix batch. Round 2 runs only after
+round 1 has confirmed criticals and those findings receive repairs; it checks the repaired
+head incrementally. If confirmed criticals or required evidence gaps remain after round 2,
+stop and report them explicitly. Do not start a second fix batch or a third review, and do
+not claim completion with unresolved blockers. Further work requires a new user request.
+No new default CI-fixer, pusher or reporting workers during these rounds.
 
 ## Phase 7: Final status and benchmark
 
@@ -380,20 +440,37 @@ final report; and completed or explicitly skipped independent review. Publicatio
 also requires the intended issue/PR and successful push. A blocked step stays resumable
 without reporting success. Never infer completion from artifact existence alone.
 
-For benchmarks, record acquisition, requirements/scope, implementation, test authoring,
-validation/repair, review, reporting/Git and total wall time. Separate user waits and
-workflow development from active encoding, and don't add overlapping role durations.
+For benchmarks, append clock-generated `<UTC time> <phase> start|end` markers to
+`{RUN_ROOT}/{PREFIX}-encode-timing.log` at every phase boundary, review dispatch and
+accepted result, and around user waits; summarize them in
+`{RUN_ROOT}/{PREFIX}-encode-timing.json` with these keys so runs stay comparable:
+`setup_seconds`, `research_seconds` (with `acquisition_window_seconds`),
+`spec_scope_seconds`, `user_wait_seconds`, `implementation_seconds`,
+`test_authoring_seconds` (concurrent with implementation, never summed with it),
+`validation_repair_seconds` (with `test_invocations` and `test_runner_seconds`),
+`commit_seconds`, `review_round_N_seconds` (dispatch through accepted result),
+`repair_round_N_seconds`, `total_wall_seconds` and `active_seconds` (wall minus user
+waits and interruptions). Separate user waits and workflow development from active
+encoding, and don't add overlapping role durations.
 Record interpreter startup, actual test time, repeated calls, blocked fetches, fixes,
 misses and withdrawn findings where observed. Report code/source hashes and environment
 so comparisons use equivalent inputs. Real implementations establish workflow behavior;
 helper tests and saved-report replays do not establish policy accuracy or speed gains.
+For every review round, the caller records a clock timestamp immediately before dispatch
+and another when it has checked the returned artifact identity/status and can route fixes.
+Report this whole interval as review time, including dispatch, skill loading, reviewers,
+consolidation, cleanup and return handoff. Reviewer-only time is a breakdown, never the
+headline review duration. Preserve interruption/recovery intervals within that wall time
+and identify them separately. Do not claim the integrated workflow is faster until an
+actual encode-to-review invocation completes under the changed workflow.
 
 ## Artifact ownership
 
 All `{PREFIX}-*` paths are under RUN_ROOT. The coordinator maintains the run state,
 research/spec/scope, source manifest, coverage/validator/checkpoint/CI status, PR body,
-final report and merged fix checklist. The implementer owns the implementation manifest;
-the test-author owns the test manifest. Fixers own only their per-round checklist.
+final report, merged fix checklist and timing log/summary. The implementer owns the
+implementation manifest; the test-author owns the test manifest; each worker owns its
+own progress log. Fixers own only their per-round checklist.
 Review-program owns its `review-*` artifacts and temporary review snapshot cleanup.
 These artifact names preserve caller compatibility; legacy per-stage agent names are not
 requirements to spawn separate workers. Never commit local research or remove another

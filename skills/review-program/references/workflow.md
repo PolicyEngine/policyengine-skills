@@ -9,8 +9,15 @@ editing code. Default to two substantive reviewers: policy/sources and code/test
 The coordinator may read the diff, source index, code and findings. It resolves scope,
 provides inputs, consolidates results and handles the user; no separate agents are needed
 for context analysis, file listing, verification planning or report assembly. Reviewers
-own investigation and validation of their findings. Use another reader only for a specific
+own investigation and validation of their findings. Their completed, evidenced findings
+go directly to consolidation; neither the review coordinator nor a calling encode/fix
+workflow performs a second routine verification. Use another reader only for a specific
 material disagreement or uncertainty, not automatically for every flag or citation.
+
+In country-model reviews, the coordinator loads model-development in its own context
+before substantive work and records the same loading evidence required of its reviewers.
+Coordinator status is not an exemption from the loading contract. Read only the references
+needed for the assigned work; loading does not add a coordinator audit stage.
 
 Do not edit tracked source, switch existing branches, commit, push or apply fixes. Use a
 disposable detached snapshot and write reports, downloads, renders and diagnostic scripts
@@ -35,6 +42,14 @@ complete it directly. A live progress update can justify continued analysis, not
 unbounded external call. If the work cannot be finished, consolidate a PARTIAL review
 with the missing checks identified. Never keep waiting indefinitely for an optional
 source search.
+
+Budget each complete review for under 20 minutes, with 25 minutes as the outer target,
+including setup, reviewers, adjudication, cleanup and caller acceptance. Record the start
+once and pass it to both reviewers. At 17 elapsed minutes, finish current checks and write
+the role reports; start no optional diagnostics or source searches. Reserve the remaining
+time for named disputes and assembly. Unfinished required checks remain explicit PARTIAL
+gaps; neither drop them nor call a time-limited review complete. A target overrun is a
+measured workflow failure to report, not time to subtract from the headline.
 
 If delegation is unavailable, execute the roles directly with the same scope and outputs.
 An encoding implementation still needs an independent review context; reuse raw sources,
@@ -299,7 +314,9 @@ parameters, tests or source sections, not the whole diff or PDF count; repetitiv
 fixtures alone do not justify extra policy reviewers. Record the actual partition and
 reason. Split the policy reviewer by source group and the code reviewer
 by variable group; state why, partition ownership and avoid reading the same whole
-program in every role. Do not spawn nested reviewers.
+program in every role. Do not spawn nested reviewers or helper/explorer agents for
+dependency tracing; a reviewer traces dependencies itself, since any spawned context
+would do model work without the loaded skills.
 Load only references needed for the actual task, not every model-development document;
 read a reference's relevant section, not the whole reference set.
 For country-model review, each reviewer first loads the model-development entrypoint
@@ -328,11 +345,16 @@ Code reviewer: inspect behavior, entity/period/vectorization correctness and mea
 coverage. Trace suspicious cases through dependencies. Run the changed tests and the
 directly relevant regression tests in one runner invocation (pass every path to the same
 command; each invocation pays the model's import cost), writing full output to a log
-under `RUN_ROOT` and reading back only the summary line and failures. Add a small
+under `RUN_ROOT` and reading back only the summary line and failures. Use
+`scripts/run_bounded.py --seconds 600 COMMAND ...` with combined stdout/stderr captured
+in that log and a tool timeout longer than the subprocess deadline. The wrapper records
+exit status and elapsed time on the first execution. Do not detach with `nohup` or shell
+`&`, or pipe through `tail` and lose the runner's status. Add a small
 reproduction when useful. If the environment is unavailable, report tests NOT RUN; do
 not install dependencies or repeat a broad suite just to produce a review. Existing CI
-and local tests are separate evidence. Reuse a test result only for unchanged tested
-inputs/dependencies/environment; retest after changes. Check the repository's actual
+and local tests are separate evidence. Formatting alone does not require a test rerun;
+retain the passing result with its formatter/hash provenance. Reuse results for unchanged
+tested behavior, dependencies and environment; retest after substantive changes. Check the repository's actual
 changelog/format conventions, not a universal country-model template in every repo.
 An existing interpreter with the snapshot on `PYTHONPATH` is acceptable when `uv run`
 would install/sync dependencies. Confirm imports resolve to the snapshot. Set
@@ -340,12 +362,13 @@ would install/sync dependencies. Confirm imports resolve to the snapshot. Set
 (for example, `-o cache_dir="$RUN_ROOT/$PREFIX-review-pytest-cache"`).
 
 When the diff changes who is eligible or how much they receive, the code reviewer checks
-affected cases through to the final benefit, subtraction or tax result: at least one case
-per household shape the changed tests use, plus one composition those tests do not cover
-(for example a second tax unit in the same SPM unit, a non-parent adult, or a swapped
-member order). Use actual demographic/income inputs rather than forcing the eligibility
-flag or intermediate amount. An existing test can satisfy this when it exercises that complete path; otherwise
-run a focused diagnostic in the available environment. Trace remaining age, entity and
+affected cases through to the final benefit, subtraction or tax result. First reuse
+existing passing tests that exercise the complete path. Add focused diagnostics only
+for an uncovered changed behavior or a specific suspected defect, including composition
+risks where the code suggests them (such as multiple tax units or member ordering).
+There is no new-case quota per household shape and no duplicate diagnostic for a path
+already covered. Use actual demographic/income inputs rather than forcing eligibility
+or intermediate amounts. Trace remaining age, entity and
 aggregation gates, including a risk of double-counting an existing benefit. The policy
 reviewer establishes that the scenario qualifies under the source; share one reproduction
 and its evidence rather than running it twice. If execution is unavailable, record the
@@ -405,23 +428,28 @@ more findings, not repeated boilerplate or invented statistics.
 
 ## Phase 5: Resolve material uncertainty
 
-The coordinator reads both reports and deduplicates before requesting any more work.
-Before consolidation it opens the evidence artifact of every CRITICAL once (the
-reproduction output or the quoted source lines) and confirms the trigger, the expected
-result and its source are all present and support the material scenario premises. Opening
-an artifact is not validation of its expected result. A refuted/invalid example is corrected
-or withdrawn, not escalated because it changes dollars. A remaining material uncertainty
-is recorded as a specific gap; an existing finding awaiting that check is UNVERIFIED and
-excluded from confirmed-critical repair counts. Do not mint a new critical from an
-unsupported hypothesis. Return a specific unresolved question to its original reviewer when that
-reviewer can answer from existing evidence. Use at most one additional independent adjudication batch
-for materially conflicting findings or uncertain high-impact claims; batch related items
-by topic, not one agent per value. It uses the remaining acquisition budget, not a reset.
-Keep that response to the disputed claim's disposition, decisive evidence and missing
-premise. Do not turn adjudication into a replacement design or add incidental findings;
-those require their own complete evidence and are outside this bounded question.
-Do not reconfirm findings with adequate source and code-path evidence, or investigate
-incidental pre-existing issues to complete a review of changed behavior.
+The coordinator deduplicates completed, evidenced findings and proceeds to Phase 6.
+Reviewers own source validation, plausible scenario premises and reproduction correctness;
+the coordinator does not reopen each critical's source, rerun its case or reconstruct its
+proof. Target at most two minutes from last reviewer completion to assembled result/cleanup
+when there is no material dispute.
+
+Only a specific missing premise or conflict triggers adjudication: an absent source-backed
+expectation, invalid scenario, contradictory evidence or incompatible reviewer conclusions.
+Send that question and existing evidence to the original reviewer, not a general second-look
+request. Correct or withdraw refuted examples. Mark claims awaiting material evidence
+UNVERIFIED and exclude them from confirmed-critical repair counts.
+
+If the original reviewers cannot resolve a material conflict, use at most one independent
+adjudication batch within the remaining acquisition budget. Return only the disputed claim's
+disposition, decisive evidence and missing premise. Investigation stays with that owner:
+the coordinator adds no research pass, incidental findings or replacement implementation.
+Once the reviewers' reports are complete, that adjudication batch is the coordinator's
+only permitted external call; probing further URLs or reopening pages outside the named
+questions is a recorded deviation, not a check, and unresolved items become gaps.
+Keep historical investigation within the approved review scope. Record extra time against
+the named dispute, not generic consolidation; return PARTIAL when required evidence remains
+unavailable within budget. The timing target never turns missing evidence into approval.
 
 If material evidence or a required review check remains unavailable, record PARTIAL.
 Produce the reports promptly with those gaps; a later explicitly expanded source budget
@@ -471,6 +499,14 @@ Classify confirmed findings:
   demonstrated case changes eligibility/category or materially changes results.
 - **SUGGESTION**: optional readability, documentation or performance improvements.
 
+Each reviewer applies this rubric before returning its findings. Materiality includes
+the effect on an affected household: confirmed wrong eligibility or a lost/full benefit
+is critical even for a small population or a one-line repair. Do not downgrade it merely
+because the case is uncommon. Distinguish an executed result from a code trace and an
+unestablished scenario premise; unresolved premises remain UNVERIFIED. The coordinator
+may reconcile a severity label against the finding's stated evidence without rerunning
+that evidence or starting another policy review.
+
 For population-sensitive input defaults, quantify the direction/impact where supported;
 do not prescribe a default merely to suppress a discrepancy. Consider data population,
 documented limitations or justified defaults. Critical only with material demonstrated
@@ -516,8 +552,14 @@ For timed runs, record the canonical keys in the assembler's `timing` block so r
 comparable: `setup_seconds` (capture through snapshot), `scope_seconds`,
 `parallel_review_seconds` (dispatch to last role completion), `policy_role_seconds`,
 `code_role_seconds`, `adjudication_seconds`, `consolidation_cleanup_seconds` and
-`elapsed_seconds`; distinguish setup, overlapping role wall time and consolidation/cleanup;
-do not add concurrent role durations. Record CLI wall time separately from test-reported
+`elapsed_seconds`; measure elapsed time from invocation through completed artifacts and
+snapshot cleanup, including coordinator work. When called by encode-policy-v2, also retain
+its dispatch-to-accepted-result interval as the end-to-end review time. The under-20-minute
+target and 25-minute outer target apply to that entire interval, not each role. Distinguish
+setup, overlapping role wall time and consolidation/cleanup;
+do not add concurrent role durations. `consolidation_cleanup_seconds` runs from the last
+role completion to cleanup and contains `adjudication_seconds`; report adjudication as a
+sub-span and never sum the two. Record CLI wall time separately from test-reported
 time, and source acquisition window separately from time inside network calls. These
 differences are not pure import or network-latency measurements. A few diagnosed cases
 do not establish review recall; record confirmed misses or false positives without

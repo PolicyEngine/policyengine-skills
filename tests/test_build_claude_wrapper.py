@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 
 def test_build_claude_wrapper(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parent.parent
@@ -44,6 +46,10 @@ def test_build_claude_wrapper(tmp_path: Path) -> None:
             "and file-path strings in marketplace entries - hooks/hooks.json at the "
             "plugin root is auto-loaded instead"
         )
+        if "review-program" in skills:
+            assert "./agents/country-models/review-worker.md" in plugin["agents"]
+        if "encode-policy-v2" in skills:
+            assert "./agents/country-models/model-worker.md" in plugin["agents"]
 
     assert (output_dir / "skills" / "policyengine" / "SKILL.md").exists()
     assert (output_dir / "skills" / "policyengine-us" / "SKILL.md").exists()
@@ -52,6 +58,16 @@ def test_build_claude_wrapper(tmp_path: Path) -> None:
         assert (output_dir / "skills" / name / "SKILL.md").is_file()
         assert not (output_dir / "commands" / f"{name}.md").exists()
     assert (output_dir / "agents" / "country-models" / "rules-engineer.md").exists()
+    for profile in ("review-worker", "model-worker"):
+        worker = output_dir / "agents" / "country-models" / f"{profile}.md"
+        worker_config = yaml.safe_load(worker.read_text().split("---", 2)[1])
+        allowed_tools = {name.strip() for name in worker_config["tools"].split(",")}
+        denied_tools = {
+            name.strip() for name in worker_config["disallowedTools"].split(",")
+        }
+        assert "Skill" in allowed_tools, profile
+        assert not {"Agent", "Task"} & allowed_tools, profile
+        assert {"Agent", "Task"} <= denied_tools, profile
     assert (output_dir / "hooks" / "hooks.json").exists()
     assert (output_dir / "GENERATED_FROM").read_text().strip() == "test-sha"
 

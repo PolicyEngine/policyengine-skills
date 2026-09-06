@@ -31,6 +31,12 @@ canonical workflow resolves the base repository and reviews local HEAD without a
 Mandatory completion gate:
 
 - Default to policy/source and code/test reviewers; consolidate their findings directly.
+- Reviewers do their own investigation and never delegate helper or verification tasks.
+  Use the surface adapter's reviewer profile; read-only model work still requires skills.
+- Reviewers own finding validation. The coordinator resolves specific conflicts and
+  assembles the result; calling workflows route repairs without reviewing it again.
+- For country-model work, the coordinator and each reviewer load model-development in
+  their own contexts before substantive work and supply the canonical loading evidence.
 - The review is incomplete until `{RUN_ROOT}/{PREFIX}-review-full-report.md` and
   `{RUN_ROOT}/{PREFIX}-review-summary.md` exist, with
   `{RUN_ROOT}/{PREFIX}-review-result.json` for confirmed-critical repair dispatch.
@@ -48,8 +54,9 @@ Surface adapters:
 
 Delegation mapping (when subagent use is available and authorized):
 
-- Map every role in the canonical Roles table to a `worker` when it writes report or
-  artifact files, or an `explorer` for read-only codebase questions.
+- Map the two substantive reviewer roles to workers with skill access. Where supported,
+  remove delegation tools from those workers. They perform read-only dependency tracing
+  themselves rather than creating additional explorers or reviewers.
 - Pass concrete `RUN_ROOT`, `WORKTREE_ID`, `PREFIX`, and (from Phase 1) `SNAPSHOT`
   values and the role's task spec from the canonical workflow to every subagent; name
   the role's skills explicitly in the subagent prompt — do not assume a worker infers

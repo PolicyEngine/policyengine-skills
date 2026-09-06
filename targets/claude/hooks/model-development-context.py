@@ -24,8 +24,9 @@ def main():
         return
     context = (
         "This is a PolicyEngine country-model repository. Model implementation, "
-        "test-authoring and review roles require policyengine-model-development "
-        "loaded with the Skill tool in each worker's own context, followed by its "
+        "test-authoring and review roles, including encoding/review coordinators, "
+        "require policyengine-model-development loaded with the Skill tool in each "
+        "agent's own context before substantive work, followed by its "
         "relevant references. Resolve the available installed skill name and follow "
         "references/agent-loading.md: SKILLS_READY includes successful load evidence; "
         "SKILLS_BLOCKED identifies an unavailable skill/tool before substantive work. "

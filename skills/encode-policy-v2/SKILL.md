@@ -29,8 +29,12 @@ Mandatory gates that no surface may skip:
 - Read all relevant rules and visually inspect tables, scans or ambiguous PDF evidence;
   share validated originals and extracts with the independent review.
 - Do not push through a red structural or quick-audit gate, or silently push failing tests.
+- Workers never delegate; brief both owners from one shared contract block, and treat the
+  coordinator's single bounded test invocation as the run of record.
 - In local mode, make no GitHub writes or pushes; preserve the implementation worktree.
 - Keep new PRs draft and complete follow-up review after any review-fix round.
+- Maximum two reviews: a second, incremental review follows repairs to confirmed
+  criticals from the first. Stop after round 2 with any remaining blockers reported.
 - Do not finish before the Phase 7 summary and canonical completion contract are satisfied.
 
 Surface adapters:
@@ -54,8 +58,12 @@ Codex delegation mapping, when subagent use is available and authorized:
   the parent session's skill load supplies the worker's context.
 - Test-source analysis can overlap implementation; final tests use the published variable
   contract. Reuse owners for repairs. Workers never stage, commit, push or independently
-  sync/format the shared environment.
+  sync/format the shared environment. They do their own work without helper or nested
+  agents, run at most one bounded self-check of their owned tests, and report a
+  `CONTRACT MISMATCH` instead of relocating cases; the coordinator runs the tests of record.
 - Run review-program in a fresh review coordinator context with its canonical local or
-  published arguments, raw source manifest and scope. Leave capacity for its reviewers.
+  published arguments, raw source manifest, captured head and scope. Require that
+  coordinator's own model-development load. Leave capacity for its reviewers and consume
+  its completed decision directly for repair routing, without a second review by the encoder.
 - Use only supported runtime capabilities. When delegation is unavailable, perform the
   implementation roles directly while preserving independent review context and gates.
