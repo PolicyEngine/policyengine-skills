@@ -1,7 +1,7 @@
 ---
 name: review-worker
 description: Executes one assigned policy/source or code/test role from review-program, with skill access and no delegation tools
-tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch, WebSearch, Skill, ToolSearch, SendMessage
+tools: Bash, Read, Write, Grep, Glob, WebFetch, WebSearch, Skill, ToolSearch, SendMessage
 disallowedTools: Agent, Task
 model: inherit
 ---

@@ -346,8 +346,8 @@ coverage. Trace suspicious cases through dependencies. Run the changed tests and
 directly relevant regression tests in one runner invocation (pass every path to the same
 command; each invocation pays the model's import cost), writing full output to a log
 under `RUN_ROOT` and reading back only the summary line and failures. Use
-`scripts/run_bounded.py --seconds 600 COMMAND ...` with combined stdout/stderr captured
-in that log and a tool timeout longer than the subprocess deadline. The wrapper records
+`scripts/run_bounded.py --seconds 540 COMMAND ...` with combined stdout/stderr captured
+in that log and the tool timeout at its maximum, above the subprocess deadline. The wrapper records
 exit status and elapsed time on the first execution. Do not detach with `nohup` or shell
 `&`, or pipe through `tail` and lose the runner's status. Add a small
 reproduction when useful. If the environment is unavailable, report tests NOT RUN; do

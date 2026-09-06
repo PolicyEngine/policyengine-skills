@@ -21,8 +21,9 @@ adding stages, audits, test commands or approval prompts.
   profile (Skill access, no delegation or web tools) with the full canonical role, exact
   owned paths, artifact contracts, relevant skill sections, concrete `WORKTREE_ROOT`,
   `WORKTREE_ID`, `RUN_ROOT`, `PREFIX` and local/publication mode. If that profile is not
-  installed, use `general-purpose` with an explicit no-delegation instruction and record
-  the substitution. A specialized standalone agent is not required and must not add its
+  installed, or cannot be spawned as a retained named worker in this runtime, use
+  `general-purpose` with an explicit no-delegation instruction and record the
+  substitution. A specialized standalone agent is not required and must not add its
   own audits, dependency sync, formatting, test suites, commits or pushes to this role
   contract. Give both workers the same shared contract block; do not paraphrase it per
   worker.
@@ -40,10 +41,11 @@ adding stages, audits, test commands or approval prompts.
   each worker's `{PREFIX}-encode-progress-{role}.log`; routine progress can also arrive
   by message or artifact; a partial report is not DONE. If delegation is unavailable,
   perform the roles directly, retaining independent review context.
-- Run the test runner through `run_bounded.py --seconds 600` with the Bash tool's
-  `timeout` set above that deadline (milliseconds, up to 600000) and output redirected
-  to the log; the default two-minute Bash limit kills a program suite mid-run and
-  discards its status. Pass the same instruction to workers for their single self-check.
+- Run the test runner through `run_bounded.py --seconds 540` with the Bash tool's
+  `timeout` at its 600000-millisecond maximum, so the wrapper's deadline fires first and
+  its exit-status line survives; redirect output to the log. The default two-minute Bash
+  limit kills a program suite mid-run and discards its status. Pass the same instruction
+  to workers for their single self-check.
 - Invoke review-program in a fresh `general-purpose` coordinator with its exact local or
   published arguments, approved scope, captured head, source manifest and runtime
   constraints. Require that coordinator to load both review-program and model-development

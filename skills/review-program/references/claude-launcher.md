@@ -33,9 +33,10 @@ to Claude Code; it adds no review stages or completion gates.
   the call is rejected and each retry costs about a minute. Unnamed reviewers are
   identified by their progress-log path.
 - **Test runs**: the code reviewer invokes the runner once through
-  `run_bounded.py --seconds 600` with the Bash tool's `timeout` set above that deadline
-  (milliseconds, up to 600000) and output redirected to its log; the default two-minute
-  Bash limit kills a program suite mid-run and discards its status.
+  `run_bounded.py --seconds 540` with the Bash tool's `timeout` at its 600000-millisecond
+  maximum, so the wrapper's deadline fires first and its exit-status line survives, and
+  output redirected to its log; the default two-minute Bash limit kills a program suite
+  mid-run and discards its status.
 - **Model-development loading**: the country-model review coordinator and reviewers invoke the resolved installed
   skill with the `Skill` tool in their own context, then read the relevant references.
   Require canonical `SKILLS_READY` evidence before accepting their work. A worker without

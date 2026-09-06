@@ -108,7 +108,8 @@ not unaffected research. A workflow-contract change requires reassessing old com
 markers; legacy role names alone do not establish that the new gates passed.
 
 Use the review-program skill's `scripts/run_bounded.py` for networked Git/GitHub commands
-with a 60-second deadline and for test-runner invocations with a 600-second deadline.
+with a 60-second deadline and for test-runner invocations with a 540-second deadline,
+below the runtime's tool timeout so the wrapper's exit status is always recorded.
 Resolve that installed skill directory as `REVIEW_SKILL_ROOT`.
 A failed fetch/read is not an empty result; retry a transient setup failure once, then
 report the blocker. Scope GitHub reads/writes explicitly to `BASE_REPO`.
@@ -289,8 +290,8 @@ The coordinator's invocation is the run of record. A worker may run its owned te
 at most once per task as a self-check before reporting DONE, in one bounded invocation;
 it never loops over files one at a time, repeats an unchanged set to recover lost
 output, or runs another owner's files. Every invocation uses the bounded helper with a
-600-second deadline and a tool timeout above it, writes combined output to a log under
-RUN_ROOT, and reads back the summary line and failures. Do not pipe the runner through
+540-second deadline and the tool timeout at its maximum above it, writes combined output
+to a log under RUN_ROOT, and reads back the summary line and failures. Do not pipe the runner through
 `tail`, detach it, or rely on a default two-minute tool limit; each loses the exit status
 and forces a repeat. Record the number of runner invocations and their total time in the
 CI status so repeated runs stay visible.
