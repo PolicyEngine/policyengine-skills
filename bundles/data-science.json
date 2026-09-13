@@ -2,7 +2,7 @@
   "name": "data-science",
   "description": "Data analysis, survey enhancement, imputation, calibration, and microdata utilities",
   "category": "data",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "keywords": [
     "data",
     "microdata",
