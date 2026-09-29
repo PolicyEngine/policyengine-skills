@@ -66,7 +66,8 @@ Analysis always runs on the **latest released** `policyengine` (`>=5.0.1`; resol
 from PyPI as described in "Checking what you're running"). Each release pins exactly-matched
 country-model versions and the certified data bundle, which is what makes results
 reproducible. Directly-imported country packages (`policyengine_us` / `policyengine_uk`) are
-for model development and tests, not for analysis compute.
+for model development and tests, not for analysis compute (the exception: a UK macro path needs
+`policyengine_uk`'s `Scenario`; see "Macro scenarios" in the `policyengine-uk` skill).
 
 ## Household calculations (fast, ~2 GB RAM)
 

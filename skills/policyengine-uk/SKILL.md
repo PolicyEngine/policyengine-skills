@@ -200,8 +200,9 @@ dataset's `constituency_code_oa` column via `compute_uk_constituency_impacts` /
 
 ## Population data
 
-The UK default dataset is **`populace_uk_2023`** (a Microcosm build), pinned by the certified
-bundle in policyengine 4.21.0. It lives in a **private** Hugging Face repo, so population runs
+The UK default dataset in policyengine 5.3.0's certified bundle is **`enhanced_frs_2024_25`**
+(policyengine-uk-data 1.56.16; it replaced the Microcosm `populace_uk_2023` default in August
+2026). It lives in a **private** Hugging Face repo, so population runs
 require a `HUGGING_FACE_TOKEN` with access:
 
 ```bash
@@ -272,15 +273,16 @@ running it with +1pp CPI and earnings in 2027-2033:
   HDF5 file lock fails.
 
 To combine a macro path with a policy, build two simulations with the same macro `Scenario`: a
-macro baseline and a macro reform. For a policy that only sets rates, thresholds or amounts for
-every year you report, apply it to the reform simulation with
-`Scenario.from_reform(policy).simulation_modifier(sim)`, then
-`sim.tax_benefit_system.reset_parameter_caches()`, before calculating. If the policy changes
-anything `process_parameters()` reads (`gov.dwp.state_pension.triple_lock.*`,
-`gov.economic_assumptions.*`, or an uprated parameter whose later years should follow it),
-merge it into the macro scenario instead:
-`Scenario(parameter_changes={**macro_changes, **policy_changes}, applied_before_data_load=True)`.
-Do not combine them with `+` (`Scenario.__add__` drops `applied_before_data_load`), and do not
+macro baseline and a macro reform. Apply a policy that sets rates, thresholds or amounts to the
+reform simulation with `Scenario.from_reform(policy).simulation_modifier(sim)`, then
+`sim.tax_benefit_system.reset_parameter_caches()`, before calculating, and set its value for
+every year you report: don't rely on later years of an uprated parameter following a one-year
+change. Settings that `process_parameters()` reads (`gov.dwp.state_pension.triple_lock.*`,
+`gov.economic_assumptions.*`) go into the macro scenario instead:
+`Scenario(parameter_changes={**macro_changes, **policy_changes}, applied_before_data_load=True)`,
+with `apply_parameter_changes` period keys (a bare year is a fiscal year; the `"a.b"` range form
+raises `ValueError`). A policy path that repeats a macro path replaces it entirely. Do not
+combine scenarios with `+` (`Scenario.__add__` drops `applied_before_data_load`), and do not
 compare against `sim.baseline`, which is built on the default macro path.
 
 ## Country-model development notes (policyengine_uk directly)

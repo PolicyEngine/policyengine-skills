@@ -127,9 +127,10 @@ multizone. Register in `policyengine-app-v2/website/src/data/apps.json` (`type`,
 ## Data and backend patterns
 
 Never paste ad-hoc computed numbers into source. Always: Python script → data file
-(JSON/CSV) → frontend imports it. The data file holds model outputs only, one full
-microsimulation per scenario shown; the pipeline and the frontend never scale, interpolate
-or extrapolate results to cover scenarios that were not run (see "Every reported number is a
+(JSON/CSV) → frontend imports it. The data file holds model outputs for the scenarios
+shown (and arithmetic on those runs, such as reform minus baseline), plus clearly labelled
+external comparators; the pipeline and the frontend never scale, interpolate or extrapolate
+results to cover scenarios that were not run (see "Every reported number is a
 model run" in the `policyengine` skill). Pick by need:
 
 - **A — Precomputed JSON/CSV**: finite scenarios (legislative trackers, static analyses). A
