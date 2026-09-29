@@ -4,7 +4,7 @@ description: |
   Load before writing PolicyEngine-UK code — UK household calculations, income tax (incl.
   Scottish and Welsh variations), National Insurance, Universal Credit and other benefits,
   poverty and reform analysis. Covers the person/benunit/household entity model (UK has NO
-  tax_unit), pe.uk.calculate_household, BHC vs AHC poverty, ITL1 regions, populace_uk_2023
+  tax_unit), pe.uk.calculate_household, BHC vs AHC poverty, ITL1 regions, enhanced_frs_2024_25
   data, and the policyengine_uk Scenario surface for country-model development.
   Triggers: Microcosm (formerly Populace), policyengine uk, pe.uk, Universal Credit, child benefit, pension credit, housing
   benefit, council tax, income tax, national insurance, personal allowance, Scottish income
@@ -25,8 +25,9 @@ the canonical `import policyengine as pe` interface, the population flow
 and dataset handling — this skill only carries what is *different* about the UK.
 
 Verified against policyengine 4.21.0 + policyengine-uk 2.89.2 + policyengine-core 3.30.0
-(2026-07). UK examples are not in the `[us]`-only CI verify set, so they carry no
+(2026-07). UK examples are not in the `[us]`-only CI verify set, so they carry no fast
 `<!-- verify -->` marker; each was run manually in a `policyengine[uk]` environment.
+Population examples may carry `<!-- verify: slow -->`.
 
 ## Setup
 
@@ -199,8 +200,9 @@ dataset's `constituency_code_oa` column via `compute_uk_constituency_impacts` /
 
 ## Population data
 
-The UK default dataset is **`populace_uk_2023`** (a Microcosm build), pinned by the certified
-bundle in policyengine 4.21.0. It lives in a **private** Hugging Face repo, so population runs
+The UK default dataset in the certified bundle (policyengine 5.3.0 through 6.1.2) is
+**`enhanced_frs_2024_25`** (policyengine-uk-data 1.56.16; it replaced the Microcosm `populace_uk_2023` default in August
+2026). It lives in a **private** Hugging Face repo, so population runs
 require a `HUGGING_FACE_TOKEN` with access:
 
 ```bash
@@ -208,9 +210,80 @@ export HUGGING_FACE_TOKEN=hf_...   # required for UK population data; household 
 ```
 
 Do not hardcode a raw `hf://` dataset URI — the certified default resolves by name through the
-bundle. The pre-Microcosm UK datasets are superseded. See the `policyengine-data` skill for how
-Microcosm UK is built (FRS + WAS imputation) and calibrated, and the `policyengine` skill for the
+bundle. See the `policyengine-data` skill for the dataset stack and calibration, and the
+`policyengine` skill for the
 `ensure_datasets` / `Simulation` population flow, which is identical across countries.
+
+## Macro scenarios (a different CPI or earnings path)
+
+A macro path goes in through the growth series in `gov.economic_assumptions.yoy_growth.obr`
+(`consumer_price_index`, `average_earnings`; move `rpi` and `cpih` with CPI if prices move),
+passed as a `Scenario` applied **before the data load**. This needs
+`managed_microsimulation(scenario=...)`: the `pe.uk` `Simulation`, `Policy`/`Dynamic` and
+`economic_impact_analysis` interfaces apply parameter values after the data load, so growth
+edits made through them are silent no-ops too.
+
+<!-- verify: slow -->
+```python
+from policyengine.tax_benefit_models.uk import managed_microsimulation
+from policyengine_uk.utils.scenario import Scenario
+
+OBR = "gov.economic_assumptions.yoy_growth.obr"
+base = managed_microsimulation()
+p = base.tax_benefit_system.parameters
+changes = {
+    f"{OBR}.{series}": {
+        f"year:{y}-01-01:1": float(p.get_child(f"{OBR}.{series}")(f"{y}-01-01")) + 0.01
+        for y in range(2027, 2034)
+    }
+    for series in ("consumer_price_index", "average_earnings")
+}
+macro = managed_microsimulation(
+    scenario=Scenario(parameter_changes=changes, applied_before_data_load=True)
+)
+for year in (2029, 2034):  # inside and beyond the dataset's own years
+    assert macro.calculate("employment_income", year).sum() > base.calculate("employment_income", year).sum()
+```
+
+Verified in policyengine 5.3.0 / policyengine-uk 2.90.2 (2026-09), by reading the code and
+running it with +1pp CPI and earnings in 2027-2033:
+
+- Before the data load, `Simulation.apply_parameter_changes` reloads the parameters, applies
+  the edits and reruns `process_parameters()`, which rebuilds the triple lock, the uprating
+  indices and every index-uprated parameter; the dataset is then extended with those
+  parameters. Employment income, child benefit rates, the State Pension and income tax all
+  moved (2034 employment income £1,662.6bn → £1,779.4bn), including years past the
+  dataset's last year.
+- **The same changes as a `reform=` dict do nothing.** `Scenario.from_reform` turns the dict
+  into a plain `.update()` modifier that runs after the data load and never calls
+  `process_parameters()`, so the growth series change but nothing derived from them is
+  rebuilt: incomes, benefit rates, the State Pension and income tax were identical to
+  baseline. No error is raised. (An after-load `Scenario(parameter_changes=...)` rebuilds the
+  parameters but not the microdata, which was already uprated.)
+- Period keys: in `apply_parameter_changes` a bare year (`"2030"`) means the fiscal year from
+  6 April. The `yoy_growth` series are calendar-year values keyed 1 January, so use
+  `"year:2030-01-01:1"`. The `"2030-01-01.2030-12-31"` form used in `reform=` dicts raises
+  `ValueError` here.
+- The rebuilt series have fixed horizons in policyengine-uk 2.90.2: the triple lock covers
+  2022-2034 (`create_triple_lock.py`) and the uprating indices run to 2039. Growth edits after
+  those years do not move the State Pension or index-uprated parameters; check the parameter
+  you care about in the final year before relying on a long-horizon path.
+- One process can build several such simulations, but `policyengine` materialises the
+  dataset under `./data/`: run parallel processes from separate working directories or the
+  HDF5 file lock fails.
+
+To combine a macro path with a policy, build two simulations with the same macro `Scenario`: a
+macro baseline and a macro reform. Apply a policy that sets rates, thresholds or amounts to the
+reform simulation with `Scenario.from_reform(policy).simulation_modifier(sim)`, then
+`sim.tax_benefit_system.reset_parameter_caches()`, before calculating, and set its value for
+every year you report: don't rely on later years of an uprated parameter following a one-year
+change. Settings that `process_parameters()` reads (`gov.dwp.state_pension.triple_lock.*`,
+`gov.economic_assumptions.*`) go into the macro scenario instead:
+`Scenario(parameter_changes={**macro_changes, **policy_changes}, applied_before_data_load=True)`,
+with `apply_parameter_changes` period keys (a bare year is a fiscal year; the `"a.b"` range form
+raises `ValueError`). A policy path that repeats a macro path replaces it entirely. Do not
+combine scenarios with `+` (`Scenario.__add__` drops `applied_before_data_load`), and do not
+compare against `sim.baseline`, which is built on the default macro path.
 
 ## Country-model development notes (policyengine_uk directly)
 
@@ -224,7 +297,7 @@ from policyengine_uk.model_api import Scenario   # -> policyengine_uk.utils.scen
 
 `Scenario` is a Pydantic model with two fields — `parameter_changes` (`{path: {period: value}}`)
 and `simulation_modifier` (a `Callable[[Simulation], None]`) — and scenarios compose with `+`
-(parameter dicts merge, modifiers chain). The country-package `Microsimulation(reform=...)`
+(parameter dicts merge, modifiers chain; the sum drops `applied_before_data_load`). The country-package `Microsimulation(reform=...)`
 accepts **either a plain dict or a `Reform` class** (its verified signature is
 `reform: Union[Dict, Type[Reform]]`) and internally calls `Scenario.from_reform(reform)`.
 `Reform.from_dict(dict, country_id="uk")` also works and applies correctly for both flat and
@@ -298,6 +371,6 @@ fixed value — cite the uprating order, not just the base Act, when a value cha
 
 - `policyengine` — the canonical `pe.*` interface, population flow, MicroSeries rules, and
   regional impacts. Read it first.
-- `policyengine-data` — how Microcosm UK (FRS + WAS) is built and calibrated.
+- `policyengine-data` — the dataset stack (the Enhanced FRS default, Microcosm) and calibration.
 - `policyengine-model-development` — implementing new UK variables and parameters.
 - `policyengine-us` — the US counterpart (and the source of the `tax_unit` habit to unlearn).
