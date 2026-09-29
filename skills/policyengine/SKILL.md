@@ -28,9 +28,9 @@ against the latest release (5.0.1 at 2026-08). Re-verify the bundle when precisi
 ## Every reported number is a model run
 
 PolicyEngine is a microsimulation model, and its outputs are the product. Every fiscal,
-distributional, poverty or household figure an analysis reports must come from running the
-model for that scenario and year, never from arithmetic on the output of other runs. None of
-these is allowed, however well it is validated:
+distributional, poverty or household figure an analysis presents as a PolicyEngine estimate
+must come from running the model for that scenario and year, never derived from the output of
+runs for other scenarios. None of these is allowed, however well it is validated:
 
 - scaling one run's totals by a ratio of indices, levels or shares (for example
   `cost = spend * (index_a - index_b) / index_central` applied to thousands of Monte Carlo
@@ -40,14 +40,17 @@ these is allowed, however well it is validated:
 - a side model (closed form, spreadsheet, regression on model output) that stands in for the
   model on some scenarios;
 - changing one parameter in a scenario that should move the rest of the system. A macro or
-  price path goes in as model inputs, so every uprated parameter and income follows it (UK:
-  see "Macro scenarios" in the `policyengine-uk` skill).
+  price path goes in as model inputs, so the model's uprating carries it through (UK: see
+  "Macro scenarios" in the `policyengine-uk` skill).
 
 When the design needs more scenarios than you can run, run fewer: choose a small set you can
 explain, run each one fully, and state how many full runs stand behind each figure. A
 distribution comes from full runs over sampled scenarios, with the sampling error stated.
-Arithmetic on model *inputs* is fine (building a parameter path from an uprating rule, say);
-arithmetic on model *outputs* is not. If the model cannot produce a figure, do not publish it.
+Arithmetic on model *inputs* is fine (building a parameter path from an uprating rule, say),
+and so is arithmetic that combines outputs of the runs for the scenario being reported: reform
+minus baseline, sums over years, ratios, percentage changes, averages, deflation, and sampling
+error across full runs. Arithmetic that produces a figure for a scenario nobody ran is not. If
+the model cannot produce a figure, do not publish it.
 
 ## Setup
 
