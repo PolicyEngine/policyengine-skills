@@ -326,7 +326,7 @@ precomputed:  # for precomputed / precomputed-csv patterns
 
 custom_modal:  # for custom-modal pattern
   reason: "Needs microsimulation with custom CTC phase-out parameter"
-  policyengine_package: "policyengine[us]"  # top-level extra (>=5.0.1) — pins matched country model + certified bundle; microsim endpoints use pe.us.managed_microsimulation()
+  policyengine_package: "policyengine[us]"  # top-level extra (>=6.0.0) — pins matched country model + certified bundle; microsim endpoints use pe.us.managed_microsimulation()
   architecture: gateway-polling  # Always use this — mirrors API v2 simulation service
   backend_files:  # Three-file structure (avoids module-level import crash-loop)
     image_setup: backend/_image_setup.py    # Standalone snapshot function

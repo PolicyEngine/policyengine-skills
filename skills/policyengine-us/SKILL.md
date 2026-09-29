@@ -146,9 +146,12 @@ program's per-enrollee cost) enters `household_benefits` only when
 policyengine-healthcare). Before that release this household's net income was about $16,000
 higher.
 
-Variables outside the default output columns (poverty flags, `is_child`, state credits, most
-intermediate variables) must be requested with `extra_variables=[...]`, or attribute access raises
-`AttributeError` listing what *is* available:
+The default output columns are short: on `spm_unit`, `snap`, `tanf`, `spm_unit_net_income` and
+the SPM poverty flags (`spm_unit_is_in_spm_poverty`, `spm_unit_is_in_deep_spm_poverty`); on
+`person`, `age`, `is_child`, `is_adult`, `employment_income`, `ssi` and a few more. Anything else
+(`in_poverty`, `person_in_poverty`, state credits, most intermediate variables) must be requested
+with `extra_variables=[...]`, or attribute access raises `AttributeError` listing what *is*
+available:
 
 <!-- verify -->
 ```python
@@ -159,9 +162,9 @@ r = pe.us.calculate_household(
     tax_unit={"filing_status": "HEAD_OF_HOUSEHOLD"},
     household={"state_code": "NY", "county_fips": "36001"},
     year=2026,
-    extra_variables=["in_poverty", "person_in_poverty", "is_child"],
+    extra_variables=["in_poverty", "person_in_poverty"],
 )
-assert r.person[1].is_child == 1
+assert r.person[1].is_child == 1               # a default column
 r.spm_unit.in_poverty          # SPM-unit poverty flag
 r.person[0].person_in_poverty  # person-level projection
 ```
@@ -248,6 +251,54 @@ state's variables with `[v for v in CountryTaxBenefitSystem().variables if v.sta
 SNAP is the US benefit whose timing most often surprises analysts. Everything below is verified
 against the model source.
 
+**The county sets New York's and Alaska's utility allowances.** SNAP utility allowances follow
+`snap_utility_region`, which reads the county in Alaska and New York. The same Albany County
+family from "Household calculation", moved to New York County (Manhattan), gets more SNAP, pays
+New York City tax, and crosses the SPM poverty line (Manhattan's SPM threshold is higher):
+
+<!-- verify -->
+```python
+import policyengine as pe
+
+def ny(county_fips):
+    r = pe.us.calculate_household(
+        people=[
+            {"age": 35, "employment_income": 25_000},
+            {"age": 33, "employment_income": 0},
+            {"age": 8},
+            {"age": 5},
+        ],
+        tax_unit={"filing_status": "JOINT"},
+        household={"state_code": "NY", "county_fips": county_fips},
+        year=2026,
+    )
+    return round(r.spm_unit.snap), bool(r.spm_unit.spm_unit_is_in_spm_poverty)
+
+assert ny("36001") == (7_398, False)   # Albany County: rest-of-state utility allowance
+assert ny("36061") == (8_061, True)    # New York County: New York City utility allowance
+```
+
+**Adults subject to the ABAWD rules need their hours.** `weekly_hours_worked_before_lsr`
+defaults to 0 (policyengine-us 2.x), so a childless adult who is subject to the ABAWD work
+requirement (`is_subject_to_snap_abawd`) fails it (`meets_snap_abawd_work_requirements`) unless
+you pass their hours:
+
+<!-- verify -->
+```python
+import policyengine as pe
+
+def snap(**hours):
+    return pe.us.calculate_household(
+        people=[{"age": 30, "employment_income": 8_000, **hours}],
+        tax_unit={"filing_status": "SINGLE"},
+        household={"state_code": "CA", "county_fips": "06037"},
+        year=2026,
+    ).spm_unit.snap
+
+assert round(snap()) == 298                                    # hours default to 0
+assert round(snap(weekly_hours_worked_before_lsr=25), 2) == 3_607.57
+```
+
 **SNAP is monthly.** `snap` and its inputs have `definition_period = MONTH`. When
 `calculate_household` reports an annual figure (like the $7,398 above), it is the **sum of twelve
 monthly allotments** — not one annual calculation. That is why SNAP produces partial-year cliffs
@@ -285,7 +336,10 @@ The 30% expected-contribution rate is itself a parameter — `gov.usda.snap.expe
 
 To debug one month, drop to the country package and calculate at a monthly period:
 `from policyengine_us import Simulation; Simulation(situation=...).calculate("snap_normal_allotment", "2026-11")`, with `.trace = True` for the dependency tree. That direct-import surface is for tracing,
-not for analysis results you report (see the policyengine skill).
+not for analysis results you report (see the policyengine skill). It applies the same SPM rule:
+to trace an SPM output (`in_poverty`, `spm_unit_spm_threshold`), put a year-keyed five-digit
+`county_fips` in the situation's household (`{"2026": "06037"}`) or construct
+`Simulation(situation=..., spm={"geography_kind": "national"})`.
 
 ## Datasets and population analysis
 

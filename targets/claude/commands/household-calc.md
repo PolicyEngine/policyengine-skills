@@ -18,19 +18,26 @@ Do NOT use for population-level questions ("how many households benefit"; "what'
 
 `$ARGUMENTS` — natural-language household description + question. Include:
 - Country (`US`, `UK`, `CA`) and state / province if relevant
+- US: the county (or a city/ZIP to map to its five-digit `county_fips`). Since policyengine
+  6.0.0 a US household needs one for SPM poverty, and it sets county-dependent rules (ACA
+  rating area, SNAP utility region in AK/NY, local taxes). If the user gives only a state, run
+  with `spm={"geography_kind": "national"}` and say that county-dependent results use the
+  state's first county.
+- US: weekly hours worked for each working-age adult (`weekly_hours_worked_before_lsr`,
+  default 0, which fails the SNAP ABAWD work requirement)
 - Household composition (single, married, dependents with ages)
 - Income sources ($ amounts for wages, SS, unemployment, etc.)
 - The question — baseline benefits? A specific reform? A marginal-rate calculation?
 
 Flags:
-- `--year YYYY` (default: current tax/benefit year)
+- `--year YYYY` (default: current tax/benefit year; US household calculations cover 2022–2035)
 - `--reform <preset-name-or-dict>` — apply a preset reform (see `presets/reforms/`) or a raw reform-dict JSON before calculating
 - `--reform-file PATH` — load reform-dict from a file
 
 ## What this command does
 
 1. Loads the appropriate country skill (`policyengine-us` / `policyengine-uk` / `policyengine-canada`) — these carry the correct API patterns for the current package version.
-2. Constructs a `Simulation` (household-level, not `Microsimulation`) using the parsed household description.
+2. Computes the household from the parsed description: US and UK through `pe.us.calculate_household` / `pe.uk.calculate_household` (see the `policyengine` skill), Canada through `policyengine_canada`'s household `Simulation` (see `policyengine-canada`). Never `Microsimulation`.
 3. Calculates the variables the user asked about (net income, specific benefit, tax owed, marginal rate).
 4. Reports baseline values, reform values (if `--reform`), and the delta.
 5. Optionally cites the parameter paths that drove each result so the analyst can trace numbers back to statute.

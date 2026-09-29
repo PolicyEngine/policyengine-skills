@@ -163,7 +163,7 @@ import modal
 from _image_setup import snapshot_models
 app = modal.App("my-tool-workers")
 image = (modal.Image.debian_slim(python_version="3.11")
-         .pip_install("policyengine[us]==X.Y.Z", "pydantic")   # top-level release (>=5.0.1): pins matched country model + certified data bundle
+         .pip_install("policyengine[us]==X.Y.Z", "pydantic")   # top-level release (>=6.0.0): pins matched country model + certified data bundle
          .run_function(snapshot_models)
          .add_local_file("backend/simulation.py", remote_path="/root/simulation.py"))
 
@@ -178,7 +178,10 @@ policyengine as pe; sim = pe.us.managed_microsimulation(reform=...)` (same weigh
 MicroSeries surface: `.calc()` US / `.calculate()` UK; provenance on
 `sim.policyengine_bundle`) — never a directly-imported country-package `Microsimulation`,
 whose default dataset can lag the certified bundle.
-Household-level endpoints may use `from policyengine_us import Simulation`. Pre-cache the
+Household-level endpoints may use `from policyengine_us import Simulation`; a US situation
+needs a household `county_fips` (five-digit string) or `spm={"geography_kind": "national"}`
+for SPM outputs, and the county drives county-dependent rules, so collect it in the form (the
+`policyengine` skill, "US geography"). Pre-cache the
 certified dataset by constructing the managed microsim inside `snapshot_models()` (UK builds
 need `HUGGING_FACE_TOKEN` — private dataset repo). Details: the `policyengine` skill.
 

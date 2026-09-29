@@ -182,7 +182,7 @@ export async function calculate(countryId, household) {
 
 Pattern C uses a **three-file backend structure** mirroring policyengine-api-v2's simulation service: a standalone image setup, a worker app, and pure simulation logic. A lightweight gateway manages job submission/polling. This avoids Modal's ~150s gateway timeout and a common crash-loop where module-level imports fail.
 
-First, look up the latest version of the top-level `policyengine` package from PyPI (must be `>=5.0.1`). Do NOT guess or use a version from memory:
+First, look up the latest version of the top-level `policyengine` package from PyPI (must be `>=6.0.0`). Do NOT guess or use a version from memory:
 
 ```bash
 pip index versions policyengine 2>/dev/null | head -1
@@ -213,13 +213,19 @@ Create `backend/simulation.py` (pure logic, policyengine at module level — cap
 from policyengine_us import Simulation  # household-level; snapshotted at build time
 
 def run_compute(params: dict) -> dict:
+    # US situations need a household county_fips: a five-digit string keyed by year,
+    # {"2026": "06037"}. Without it SPM outputs (poverty, thresholds) raise SPMInputError,
+    # and county-dependent rules (ACA rating area, SNAP utility region, local taxes) use
+    # the state's first county. Collect the county (or a ZIP mapped to one) in the form;
+    # if only the state is known, pass spm={"geography_kind": "national"} to Simulation
+    # and label SPM results as national. See the policyengine skill, "US geography".
     sim = Simulation(situation=params["household"])
     return {"result": float(sim.calculate("variable_name", 2025).sum())}
 ```
 
 If the tool needs **population-scale** results (statewide/national impacts), compute them
 through policyengine.py's managed path — `import policyengine as pe;
-sim = pe.us.managed_microsimulation(reform=...)` (policyengine>=5.0.1) — never a
+sim = pe.us.managed_microsimulation(reform=...)` (policyengine>=6.0.0) — never a
 directly-imported country-package `Microsimulation`, whose default dataset can lag the
 certified bundle. The managed constructor returns the same MicroSeries `.calc()` surface and
 records provenance on `sim.policyengine_bundle`; see the `policyengine` skill.

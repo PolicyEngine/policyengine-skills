@@ -72,7 +72,8 @@ print(result.spm_unit.snap, result.tax_unit.eitc, result.tax_unit.income_tax)
 Result access is **dot-attribute on singular entities** — `result.tax_unit.ctc`, never
 `result.tax_unit[0]["ctc"]`. Only `result.person` is a list (`result.person[0].age`). Entities:
 `person[i]`, `marital_unit`, `family`, `spm_unit`, `tax_unit`, `household` (US);
-`person[i]`, `benunit`, `household` (UK).
+`person[i]`, `benunit`, `household` (UK). US results also carry `result.provenance`, a plain
+dict rather than an entity (see "US geography").
 
 **Each entity exposes a limited default column set** — accessing anything else raises
 `AttributeError` listing what's available and telling you the fix: pass
@@ -133,15 +134,23 @@ assert len(earnings) == len(net) == 401
 assert earnings[1] == 500.0
 ```
 
-### US geography: a county, or national SPM
+### US geography: a county, or an explicit SPM selection
 
 Since policyengine 6.0.0 (policyengine-us 2.x) SPM measurement never guesses a place from the
-state. Two ways to satisfy it:
+state, and the default US outputs include SPM poverty (`spm_unit_is_in_spm_poverty`,
+`spm_unit_is_in_deep_spm_poverty`). `extra_variables` only adds columns, so even a call that
+wants nothing but `income_tax` needs one of these:
 
-- **`county_fips` as a five-digit string** (`"06037"`). An integer (`6037`) or a dropped
-  leading zero (`"6037"`) raises the same `SPMInputError` as a missing county.
+- **`county_fips` as a five-digit string** (`"06037"`). In the default county mode an integer
+  (`6037`, or even `36061`) or a dropped leading zero (`"6037"`) raises `SPMInputError` with
+  `code == "SPM_GEOGRAPHY_REQUIRED"`, the same as a missing county.
 - **`spm={"geography_kind": "national"}`** when you only know the state: SPM poverty is then
-  measured against the national threshold.
+  measured against the national threshold. Nothing validates `county_fips` in this mode, so
+  `6037` or `"6037"` silently becomes the state's first county (see below).
+- **`spm={"geography_kind": "metro", "geography_id": "31080"}`** to name an SPM area directly
+  (31080 is the Los Angeles–Long Beach–Anaheim MSA). `pe.us.SPMSelection` is the typed form of
+  the mapping; a malformed selection, such as metro without `geography_id`, raises a pydantic
+  `ValidationError`. `SPMInputError` (from `spm_calculator.errors`) subclasses `ValueError`.
 
 <!-- verify -->
 ```python
@@ -182,14 +191,25 @@ assert by_county.household.household_net_income == by_nation.household.household
 ```
 
 `result.provenance["spm_config"]` records the selection a result used (geography kind,
-scenario, the pinned forecast's hash).
+scenario, the pinned forecast's hash); `result.provenance["spm"]` is the calculation receipt
+(forecast id, runtime versions, and under `geographies` the SPM area each county resolved to,
+with its geographic factor).
+
+**Years 2022–2035 only.** The pinned SPM forecast covers 2022–2035, and because the default
+outputs include SPM poverty, `calculate_household` raises `SPMInputError`
+(`SPM_YEAR_UNAVAILABLE`) for any other year, whatever the geography. The country package's
+`Simulation` still computes non-SPM variables such as `income_tax` for other years.
 
 **The county matters beyond SPM.** `county_fips` also sets the household's `county`, which
-county-dependent rules read: ACA rating areas, county taxes and county programs. Without it the
-model falls back to `first_county_in_state`, the state's alphabetically first county: Anderson
-County for any Texas household, rather than Houston's Harris County. `spm=` does not change
-that fallback. Pass the real county whenever a result can depend on location (see
-policyengine-healthcare for the ACA case).
+county-dependent rules read: ACA rating areas, SNAP utility regions (Alaska and New York),
+local income taxes such as New York City's, and county programs. Without it the model falls
+back to `first_county_in_state`, the state's alphabetically first county: Anderson County for
+any Texas household rather than Houston's Harris County, Albany County for New York rather
+than New York City. `spm=` does not change that fallback. Nothing checks `county_fips` against
+`state_code` either: a `"NY"` household given `"06037"` runs New York state rules with Los
+Angeles County rules, so the county's first two digits must be the state's FIPS code. Pass the
+real county whenever a result can depend on location (see policyengine-us for SNAP and New
+York City, policyengine-healthcare for ACA premiums).
 
 ## Population analysis (heavy: tens of GB RAM, minutes per simulation)
 
@@ -235,7 +255,11 @@ Key facts:
   `unattributed`. Sign convention: **positive = government better off**. `total` is
   Δhousehold_tax − Δhousehold_benefits plus shared-funding health-program cost
   (Medicaid/CHIP/MSP), so it captures cascading interactions — never score a reform by
-  summing the directly-modified program variable alone.
+  summing the directly-modified program variable alone. The exception is an in-kind program
+  that the US model leaves out of `household_benefits` by default: Head Start and Early Head
+  Start count only when `gov.simulation.include_head_start_benefits_in_net_income` is true
+  (default false; see policyengine-us), so score a Head Start reform from `head_start` /
+  `early_head_start` directly or switch the toggle on in both simulations.
 - **Memory/time**: a full US population simulation is tens of GB of RAM and several minutes;
   a baseline+reform pair with full outputs took ~15 minutes on a 128 GB machine. Run ONE
   heavy simulation pipeline at a time. Household calculations are the cheap path — prefer
@@ -416,13 +440,14 @@ import importlib.metadata as md
 import json
 from pathlib import Path
 
-versions = {p: md.version(p) for p in ("policyengine", "policyengine-us")}
+versions = {p: md.version(p) for p in ("policyengine", "policyengine-us", "spm-calculator")}
 manifest = json.loads(
     Path(md.distribution("policyengine").locate_file("policyengine/data/bundle/manifest.json"))
     .read_text()
 )
 us = manifest["data_releases"]["us"]
-print(versions, us["default_dataset"], us["build_id"])
+spm = manifest["measurements"]["spm"]   # pinned SPM forecast hash, scenario, default geography
+print(versions, us["default_dataset"], us["build_id"], spm)
 assert us["default_dataset"].startswith("populace_us")
 ```
 
