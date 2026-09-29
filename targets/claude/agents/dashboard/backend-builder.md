@@ -213,7 +213,7 @@ When `data_pattern: custom-modal`, build a two-layer architecture on Modal: a li
 pip index versions policyengine 2>/dev/null | head -1
 ```
 
-Use the version number returned (must be `>=5.0.1`) in the `pip_install()` call below. Install `policyengine[us]` (or `policyengine[uk]`) rather than a bare country package: the extra pins an exactly-matched `policyengine-us`/`policyengine-uk` + `policyengine-core` and carries the certified data-bundle manifest, so population results are reproducible and their provenance is known.
+Use the version number returned (must be `>=6.0.0`) in the `pip_install()` call below. Install `policyengine[us]` (or `policyengine[uk]`) rather than a bare country package: the extra pins an exactly-matched `policyengine-us`/`policyengine-uk` + `policyengine-core` and carries the certified data-bundle manifest, so population results are reproducible and their provenance is known.
 
 ### Step 2: Create Image Setup
 
@@ -244,7 +244,7 @@ image build (attach it as a Modal secret to the snapshot function and the worker
 
 Generate `backend/simulation.py`. This is **pure business logic** — no Modal imports. policyengine imports are at module level because they are captured in the image snapshot.
 
-**Population/statewide endpoints go through policyengine.py's managed path** — `pe.us.managed_microsimulation()` (policyengine>=5.0.1), which returns a country-package `Microsimulation` pinned to the certified data bundle, with the same weighted MicroSeries interface (`.calc()` US / `.calculate()` UK) and provenance stamped on `sim.policyengine_bundle`. A directly-imported country-package `Microsimulation` is deprecated for analysis: its default dataset can lag the certified bundle, so results are not provenance-known.
+**Population/statewide endpoints go through policyengine.py's managed path** — `pe.us.managed_microsimulation()` (policyengine>=6.0.0), which returns a country-package `Microsimulation` pinned to the certified data bundle, with the same weighted MicroSeries interface (`.calc()` US / `.calculate()` UK) and provenance stamped on `sim.policyengine_bundle`. A directly-imported country-package `Microsimulation` is deprecated for analysis: its default dataset can lag the certified bundle, so results are not provenance-known.
 
 ```python
 import policyengine as pe                # managed analysis surface — snapshotted at build time
@@ -256,6 +256,12 @@ from pydantic import BaseModel           # Available in image
 
 def run_household(params: dict) -> dict:
     # Build household from params (per plan.yaml endpoints)
+    # US situations need a household county_fips: a five-digit string keyed by year,
+    # {"2026": "06037"}. Without it SPM outputs (poverty, thresholds) raise SPMInputError,
+    # and county-dependent rules (ACA rating area, SNAP utility region, local taxes) use
+    # the state's first county. Collect the county (or a ZIP mapped to one) in the form;
+    # if only the state is known, pass spm={"geography_kind": "national"} to Simulation
+    # and label SPM results as national. See the policyengine skill, "US geography".
     sim = Simulation(situation=params["household"])
     return {"net_income": float(sim.calculate("household_net_income", 2025).sum())}
 

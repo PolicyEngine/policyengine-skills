@@ -40,7 +40,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 MICROSIM_REASON = (
     "direct country-package Microsimulation is deprecated for analysis "
     "(2026-08-01); use pe.{us,uk}.managed_microsimulation() from "
-    "policyengine>=5.0.1 — deliberate deprecation notes and explicitly-scoped "
+    "policyengine>=6.0.0 — deliberate deprecation notes and explicitly-scoped "
     "engine-development examples take <!-- stale-ok -->"
 )
 

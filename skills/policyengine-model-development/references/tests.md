@@ -65,6 +65,13 @@ assert both sides of a boundary in one case:
       2024-09: true
 ```
 
+Always quote `county_fips`: YAML reads an unquoted `06037` as the octal integer 3103, and the
+model accepts only a five-digit string. Since policyengine-us 2.0 a case asserting an
+SPM-dependent output (`spm_unit_spm_threshold`, `spm_unit_is_in_spm_poverty`, `in_poverty`, or
+the SPM resources of a unit allocated housing assistance) also needs a household
+`county_fips`; with `state_code` alone the calculation raises `SPMInputError`
+(`SPM_GEOGRAPHY_REQUIRED`). Cases for other variables still run on `state_code` alone.
+
 Any month works here. Annual inputs can remain scalars; supply monthly inputs with
 period keys when their values vary through the year. This is useful whenever a MONTH-defined variable changes mid-year — a benefit standard that
 re-bases in April, a waiver that starts in September, a rate that changes on a state's own schedule.

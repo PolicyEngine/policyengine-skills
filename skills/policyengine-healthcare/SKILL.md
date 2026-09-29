@@ -26,8 +26,9 @@ This skill is the domain layer for analysts using the `policyengine` package; fo
 programs use **policyengine-us**, for the shared calculation/reform mechanics use the
 **policyengine** skill, and for building new health variables use **policyengine-model-development**.
 
-Verified against policyengine 4.21.0 / policyengine-us 1.764.6 (2026-07). Re-verify variable names
-and parameter values before reporting.
+Verified against policyengine 4.21.0 / policyengine-us 1.764.6 (2026-07); the marked examples
+re-verified on policyengine 6.1.2 / policyengine-us 2.2.1 (2026-09). Re-verify variable names and
+parameter values before reporting.
 
 ## The one gotcha that dominates everything: health benefits are excluded from net income
 
@@ -49,7 +50,8 @@ Measure health impact one of these ways instead:
   Δtax − Δbenefits, so it captures the health split automatically — do not hand-roll it from
   `household_net_income`. See the policyengine skill for the population flow.
 
-Verified end to end (single adult, $35k, Texas — ACA-eligible, not Medicaid-eligible):
+Verified end to end (single adult, $35k, Harris County, Texas — ACA-eligible, not
+Medicaid-eligible):
 
 <!-- verify -->
 ```python
@@ -58,11 +60,11 @@ import policyengine as pe
 r = pe.us.calculate_household(
     people=[{"age": 45, "employment_income": 35_000}],
     tax_unit={"filing_status": "SINGLE"},
-    household={"state_code": "TX"},
+    household={"state_code": "TX", "county_fips": "48201"},  # Harris County
     year=2026,
     extra_variables=["aca_ptc", "household_net_income_including_health_benefits"],
 )
-assert round(r.tax_unit.aca_ptc, 2) == 6_250.38          # a real PTC...
+assert round(r.tax_unit.aca_ptc, 2) == 6_635.45          # a real PTC...
 # ...but it is NOT in default net income; the gap is exactly the PTC:
 gap = (r.household.household_net_income_including_health_benefits
        - r.household.household_net_income)
@@ -170,7 +172,33 @@ p.gov.aca.state_rating_area_cost  # indexed by state and rating area
 
 ## Geographic variation: age curves and family tiers
 
-ACA premiums vary by rating area, and the age-rating rule is not uniform. Most states use the
+ACA premiums vary by rating area, which the model looks up from the household's county, so pass
+`county_fips` for any premium or PTC question. Without it the model uses the state's
+alphabetically first county (`first_county_in_state`), silently: the $35k Texas adult above
+lands in Anderson County (rating area 21) instead of Harris County (rating area 10), with a
+different benchmark premium and PTC. Tracked in PolicyEngine/policyengine-us#9480.
+
+<!-- verify -->
+```python
+import policyengine as pe
+
+def aca(household):
+    r = pe.us.calculate_household(
+        people=[{"age": 45, "employment_income": 35_000}],
+        tax_unit={"filing_status": "SINGLE"},
+        household=household,
+        year=2026,
+        spm={"geography_kind": "national"},  # lets the county-less call run
+        extra_variables=["slcsp_rating_area", "slcsp", "aca_ptc"],
+    )
+    # slcsp is monthly; on an annual result it is the year's total benchmark premium
+    return r.household.slcsp_rating_area, round(r.tax_unit.slcsp, 2), round(r.tax_unit.aca_ptc, 2)
+
+assert aca({"state_code": "TX"}) == (21, 8_856.62, 6_250.38)  # Anderson County
+assert aca({"state_code": "TX", "county_fips": "48201"}) == (10, 9_241.69, 6_635.45)  # Harris
+```
+
+The age-rating rule is not uniform either. Most states use the
 federal age curve, but the model carries **custom age curves for AL, DC, MA, MN, MS, OR, UT** and
 **family-tier rating (not age-based) for NY and VT** (verified from
 `policyengine_us/parameters/gov/aca/age_curves/`: `al, dc, ma, mn, ms, or, ut` plus `ny, vt`). When
