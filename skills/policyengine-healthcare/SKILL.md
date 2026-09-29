@@ -189,13 +189,13 @@ def aca(household):
         household=household,
         year=2026,
         spm={"geography_kind": "national"},  # lets the county-less call run
-        extra_variables=["county", "slcsp", "aca_ptc"],
+        extra_variables=["slcsp_rating_area", "slcsp", "aca_ptc"],
     )
     # slcsp is monthly; on an annual result it is the year's total benchmark premium
-    return r.household.county, round(r.tax_unit.slcsp, 2), round(r.tax_unit.aca_ptc, 2)
+    return r.household.slcsp_rating_area, round(r.tax_unit.slcsp, 2), round(r.tax_unit.aca_ptc, 2)
 
-assert aca({"state_code": "TX"}) == ("ANDERSON_COUNTY_TX", 8_856.62, 6_250.38)
-assert aca({"state_code": "TX", "county_fips": "48201"}) == ("HARRIS_COUNTY_TX", 9_241.69, 6_635.45)
+assert aca({"state_code": "TX"}) == (21, 8_856.62, 6_250.38)  # Anderson County
+assert aca({"state_code": "TX", "county_fips": "48201"}) == (10, 9_241.69, 6_635.45)  # Harris
 ```
 
 The age-rating rule is not uniform either. Most states use the
