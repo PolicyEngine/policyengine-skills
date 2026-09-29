@@ -273,11 +273,11 @@ Certified defaults resolve automatically — **do not pass raw `hf://` URIs**:
 |---|---|---|
 | `populace_us_2024` | US default (Microcosm, ~57k households calibrated to ~30k+ admin targets) | public |
 | `populace_us_2024_acs_local` | US local-area build (~1.6M households, ACS multispine, PUMA-assigned CD-119/county/state) | load **by name** for state/district work; never selected implicitly |
-| `populace_uk_2023` | UK default (Microcosm) | private HF repo — set `HUGGING_FACE_TOKEN` |
+| `enhanced_frs_2024_25` | UK default (policyengine-uk-data Enhanced FRS 2024-25; certified in policyengine 5.3.0 to 6.1.2) | private HF repo — set `HUGGING_FACE_TOKEN` |
 
 The pre-2026 datasets are gone:
 <!-- stale-ok -->
-`enhanced_cps_2024` and `enhanced_frs_2023_24` are superseded by Microcosm, and the per-area
+`enhanced_cps_2024` is superseded by Microcosm and `enhanced_frs_2023_24` by `enhanced_frs_2024_25`, and the per-area
 <!-- stale-ok -->
 files (`hf://policyengine/policyengine-us-data/states/*.h5`, `districts/*.h5`) no longer
 exist — policyengine-us-data is archived. **Local-area analysis = filter one national dataset
