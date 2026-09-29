@@ -25,8 +25,9 @@ reform dicts, datasets — from the **policyengine** skill; read that first for 
 US-specific. For building new US variables or parameters, use **policyengine-model-development**.
 For Medicaid / ACA / CHIP / Medicare, use **policyengine-healthcare**.
 
-Verified against policyengine 4.21.0 / policyengine-us 1.764.6 (2026-07). Re-verify law-year
-values before reporting — the model updates continuously.
+Verified against policyengine 4.21.0 / policyengine-us 1.764.6 (2026-07); the marked examples
+re-verified on policyengine 6.1.2 / policyengine-us 2.2.1 (2026-09). Re-verify law-year values
+before reporting — the model updates continuously.
 
 ## The six entities, and which program lives on which
 
@@ -95,7 +96,7 @@ def odc(dependent):
     return pe.us.calculate_household(
         people=[{"age": 45, "employment_income": 40_000}, kid],
         tax_unit={"filing_status": "HEAD_OF_HOUSEHOLD"},
-        household={"state_code": "CA"},
+        household={"state_code": "CA", "county_fips": "06037"},
         year=2026,
     ).tax_unit.ctc
 
@@ -105,8 +106,11 @@ assert odc(True) == 500     # $500 credit for other dependents (ODC)
 
 ## Household calculation
 
-`state_code` (not `state_code_str`) goes in the `household` dict. A low-income married couple with
-two children, showing where each program lands:
+`state_code` (not `state_code_str`) and `county_fips` (a five-digit string) go in the `household`
+dict. Since policyengine 6.0.0 a state alone raises `SPMInputError`, because the default outputs
+include SPM poverty and its threshold is set by county; the policyengine skill covers the
+national-threshold alternative. A low-income married couple with two children in Albany County,
+showing where each program lands:
 
 <!-- verify -->
 ```python
@@ -120,18 +124,27 @@ r = pe.us.calculate_household(
         {"age": 5},
     ],
     tax_unit={"filing_status": "JOINT"},
-    household={"state_code": "NY"},
+    household={"state_code": "NY", "county_fips": "36001"},  # Albany County
     year=2026,
+    extra_variables=["head_start"],
 )
 assert round(r.tax_unit.ctc) == 4_400          # 2 children x $2,200 (OBBBA, 2026)
 assert round(r.tax_unit.eitc) == 7_316         # federal EITC (tax_unit)
-assert round(r.spm_unit.snap) == 7_364         # annual = sum of 12 monthly allotments
-assert round(r.household.household_net_income) == 62_681
+assert round(r.spm_unit.snap) == 7_398         # annual = sum of 12 monthly allotments
+assert round(r.household.household_net_income) == 46_246
+assert round(r.person[3].head_start) == 16_491  # the 5-year-old; not in net income
 ```
 
 Here `income_tax` is about −$10,691 (refundable EITC + CTC exceed liability), so
 `household_net_income` exceeds gross earnings. `state_income_tax` can likewise be negative when
 refundable state credits exceed state liability.
+
+**Head Start is left out of net income by default.** The 5-year-old's `head_start` value (the
+program's per-enrollee cost) enters `household_benefits` only when
+`gov.simulation.include_head_start_benefits_in_net_income` is true; it defaults to false
+(policyengine-us 1.819.0 onward), the same in-kind treatment as health benefits (see
+policyengine-healthcare). Before that release this household's net income was about $16,000
+higher.
 
 Variables outside the default output columns (poverty flags, `is_child`, state credits, most
 intermediate variables) must be requested with `extra_variables=[...]`, or attribute access raises
@@ -144,7 +157,7 @@ import policyengine as pe
 r = pe.us.calculate_household(
     people=[{"age": 35, "employment_income": 25_000}, {"age": 8}],
     tax_unit={"filing_status": "HEAD_OF_HOUSEHOLD"},
-    household={"state_code": "NY"},
+    household={"state_code": "NY", "county_fips": "36001"},
     year=2026,
     extra_variables=["in_poverty", "person_in_poverty", "is_child"],
 )
@@ -218,12 +231,12 @@ import policyengine as pe
 r = pe.us.calculate_household(
     people=[{"age": 30, "employment_income": 20_000}, {"age": 4}],
     tax_unit={"filing_status": "HEAD_OF_HOUSEHOLD"},
-    household={"state_code": "CA"},
+    household={"state_code": "CA", "county_fips": "06037"},
     year=2026,
     extra_variables=["ca_eitc"],
 )
 assert round(r.tax_unit.eitc) == 4_427          # federal EITC
-assert round(r.tax_unit.ca_eitc, 2) == 410.16   # CalEITC (state)
+assert round(r.tax_unit.ca_eitc, 2) == 401.89   # CalEITC (state)
 assert r.tax_unit.state_income_tax < 0          # refundable CA credits exceed liability
 ```
 
@@ -236,7 +249,7 @@ SNAP is the US benefit whose timing most often surprises analysts. Everything be
 against the model source.
 
 **SNAP is monthly.** `snap` and its inputs have `definition_period = MONTH`. When
-`calculate_household` reports an annual figure (like the $7,364 above), it is the **sum of twelve
+`calculate_household` reports an annual figure (like the $7,398 above), it is the **sum of twelve
 monthly allotments** — not one annual calculation. That is why SNAP produces partial-year cliffs
 that annual-only reasoning misses.
 

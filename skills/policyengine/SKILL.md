@@ -22,7 +22,7 @@ interface for both single-household calculations and population microsimulation.
 certified model + data bundle, so results are reproducible and the data provenance is known.
 
 Originally verified against policyengine 4.21.0 (2026-07); the marked examples re-run in CI
-against the latest release (5.0.1 at 2026-08). Re-verify the bundle when precision matters
+against the latest release (6.1.2 at 2026-09-29). Re-verify the bundle when precision matters
 (see "Checking what you're running" below).
 
 ## Setup
@@ -35,8 +35,9 @@ uv pip install "policyengine[uk]"   # UK model (population data needs HUGGING_FA
 uv pip install "policyengine"       # both countries
 ```
 
-Analysis always runs on the **latest released** `policyengine` (`>=5.0.1`; resolve "latest"
-from PyPI as described in "Checking what you're running"). Each release pins exactly-matched
+Analysis always runs on the **latest released** `policyengine` (`>=6.0.0`, which changed the
+US household inputs below; resolve "latest" from PyPI as described in "Checking what you're
+running"). Each release pins exactly-matched
 country-model versions and the certified data bundle, which is what makes results
 reproducible. Directly-imported country packages (`policyengine_us` / `policyengine_uk`) are
 for model development and tests, not for analysis compute.
@@ -46,6 +47,12 @@ for model development and tests, not for analysis compute.
 `calculate_household` answers "what does this specific household get/pay?" — no dataset
 download, runs in seconds.
 
+**A US household needs a county, not just a state.** Since policyengine 6.0.0 the default US
+outputs include SPM poverty, and the SPM threshold is set by county, so a household with only
+`state_code` raises `SPMInputError: County selection has no county FIPS input`. Pass
+`county_fips` in `household` as a five-digit string (see "US geography" below for the
+national alternative).
+
 <!-- verify -->
 ```python
 import policyengine as pe
@@ -53,12 +60,12 @@ import policyengine as pe
 result = pe.us.calculate_household(
     people=[{"age": 40, "employment_income": 50_000}, {"age": 8}],
     tax_unit={"filing_status": "HEAD_OF_HOUSEHOLD"},
-    household={"state_code": "CA"},
+    household={"state_code": "CA", "county_fips": "06037"},  # Los Angeles County
     year=2026,
     extra_variables=["income_tax"],
 )
 assert result.tax_unit.ctc == 2_200          # OBBBA CTC, 2026
-assert round(result.household.household_net_income) == 46_358
+assert round(result.household.household_net_income) == 46_369
 print(result.spm_unit.snap, result.tax_unit.eitc, result.tax_unit.income_tax)
 ```
 
@@ -81,13 +88,13 @@ import policyengine as pe
 baseline = pe.us.calculate_household(
     people=[{"age": 40, "employment_income": 50_000}, {"age": 8}],
     tax_unit={"filing_status": "HEAD_OF_HOUSEHOLD"},
-    household={"state_code": "CA"},
+    household={"state_code": "CA", "county_fips": "06037"},
     year=2026,
 )
 reformed = pe.us.calculate_household(
     people=[{"age": 40, "employment_income": 50_000}, {"age": 8}],
     tax_unit={"filing_status": "HEAD_OF_HOUSEHOLD"},
-    household={"state_code": "CA"},
+    household={"state_code": "CA", "county_fips": "06037"},
     year=2026,
     reform={"gov.irs.credits.ctc.amount.base[0].amount": 3_000},
 )
@@ -116,7 +123,7 @@ import policyengine as pe
 result = pe.us.calculate_household(
     people=[{"age": 40}],
     tax_unit={"filing_status": "SINGLE"},
-    household={"state_code": "TX"},
+    household={"state_code": "TX", "county_fips": "48201"},  # Harris County
     year=2026,
     axes=[[{"name": "employment_income", "min": 0, "max": 200_000, "count": 401}]],
 )
@@ -125,6 +132,64 @@ net = result.household.household_net_income        # list of 401 values
 assert len(earnings) == len(net) == 401
 assert earnings[1] == 500.0
 ```
+
+### US geography: a county, or national SPM
+
+Since policyengine 6.0.0 (policyengine-us 2.x) SPM measurement never guesses a place from the
+state. Two ways to satisfy it:
+
+- **`county_fips` as a five-digit string** (`"06037"`). An integer (`6037`) or a dropped
+  leading zero (`"6037"`) raises the same `SPMInputError` as a missing county.
+- **`spm={"geography_kind": "national"}`** when you only know the state: SPM poverty is then
+  measured against the national threshold.
+
+<!-- verify -->
+```python
+import policyengine as pe
+from spm_calculator.errors import SPMInputError
+
+family = dict(
+    people=[{"age": 40, "employment_income": 50_000}, {"age": 8}],
+    tax_unit={"filing_status": "HEAD_OF_HOUSEHOLD"},
+    year=2026,
+    extra_variables=["spm_unit_spm_threshold"],
+)
+for household in ({"state_code": "CA"}, {"state_code": "CA", "county_fips": 6037}):
+    try:
+        pe.us.calculate_household(**family, household=household)  # expect: SPMInputError
+    except SPMInputError:
+        pass
+    else:
+        raise AssertionError(f"{household} should need a five-digit county string")
+
+state_only = pe.us.calculate_household(
+    **family, household={"state_code": "CA"}, spm={"geography_kind": "national"}
+)
+assert state_only.provenance["spm_config"]["geography_kind"] == "national"
+
+by_county = pe.us.calculate_household(
+    **family, household={"state_code": "CA", "county_fips": "06037"}
+)
+by_nation = pe.us.calculate_household(
+    **family,
+    household={"state_code": "CA", "county_fips": "06037"},
+    spm={"geography_kind": "national"},
+)
+assert by_county.provenance["spm_config"]["geography_kind"] == "county"
+# Same household and county: the SPM selection moves the threshold, not net income.
+assert by_county.spm_unit.spm_unit_spm_threshold != by_nation.spm_unit.spm_unit_spm_threshold
+assert by_county.household.household_net_income == by_nation.household.household_net_income
+```
+
+`result.provenance["spm_config"]` records the selection a result used (geography kind,
+scenario, the pinned forecast's hash).
+
+**The county matters beyond SPM.** `county_fips` also sets the household's `county`, which
+county-dependent rules read: ACA rating areas, county taxes and county programs. Without it the
+model falls back to `first_county_in_state`, the state's alphabetically first county: Anderson
+County for any Texas household, rather than Houston's Harris County. `spm=` does not change
+that fallback. Pass the real county whenever a result can depend on location (see
+policyengine-healthcare for the ACA case).
 
 ## Population analysis (heavy: tens of GB RAM, minutes per simulation)
 
