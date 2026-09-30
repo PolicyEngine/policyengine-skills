@@ -463,14 +463,14 @@ and styling.
 
 **Covers.** Give research posts a photographic cover: a still life of relevant objects on a
 light wooden table in soft natural light, with PolicyEngine teal (`#319795`, `#285E61`) only
-in the objects, and nothing legible: no text, numbers, currency, logos, charts, portraits or
-faces. Generate it with an image model, inspect every object for stray lettering, and save
+in the objects, and nothing legible or recognizable: no text, numbers, currency, logos,
+charts, portraits or faces. Generate it with an image model, inspect every object for stray lettering, and save
 it as an 1800×840 WebP beside the post's other assets. Never use a chart or an infographic
 as a cover. A product or tool launch may use a 1200×630 typographic card with no data
 graphic instead.
 
-Prompt used for the graded 2025 SPM prediction post (swap the objects for the post's
-subject):
+Prompt adapted from the one used for the graded 2025 SPM prediction post (swap the objects
+for the post's subject):
 
 > Photorealistic editorial still life, high three-quarter angle, on a light oak table beside
 > a window, soft diffuse morning light from the left, shallow depth of field. Objects grouped
@@ -503,7 +503,7 @@ When a post grades a registered prediction or explains why the model missed:
   separate runs. Name the run or runs behind each figure.
 - **Lead with totals.** Splitting a change into parts (thresholds and resources, or one
   income source at a time) can give different answers depending on the order of the steps.
-  Decompose each rerun from its own runs, report both orders or their average, and do not
+  Decompose each rerun from its own runs, report each order or the average over all orders, and do not
   assign a remaining gap to one part on the strength of the baseline decomposition.
 - **Compare survey years with care.** The CPS reweights to new population controls, so the
   weighted count of people in a group, or of benefit recipients, can jump for reasons that
@@ -823,7 +823,7 @@ Before publishing, verify:
 - [ ] Check mechanism claims against the code, test, or primary source
 - [ ] Draw charts as ```` ```chart ```` blocks; no chart PNGs or Plotly JSON in new posts
 - [ ] Use a photographic cover with nothing legible, never a chart
-- [ ] Put versions, script paths and rerun steps in footnotes
+- [ ] Name the model and its version in the body; put other package versions, script paths and rerun steps in footnotes
 - [ ] For graded forecasts: totals first, order-dependent splits labeled, sampling error shown for any pattern
 
 ## Resources
