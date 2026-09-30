@@ -153,12 +153,12 @@ automatically. Do not claim built-in dark mode at this version.
   renders with ui-kit's chart defaults, Inter and the PolicyEngine watermark (Recharts for
   `bar` and `waterfall`, a tile grid for `stateMap`). See policyengine-writing, "Figures,
   covers and replication in posts", and app-v2's `chart-standards.md` under
-  `docs/engineering/`. The website builds Tailwind with the `tw:` prefix, so ui-kit components
-  that rely on unprefixed utility classes render unstyled there; style blog chart parts
-  inline with the `:root` token variables. Never embed matplotlib PNGs or Plotly JSON in new
-  posts.
-- **Plotly (Python notebooks and standalone outputs, not posts)** — house style: white `plot_bgcolor`/`paper_bgcolor`, Inter
-  font, teal series, logo bottom-right. Reference tokens by hex with a CSS-var comment.
+  `docs/engineering/`. The website builds Tailwind with the `tw:` prefix, so ui-kit
+  components that rely on unprefixed utility classes render unstyled there; style blog chart
+  parts inline with the `:root` token variables. Never embed matplotlib PNGs or Plotly JSON
+  in new posts.
+- **Plotly (Python notebooks and standalone outputs, not posts)** — house style: white
+  `plot_bgcolor`/`paper_bgcolor`, Inter font, teal series, logo bottom-right. Reference tokens by hex with a CSS-var comment.
   Sketch:
   ```python
   def format_fig(fig):
