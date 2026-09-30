@@ -487,8 +487,8 @@ footnotes let a reader reproduce them.
 **Post dates.** A `posts.json` date can be a bare day (`"2026-09-29"`) or a day and time
 (`"2026-09-29 08:00:00"`). The site shows either as that calendar day in every time zone
 ([policyengine-app-v2#1237](https://github.com/PolicyEngine/policyengine-app-v2/pull/1237)).
-Leave out time zone offsets such as `Z` or `-04:00`: the research list sorts dates as text,
-and a website test fails on any date with an offset.
+Leave out time zone offsets such as `Z` or `-04:00`: a date with one shows the reader's local
+day, the research list sorts dates as text, and a website test fails on it.
 
 ## Grading forecasts and explaining misses
 
