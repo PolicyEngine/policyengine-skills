@@ -158,7 +158,8 @@ automatically. Do not claim built-in dark mode at this version.
   parts inline with the `:root` token variables. Never embed matplotlib PNGs or Plotly JSON
   in new posts.
 - **Plotly (Python notebooks and standalone outputs, not posts)** — house style: white
-  `plot_bgcolor`/`paper_bgcolor`, Inter font, teal series, logo bottom-right. Reference tokens by hex with a CSS-var comment.
+  `plot_bgcolor`/`paper_bgcolor`, Inter font, teal series, logo bottom-right. Reference
+  tokens by hex with a CSS-var comment.
   Sketch:
   ```python
   def format_fig(fig):
