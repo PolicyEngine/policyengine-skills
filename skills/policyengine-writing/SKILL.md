@@ -484,9 +484,11 @@ methodological transparency example below. Put other package versions, script pa
 hashes and rerun steps in footnotes, so the body states what the numbers show and the
 footnotes let a reader reproduce them.
 
-**Post dates.** Write `posts.json` dates with a time of day (`"2026-09-29 08:00:00"`). The
-article page and research list parse a bare date as UTC midnight and show it as the previous
-day to readers in US time zones.
+**Post dates.** A `posts.json` date can be a bare day (`"2026-09-29"`) or a day and time
+(`"2026-09-29 08:00:00"`). The site shows either as that calendar day in every time zone
+([policyengine-app-v2#1237](https://github.com/PolicyEngine/policyengine-app-v2/pull/1237)).
+Leave out time zone offsets such as `Z` or `-04:00`: a date with one shows the reader's local
+day, the research list sorts dates as text, and a website test fails on it.
 
 ## Grading forecasts and explaining misses
 
