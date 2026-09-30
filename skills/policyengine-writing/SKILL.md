@@ -445,6 +445,71 @@ The reform dramatically slashes child poverty
 This is Montana's largest income tax cut in history
 ```
 
+## Figures, covers and replication in posts
+
+**Charts.** Draw every chart in a policyengine.org post as a ```` ```chart ```` block: a
+JSON spec that the website renders with the app's Recharts defaults, Inter, the chart color
+tokens and the PolicyEngine watermark. The types are `bar`, `waterfall` and `stateMap`; the
+header comment of each component in `website/src/components/blog/` (policyengine-app-v2)
+documents its spec, and app-v2's engineering chart standards (`chart-standards.md` under
+`docs/engineering/`) cover the details. Do not put matplotlib PNGs or Plotly JSON in new posts. Keep each chart's numbers
+identical to the table or text beside it.
+
+**Charts elsewhere.** For a newsletter or social image, screenshot the chart as the live post
+renders it (headless Chromium at 2x). A re-plot drifts from the post's labels, source line
+and styling.
+
+**Covers.** Give research posts a photographic cover: a still life of relevant objects on a
+light wooden table in soft natural light, with PolicyEngine teal (`#319795`, `#285E61`) only
+in the objects and nothing legible (no text, numbers, logos, charts or faces). Generate it
+with an image model, inspect every object for stray lettering, and save it as an 1800×840
+WebP beside the post's other assets. Never use a chart or an infographic as a cover. Launches
+of a product or tool may use a typographic card instead, as the PolicyBench post does.
+
+Prompt used for the 2025 SPM posts (swap the objects for the post's subject):
+
+> Photorealistic editorial still life, high three-quarter angle, on a light oak table beside
+> a window, soft diffuse morning light from the left, shallow depth of field. Objects grouped
+> on the right two-thirds, leaving calm empty wood on the left: [objects]. Muted natural
+> palette of warm wood, white paper and soft gray, with teal (#319795 and #285E61) appearing
+> only in [two or three objects]. No legible text, numbers, logos, charts or faces anywhere.
+> Wide 2.14:1 landscape (1800×840).
+
+**Replication detail.** Put package versions, script paths, commit hashes and rerun steps
+in footnotes. The body states what the numbers show; the footnotes let a reader reproduce
+them.
+
+**Post dates.** Write `posts.json` dates with a time of day (`"2026-09-29 08:00:00"`). A
+bare date parses as UTC midnight and displays as the previous day in US time zones.
+
+## Grading forecasts and explaining misses
+
+When a post grades a registered prediction or explains why the model missed:
+
+- **Grade what was registered.** Compare the registered quantity, usually a change, with
+  the published figure at the precision the source publishes, and give the published
+  margins of error. When the published change is not statistically significant, say so,
+  and present reruns as showing which assumptions matter, not what the right values are.
+- **Every rerun is a full model run** with the changed assumption entered as a model input.
+  Never scale or combine earlier runs' outputs. State how many runs back each figure.
+- **Lead with totals.** Splitting a change into parts (thresholds and resources, or one
+  income source at a time) gives different answers depending on the order of the steps.
+  Split each rerun on its own run, say that the split depends on order, and do not assign a
+  remaining gap to one part on the strength of the baseline split.
+- **Compare survey years with care.** The CPS reweights to new population controls, so the
+  weighted count of people in a group, or of benefit recipients, can jump for reasons that
+  have nothing to do with the economy. Compare amounts per recipient, hold the age mix fixed
+  when it shifts, and treat two survey years as separate cross-sections, not a panel.
+- **Show sampling error before claiming a pattern.** A gradient across deciles or groups
+  needs a bootstrap or replicate-weight standard error. When the pattern sits within its
+  error, present a rerun built on it as a sensitivity check.
+- **Name each rate exactly**: "CPI-U, annual average" or "January over January"; "per
+  recipient aged 66 and over, at the 2024 age mix". Describe a data series the way its
+  source labels it unless you have checked the primary source.
+- **Review before publishing.** Have an independent reviewer check every number and
+  mechanism claim against the result files and the code, and review again after each round
+  of fixes.
+
 ## Structure and Organization
 
 Follow a clear hierarchical structure with key findings up front.
@@ -747,6 +812,10 @@ Before publishing, verify:
 - [ ] Introduce finished work fresh; keep development history in supporting records
 - [ ] Remove self-referential clauses, empty contrasts, and unintroduced names or roles
 - [ ] Check mechanism claims against the code, test, or primary source
+- [ ] Draw charts as ```` ```chart ```` blocks; no chart PNGs or Plotly JSON in new posts
+- [ ] Use a photographic cover with nothing legible, never a chart
+- [ ] Put versions, script paths and rerun steps in footnotes
+- [ ] For graded forecasts: totals first, order-dependent splits labelled, sampling error shown for any pattern
 
 ## Resources
 
