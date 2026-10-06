@@ -1,6 +1,10 @@
 ---
 name: policyengine-modal-deployment
-description: Deploying PolicyEngine backend APIs to Modal — workspace setup, authentication, deployment commands, environments, and troubleshooting
+description: |
+  Deploying PolicyEngine backend APIs to Modal — workspace setup, authentication,
+  deployment commands, environments, billing estimates, and troubleshooting.
+  Triggers: "Modal billing", "Modal cost", "Modal usage", "billing estimate",
+  "cost estimate".
 ---
 
 # PolicyEngine Modal deployment
@@ -287,6 +291,33 @@ App states:
 - `deployed` — running and accepting requests
 - `ephemeral` — temporary (from `modal serve`)
 - `stopped` — permanently stopped
+
+## Billing reports and cost estimates
+
+When asked for Modal usage, spend, or billing estimates, use Modal's actual billing report API/CLI before estimating from function-call duration.
+
+```bash
+# Hourly report for a date range, grouped by billable Modal object/app
+modal billing report \
+  --start YYYY-MM-DD \
+  --end YYYY-MM-DD \
+  --resolution h \
+  --json
+```
+
+Filter by the app's `Object ID`, which appears in Modal dashboard URLs such as `https://modal.com/apps/policyengine/main/ap-...` and in `modal app list --json`.
+
+```bash
+modal billing report --start 2026-05-22 --end 2026-05-23 --resolution h --json |
+  jq '[.[] | select(.["Object ID"]=="ap-APP_ID") | .Cost | tonumber] | add'
+```
+
+The Python API is `modal.billing.workspace_billing_report(...)`; it returns rows with `object_id`, `description`, `environment_name`, `interval_start`, and `cost`.
+
+Important details:
+- Reports are at the workspace object/app and time-interval level, not individual function-call level.
+- Use duration-based estimates only when billing data is unavailable or too recent to have landed.
+- If several apps share the same description, prefer filtering by `Object ID` over app name.
 
 ## Troubleshooting
 
