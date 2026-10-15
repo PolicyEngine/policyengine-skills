@@ -217,7 +217,6 @@ REPO_KIND_OVERRIDES: dict[str, str] = {
     "microunit": "library",
     "mortality": "library",
     "rdbl": "library",
-    "reweight": "library",
     "l0": "library",
     "L0": "library",
     "linecheck": "library",

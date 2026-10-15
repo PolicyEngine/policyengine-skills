@@ -15580,12 +15580,6 @@
       "tooling_relevant": false
     },
     {
-      "name": "reweight",
-      "kind": "library",
-      "kind_label": "Libraries",
-      "tooling_relevant": true
-    },
-    {
       "name": "pritzker",
       "kind": "grant-proposal",
       "kind_label": "Grants & proposals",
@@ -18452,19 +18446,6 @@
         "audit-seo"
       ],
       "total": 2
-    },
-    {
-      "name": "reweight",
-      "kind": "library",
-      "kind_label": "Libraries",
-      "tooling_relevant": true,
-      "description": "",
-      "visibility": "PUBLIC",
-      "pushed_at": "2026-04-28T00:37:00Z",
-      "skills": [],
-      "agents": [],
-      "commands": [],
-      "total": 0
     },
     {
       "name": "pritzker",
