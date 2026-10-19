@@ -1122,12 +1122,6 @@
     "pushed_at": "2026-04-28T00:35:50Z"
   },
   {
-    "name": "policyengine-data",
-    "description": "",
-    "visibility": "PUBLIC",
-    "pushed_at": "2026-04-28T00:35:47Z"
-  },
-  {
     "name": "policyengine-ng",
     "description": "A model of the Nigerian tax-benefit system",
     "visibility": "PUBLIC",
