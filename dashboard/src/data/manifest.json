@@ -418,7 +418,6 @@
       "target_repos": [
         "calibration-diagnostics",
         "policyengine-canada",
-        "policyengine-data",
         "policyengine-us",
         "policyengine-uk",
         "L0"
@@ -534,7 +533,6 @@
       "target_repos": [
         "calibration-diagnostics",
         "policyengine-us-data",
-        "policyengine-data",
         "policyengine-us",
         "microcalibrate",
         "microimpute",
@@ -15190,12 +15188,6 @@
       "tooling_relevant": false
     },
     {
-      "name": "policyengine-data",
-      "kind": "platform",
-      "kind_label": "Platform",
-      "tooling_relevant": true
-    },
-    {
       "name": "maria-microintern",
       "kind": "other",
       "kind_label": "Other",
@@ -17411,22 +17403,6 @@
       "agents": [],
       "commands": [],
       "total": 0
-    },
-    {
-      "name": "policyengine-data",
-      "kind": "platform",
-      "kind_label": "Platform",
-      "tooling_relevant": true,
-      "description": "",
-      "visibility": "PUBLIC",
-      "pushed_at": "2026-04-28T00:35:47Z",
-      "skills": [
-        "policyengine-calibration-diagnostics",
-        "policyengine-data"
-      ],
-      "agents": [],
-      "commands": [],
-      "total": 2
     },
     {
       "name": "maria-microintern",

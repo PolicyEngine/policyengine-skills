@@ -196,7 +196,6 @@ REPO_KIND_OVERRIDES: dict[str, str] = {
     "policyengine-skills": "platform",
     "policyengine-bundles": "platform",
     "policyengine.dev": "platform",
-    "policyengine-data": "platform",
     "policyengine-developer-portal": "platform",
 
     # Data pipelines
