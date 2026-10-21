@@ -18,6 +18,11 @@
 #   search_hints (optional) — extra query hints for WebSearch (e.g., "site:crfb.org")
 #   caveats      (optional) — known biases, publication cadence, dataset differences
 #
+# Pre-publish comparables (policyengine-comparables-review): the producers a published
+# analysis must be searched against are PolicyEngine/policyengine-scorecard's
+# data/comparables/producers.json, not this file. This registry stays the wider pool
+# prior-scores-finder consults while an analysis is being built.
+#
 # Tier 2 vs Tier 3 rule: Tier 2 sources have official standing (produce estimates
 # used in legislation or budget documents). Tier 3 sources are independent analysts
 # whose estimates are widely cited but not officially binding. When in doubt, use Tier 3.

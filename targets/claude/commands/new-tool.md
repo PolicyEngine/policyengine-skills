@@ -388,6 +388,8 @@ Every embeddable tool should have migration guardrails plus at least install + b
 
 Add the tool entry to `website/src/data/apps.json` in `policyengine-app-v2`. Use the auto-assigned Vercel production URL (not a custom alias).
 
+If the tool publishes an estimate (a cost, a distributional or poverty impact), run `/comparables-review` before registering it: app-v2's CI requires a `comparables` block for research entries dated on or after its cutover (`policyengine-comparables-review` skill). A calculator that publishes no estimate declares `"comparables": {"status": "no_estimate", "reason": "..."}` unless it is tagged `policy`.
+
 If the tool needs a rewrite/proxy path rather than a direct iframe source URL, update `website/next.config.ts` in the same repo as part of the launch.
 
 ## Step 8: Verify

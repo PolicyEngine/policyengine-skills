@@ -105,6 +105,9 @@ Mandatory rules:
 
 ### Deployment gotchas
 
+- **A research listing needs a comparables record.** An apps.json entry with
+  `displayWithResearch` dated on or after app-v2's cutover must carry a `comparables` block
+  naming a complete scorecard record, or app-v2's CI fails (policyengine-comparables-review).
 - **Vercel auto-assigns a non-deterministic URL suffix** (e.g. `marriage-zeta-beryl.vercel.app`).
   Read the actual URL after first deploy and hardcode *that* in the host rewrite / apps.json —
   never guess it.

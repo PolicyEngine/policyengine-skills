@@ -747,6 +747,8 @@ Before publishing, verify:
 - [ ] Introduce finished work fresh; keep development history in supporting records
 - [ ] Remove self-referential clauses, empty contrasts, and unintroduced names or roles
 - [ ] Check mechanism claims against the code, test, or primary source
+- [ ] Before publishing an estimate, run the comparables review and explain every gap over
+  the threshold (policyengine-comparables-review); app-v2 CI requires its record
 
 ## Resources
 

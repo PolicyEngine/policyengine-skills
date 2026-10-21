@@ -234,6 +234,8 @@ Skip the asset rewrite only if the zone does not set `assetPrefix`. For root-ser
 
 This is research-listing metadata. The dashboard is reachable at `policyengine.org/<zone_path>` from Step 5b alone; this entry adds it to the research/interactives listing.
 
+**Run `/comparables-review` first.** A research entry dated on or after the cutover in app-v2's `website/src/data/comparables.ts` must carry a `comparables` block naming a complete record in PolicyEngine/policyengine-scorecard, or app-v2's CI fails. The review searches every producer for external estimates of the dashboard's figures, records them in the scorecard and explains any gap over the threshold (`policyengine-comparables-review` skill). Merge the scorecard PR, then add the block that `python -m scorecard_db.comparables record analysis-<country>-<slug>` prints to the entry below.
+
 Add to `app/src/data/apps/apps.json`:
 
 ```json
@@ -247,7 +249,8 @@ Add to `app/src/data/apps/apps.json`:
   "displayWithResearch": true,
   "image": "SLUG-cover.png",
   "date": "CURRENT_DATE 12:00:00",
-  "authors": ["AUTHOR_SLUG"]
+  "authors": ["AUTHOR_SLUG"],
+  "comparables": { "...": "the block /comparables-review printed" }
 }
 ```
 

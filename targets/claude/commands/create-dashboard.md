@@ -555,7 +555,8 @@ make build          # Production build
 
 ### Next steps
 
-After reviewing locally, commit and push. Then use /deploy-dashboard to deploy.
+After reviewing locally, commit and push. Then use /deploy-dashboard to deploy. Before the
+dashboard is listed with research, run /comparables-review: app-v2's CI requires its record.
 ```
 
 ```
