@@ -114,8 +114,11 @@ Then one claim per published number, under the harvest rules
   figure. Only `own` estimates are compared.
 - `compare_to` names the estimate it matches: same metric, unit, period and time basis. If the
   worlds differ, `compare_to.across_worlds` gives the reason the quantities still match and its
-  basis, and the comparison is recorded as `constructed`. If nothing matches, `pe_missing` says
-  why ("net of behavioural responses; the dashboard is static").
+  basis, and the comparison is recorded as `constructed`. Otherwise `pe_missing` says why. If
+  the claim shares metric, unit, period and time basis with a published estimate (a net cost
+  beside our static one), it also names that estimate in `nearest_estimate`, and an annotation
+  with status `concept_mismatch` and a basis explains the difference. The validator refuses a
+  claim on a published quantity that is simply left uncompared.
 
 ### 5. Explain every gap over the threshold (`annotations.json`)
 

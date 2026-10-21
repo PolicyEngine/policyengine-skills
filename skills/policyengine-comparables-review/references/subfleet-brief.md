@@ -65,7 +65,9 @@ Work in a branch `comparables/{country}-{slug}` off `origin/main` of this reposi
    as `period`, the world it scores, attribution, benchmark class and the publication's locator.
 6. Link each claim to the PolicyEngine estimate it matches (`compare_to`; same metric, unit,
    period and time basis; `across_worlds` with a reason and basis if the worlds differ), or give
-   `pe_missing`.
+   `pe_missing`. A claim that shares metric, unit, period and time basis with an estimate but is
+   a different concept (net vs static) names it in `nearest_estimate` and gets a
+   `concept_mismatch` annotation with a basis.
 7. Run `python -m scorecard_db.comparables check sources/analysis-{country}-{slug}`. For every
    gap it reports over the threshold, find the cause. Read the analysis's code and data, the
    producer's method, and open issues (microcosm, policyengine-{country}, the analysis repo).
