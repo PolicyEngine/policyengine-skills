@@ -32,7 +32,10 @@ against their primaries before merging the scorecard PR.
 ## Arguments
 
 `$ARGUMENTS`: the dashboard or post (its URL, slug, or repository), plus `--kind
-prepublish|backfill|reharvest` (default `prepublish`).
+prepublish|backfill|reharvest|prepromotion` (default `prepublish`). Use `prepromotion`
+before a newsletter, social campaign, webinar or press push features an analysis that is
+already published: the push needs a search within the scorecard's promotion window
+(`python -m scorecard_db.comparables fresh <source> --on <push date>`).
 
 ## Related
 

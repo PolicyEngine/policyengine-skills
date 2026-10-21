@@ -749,6 +749,9 @@ Before publishing, verify:
 - [ ] Check mechanism claims against the code, test, or primary source
 - [ ] Before publishing an estimate, run the comparables review and explain every gap over
   the threshold (policyengine-comparables-review); app-v2 CI requires its record
+- [ ] Before a newsletter, social campaign, webinar or press push features an analysis, its
+  comparables search is fresh (within the promotion window, no gap pending); the newsletters
+  repo's CI checks every analysis an edition links
 
 ## Resources
 

@@ -24,6 +24,15 @@ You orchestrate the generation of marketing content from PolicyEngine blog posts
    - Extract: title, subtitle, key quotes, author, main points
    - Identify the primary announcement or finding
 
+1b. **Check comparables are fresh (required before any push)**
+   - If the source is a policyengine.org analysis that publishes an estimate, its comparables
+     search must be fresh before the posts go out (Max, 2026-10-21). Run `python -m
+     scorecard_db.comparables fresh analysis-<country>-<slug> --on <post date>` in a
+     PolicyEngine/policyengine-scorecard checkout.
+   - If it is not fresh, stop and say so: the `policyengine-comparables-review` skill runs a
+     `prepromotion` search first. Never write copy that repeats a figure whose comparables
+     show an unexplained gap over the threshold.
+
 2. **Gather missing information**
    - Use AskUserQuestion to get any missing required info:
      - Pull quote for social image

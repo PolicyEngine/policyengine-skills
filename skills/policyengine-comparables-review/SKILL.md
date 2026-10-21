@@ -1,16 +1,16 @@
 ---
 name: policyengine-comparables-review
 description: |
-  The pre-publish comparables review every PolicyEngine analysis passes before its dashboard or
-  research post is registered on policyengine.org: search every producer on the scorecard's list
-  for external estimates of what the analysis estimates, stage each one under the harvest rules in
-  PolicyEngine/policyengine-scorecard, compare it with the analysis's own figures, and explain
-  every gap over the threshold. policyengine-app-v2 CI enforces it for research entries dated on
-  or after its cutover. Includes the brief for running the search as a Subfleet research job.
+  The comparables review every PolicyEngine analysis passes before its dashboard or research post
+  is listed on policyengine.org, and again before a newsletter, social campaign or press push
+  features it: search every producer on the scorecard's list for external estimates, stage each
+  under the harvest rules in PolicyEngine/policyengine-scorecard, compare it with the analysis's
+  own figures, and explain every gap over the threshold. policyengine-app-v2 CI and the
+  newsletters repo's CI enforce it. Includes the brief for running the search as a Subfleet job.
   Triggers: "comparables", "comparables review", "pre-publish review", "before publishing",
-  "publish a dashboard", "add to apps.json", "add to posts.json", "comparables block",
-  "scorecard record", "external estimates", "how do we compare", "comparables gate",
-  "analysis-uk-", "analysis-us-", "re-harvest".
+  "add to apps.json", "add to posts.json", "scorecard record", "external estimates",
+  "comparables gate", "analysis-uk-", "analysis-us-", "re-harvest", "newsletter",
+  "before a push", "promote an analysis".
   NOT for: benchmarking a reform mid-analysis without publishing (policyengine-prior-scores,
   /prior-scores).
 metadata:
@@ -160,6 +160,27 @@ subfleet run --task research --tier standard -C <scorecard worktree> -p brief.md
 The brief has the job open a draft scorecard PR and report the producer table and every gap.
 Review the staged claims against their primaries before merging. A job's report is a claim,
 not proof.
+
+## Before a push
+
+Publishing is not the only moment that counts (Max, 2026-10-21: "even if we've already published
+something, we should do a fresh comp review before big pushes like newsletters"). Before an
+analysis is featured in a newsletter, a social campaign, a webinar or a press push, its search
+must be fresh. That means a search dated within `promotion_window_days`
+(`data/comparables/policy.json`, 7 by default) before the push, and no gap found by then still
+`pending`.
+
+```bash
+python -m scorecard_db.comparables fresh analysis-<country>-<slug> --on <push date>
+```
+
+If it is not fresh, append a search with `kind: prepromotion` and today's date that logs every
+producer. Stage what is new, explain or flag every gap over the threshold, and merge the
+scorecard PR before the push. An analysis with no record gets its first search (`backfill`).
+If the fresh search turns up a comparable whose figure differs from ours by more than the
+threshold, the push either says so beside our figure or leaves the analysis out until the gap is
+explained. PolicyEngine/newsletters' CI and its `upload-newsletter` command enforce this for
+every analysis an edition links (editions dated on or after its cutover).
 
 ## After publishing
 

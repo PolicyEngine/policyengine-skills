@@ -24,6 +24,8 @@ Orchestrates the content-generation pipeline through two dedicated agents:
 1. `content-orchestrator` (agent) — parses the source, generates localized variants (UK/US spelling, references, framing), and renders the outputs (social images via Chrome headless, social copy for LinkedIn/X).
 2. `neutrality-reviewer` (agent) — reviews the generated copy for advocacy language, speculation, or one-sided framing before publish. See `targets/claude/agents/shared/neutrality-reviewer.md`.
 
+Before anything is generated for a policyengine.org analysis that publishes an estimate, the orchestrator checks that its comparables search is fresh: dated within the scorecard's promotion window before the posts go out, with no gap still pending. If it is not, run `/comparables-review --kind prepromotion` first (`policyengine-comparables-review` skill; Max, 2026-10-21).
+
 The command is the entry point; the agents own the mechanics. Loads `content-generation` skill for templates and `policyengine-writing` skill for the tone standard.
 
 ## Usage
