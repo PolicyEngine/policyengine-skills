@@ -166,6 +166,10 @@ vercel env add NEXT_PUBLIC_API_URL production
 # Enter: https://policyengine--DASHBOARD_NAME-calculate.modal.run
 ```
 
+## Before Step 4: comparables review
+
+Run `/comparables-review` now, before the frontend deploy and the host wiring, whatever `embedding.register_in_apps_json` says. Step 5b makes the dashboard public at `policyengine.org/<zone_path>`, and app-v2's CI requires every app route to belong to a research entry that carries a `comparables` block naming a complete record in PolicyEngine/policyengine-scorecard. The review searches every producer for external estimates of the dashboard's figures, records them in the scorecard and explains any gap over the threshold (`policyengine-comparables-review` skill). Merge the scorecard PR before opening the app-v2 PR in Step 5.
+
 ## Step 4: Deploy Frontend to Vercel
 
 See the `policyengine-tools` skill ("Deployment gotchas") for the full Vercel deployment reference.
@@ -230,11 +234,11 @@ Add these entries to `rewrites().beforeFiles` in `website/next.config.ts` (use `
 
 Skip the asset rewrite only if the zone does not set `assetPrefix`. For root-served zones (no `basePath`), keep the route rewrites but map destinations to the zone root instead: `<zone_path>` → `https://<VERCEL_PRODUCTION_URL>` and `<zone_path>/:path*` → `https://<VERCEL_PRODUCTION_URL>/:path*`. See the `policyengine-tools` skill for the two valid patterns: path-mounted and root-served.
 
-### 5c. Add apps.json entry (only if `embedding.register_in_apps_json: true`)
+### 5c. Add apps.json entry
 
-This is research-listing metadata. The dashboard is reachable at `policyengine.org/<zone_path>` from Step 5b alone; this entry adds it to the research/interactives listing.
+This is research-listing metadata, and app-v2 requires it for every new zone route: its tests fail a route in `appZoneRoutes.ts` (or a rewrite in `next.config.ts`) that is not a research entry's. With `embedding.register_in_apps_json: false`, keep the entry but set `"displayWithResearch": false`; the `policy` tag still makes it a research entry, so it still needs the block.
 
-**Run `/comparables-review` first.** A research entry dated on or after the cutover in app-v2's `website/src/data/comparables.ts` must carry a `comparables` block naming a complete record in PolicyEngine/policyengine-scorecard, or app-v2's CI fails. The review searches every producer for external estimates of the dashboard's figures, records them in the scorecard and explains any gap over the threshold (`policyengine-comparables-review` skill). Merge the scorecard PR, then add the block that `python -m scorecard_db.comparables record analysis-<country>-<slug>` prints to the entry below.
+Add the block that `python -m scorecard_db.comparables record analysis-<country>-<slug>` printed in the comparables review before Step 4.
 
 Add to `app/src/data/apps/apps.json`:
 

@@ -121,6 +121,11 @@ Apply the standard routing rules (identical to the CRM publication router):
 - otherwise (routine state bill) → **bill tracker**
 - `--publish tracker|dashboard` overrides; `--publish none` stops here.
 
+The dashboard route goes through `/deploy-dashboard`, which runs the comparables
+review (`policyengine-comparables-review`) before anything is public. The tracker route is not
+a policyengine.org research entry, so that gate does not cover it; its bill-review PR carries
+the benchmark table against the state's fiscal note instead (below).
+
 **Publication preconditions (from Phase 2's `enactment_reconciliation`):**
 consult the block before dispatching — it says whether `baseline_json` is
 required, and whether this publication SUPERSEDES an earlier entry (a

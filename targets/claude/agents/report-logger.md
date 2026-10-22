@@ -302,7 +302,7 @@ Skip this destination unless `--log-to tracker` is explicitly passed AND credent
 `--log-to draft:<repo>/<path>` opens a PR with the report rendered as a blog-post-style markdown file. The canonical PolicyEngine research-post target is `policyengine-app-v2` at `app/src/data/posts/articles/{slug}.md` (also register the slug in `app/src/data/posts/posts.json`). Note: `policyengine-app` v1 is archived — never target it.
 
 1. Use the `policyengine-writing` skill for tone polish (the raw report uses neutral-mechanical language; a draft needs lead, sub-heads, and a TL;DR).
-2. Before the post can leave draft, it needs a comparables review: app-v2's CI requires a `comparables` block on research posts dated on or after its cutover. Note in the PR body that `/comparables-review` (the `policyengine-comparables-review` skill) is still to run, unless it already has.
+2. Before the post can leave draft, it needs a comparables review: app-v2's CI requires a `comparables` block on every new research post. Note in the PR body that `/comparables-review` (the `policyengine-comparables-review` skill) is still to run, unless it already has.
 3. `gh pr create --draft` against the target repo, branch named `analyze-policy/{policy_id}`.
 4. Surface the PR URL in the output.
 

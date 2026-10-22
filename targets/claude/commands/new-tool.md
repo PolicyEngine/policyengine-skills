@@ -386,9 +386,9 @@ Every embeddable tool should have migration guardrails plus at least install + b
 
 ## Step 7: Register in apps.json
 
-Add the tool entry to `website/src/data/apps.json` in `policyengine-app-v2`. Use the auto-assigned Vercel production URL (not a custom alias).
+First run `/comparables-review` (`policyengine-comparables-review` skill) and merge its scorecard PR. app-v2's CI requires a `comparables` block on every new research entry (an app shown with research or tagged `policy`), and every app route must belong to one. A household calculator that publishes no fixed estimate is still searched: its scorecard record declares `calculator` instead of pinning estimates. Apps never declare `no_estimate`.
 
-If the tool publishes an estimate (a cost, a distributional or poverty impact), run `/comparables-review` before registering it: app-v2's CI requires a `comparables` block for research entries dated on or after its cutover (`policyengine-comparables-review` skill). A calculator that publishes no estimate declares `"comparables": {"status": "no_estimate", "reason": "..."}` unless it is tagged `policy`.
+Then add the tool entry, with that block, to `website/src/data/apps.json` in `policyengine-app-v2`. Use the auto-assigned Vercel production URL (not a custom alias).
 
 If the tool needs a rewrite/proxy path rather than a direct iframe source URL, update `website/next.config.ts` in the same repo as part of the launch.
 

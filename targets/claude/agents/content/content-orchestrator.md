@@ -26,12 +26,12 @@ You orchestrate the generation of marketing content from PolicyEngine blog posts
 
 1b. **Check comparables are fresh (required before any push)**
    - If the source is a policyengine.org analysis that publishes an estimate, its comparables
-     search must be fresh before the posts go out (Max, 2026-10-21). Run `python -m
-     scorecard_db.comparables fresh analysis-<country>-<slug> --on <post date>` in a
-     PolicyEngine/policyengine-scorecard checkout.
+     search must be fresh before the posts go out. Run `PYTHONPATH=. uv run python -m
+     scorecard_db.comparables fresh analysis-<country>-<slug> --on <post date>` in a checkout
+     of PolicyEngine/policyengine-scorecard's `origin/main`.
    - If it is not fresh, stop and say so: the `policyengine-comparables-review` skill runs a
-     `prepromotion` search first. Never write copy that repeats a figure whose comparables
-     show an unexplained gap over the threshold.
+     `prepromotion` search first. A pending gap blocks the push until its cause is written;
+     never write copy around it.
 
 2. **Gather missing information**
    - Use AskUserQuestion to get any missing required info:

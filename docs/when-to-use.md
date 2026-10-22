@@ -1,6 +1,6 @@
 # When to use what
 
-The PolicyEngine plugin ships 20 command files, 36 agents, and 23 skills (20 knowledge skills plus the three workflow skills, consolidated from 53 in the July 2026 rebuild). The `/encode-policy-v2`, `/review-program`, and `/fix-pr` entries are provided directly by skills: each name resolves to a skill whose `references/workflow.md` is the canonical definition, with no duplicate command stub. Most days you'll only use 3-5 entry points. This guide maps common work to the right one.
+The PolicyEngine plugin ships 21 command files, 36 agents, and 24 skills (21 knowledge skills plus the three workflow skills, consolidated from 53 in the July 2026 rebuild). The `/encode-policy-v2`, `/review-program`, and `/fix-pr` entries are provided directly by skills: each name resolves to a skill whose `references/workflow.md` is the canonical definition, with no duplicate command stub. Most days you'll only use 3-5 entry points. This guide maps common work to the right one.
 
 ## Quick decision matrix
 
@@ -12,6 +12,7 @@ The PolicyEngine plugin ships 20 command files, 36 agents, and 23 skills (20 kno
 | Convert a bill / URL / description into a reform-dict | `/text-to-reform` | Submit to PE API or pass to `/analyze-policy` |
 | Check whether we already analyzed this reform | `/prior-analysis` | Read the archived analysis or run fresh |
 | Consult external scorekeepers (JCT/CBO/OBR/IFS/CRFB/TPC/etc.) | `/prior-scores` | Cite in your writeup |
+| Record every external estimate of an analysis in the scorecard before listing it, or before a newsletter or press push features it | `/comparables-review` | Merge the scorecard PR, then add the block to apps.json or posts.json |
 | Implement a NEW state benefit program | `/encode-policy-v2` | Inspect its draft PR and included review; address remaining findings |
 | Implement a STRUCTURAL reform the model can't express as parameters | `/implement-structural` | `/review-program` → `/create-pr` |
 | Change parameters on an EXISTING program | `/encode-reform` | `/review-program` → `/create-pr` |
