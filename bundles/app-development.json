@@ -2,7 +2,7 @@
   "name": "app-development",
   "description": "React app development - app-v2, standalone tools, Vercel deployment, and PolicyEngine-specific patterns",
   "category": "development",
-  "version": "4.0.2",
+  "version": "4.1.0",
   "keywords": [
     "react",
     "frontend",
@@ -27,6 +27,7 @@
     "./skills/policyengine-design",
     "./skills/policyengine-standards",
     "./skills/policyengine-writing",
+    "./skills/policyengine-comparables-review",
     "./skills/fix-pr"
   ],
   "commands": [
@@ -35,7 +36,8 @@
     "./commands/new-tool.md",
     "./commands/audit-seo.md",
     "./commands/audit-multizone.md",
-    "./commands/write-tests.md"
+    "./commands/write-tests.md",
+    "./commands/comparables-review.md"
   ],
   "agents": [
     "./agents/app/component-test-writer.md",
