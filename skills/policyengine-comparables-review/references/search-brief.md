@@ -84,8 +84,12 @@ command as `PYTHONPATH=. uv run python -m ...`.
      claims (`range_low`, `range_high`) sharing a `conditions.range_group`.
    - The sign convention in `conditions.sign_convention`, starting `positive =` and saying one
      thing, in words `signs.py` reads (the skill lists them, with US phrasings).
-   - The identity fields, the world it scores, attribution, benchmark class, and the
-     publication's locator.
+   - The identity fields (`conditions.basis` one word, with any account in `basis_note`;
+     `conditions.program` a slug, with any description in `program_note`; `conditions.prices:
+     real` for a base year's prices; `unstated` basis or prices when the producer does not say),
+     the world it scores, attribution, benchmark class, and the publication's locator.
+   - A one-sided figure ("over £1 billion") is `lower_bound` or `upper_bound`, set beside an
+     estimate, never compared.
 7. Link each claim to the PolicyEngine estimate it matches (`compare_to`: the same quantity,
    identity and baseline; `across_worlds` with a reason and basis if the worlds differ). A claim
    near an estimate that is a different quantity (net beside static, a fiscal year beside a

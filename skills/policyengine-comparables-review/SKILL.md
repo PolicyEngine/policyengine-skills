@@ -72,10 +72,15 @@ published figure out is how a miss hides, so list them all. Each estimate has:
 
 - `key`, `label`, `world`, `metric`, `unit_concept`, `period`, `time_basis`, `value`,
   `value_raw` (as the file prints it), `normalization`;
-- `conditions.basis` (`static`, `post_behavioural`, `forecast` or `outturn`) and
-  `conditions.program` (a slug for what is costed, such as `thirty_hours` or `both_schemes`);
-  for a fiscal year, `conditions.fy` ("2027-28"), with `period` its end year and `time_basis`
-  `fiscal_year`;
+- `conditions.basis`: one word, `static` (no behavioural response), `post_behavioural`,
+  `forecast` (a projected level, such as current-law revenue) or `outturn`; a fuller account goes
+  in `conditions.basis_note`;
+- `conditions.program`: a slug for what is costed, the programmes or taxes whose change the
+  figure counts (`thirty_hours`, `both_schemes`, `state_pension_with_income_tax`); a longer
+  description goes in `conditions.program_note`;
+- `conditions.prices: real` for a money figure in a base year's prices (absent means cash);
+- for a fiscal year, `conditions.fy` ("2027-28"), with `period` its end year and `time_basis`
+  `fiscal_year`; anything more about the year goes in `conditions.fy_note`;
 - `provenance`: the analysis repo, the commit the live page builds from, the results file's
   path and SHA-256, the field path, `computed_at`, the engine versions and the dataset release;
 - the value in PolicyEngine's orientation for its metric (`scorecard_db/signs.py`
@@ -121,7 +126,9 @@ PYTHONPATH=. uv run python -m scorecard_db.comparables pins analysis-<country>-<
 ### 4. Stage each estimate (`claims_staged.jsonl`, `manifest.jsonl`)
 
 Download each primary into a new empty directory, hash it, and add one `manifest.jsonl` line
-(url, title, date, publisher, sha256, retrieved, access). Then one claim per published number.
+(url, title, date, publisher, sha256, retrieved, access). Hash the documents your annotations
+cite and the pages your searches checked too; a manifest line nothing cites, links or lists as
+checked fails the check. Then one claim per published number.
 Copy a claim's shape from the worked example: `key`, `source`, `found_by`, `found_on`,
 `source_model`, `metric`, `unit_concept`, `value`, `value_raw`, `normalization`, `value_kind`,
 `period`, `time_basis`, `conditions`, `world`, `reform_hint`, `attribution`, `benchmark_class`,
@@ -133,11 +140,14 @@ Of the harvest rules (`sources/harvest-uk-ab2025-2026-09-24/README.md`), these a
 values (1), registered vocabulary, named baselines (7) and unreadable primaries (8). The fields
 specific to the Autumn Budget harvest (`measure_key`, `fiscal_event`) do not.
 
-- `value_raw` exactly as printed (`"-800m"`, `"£0.80bn"`, `"(0.4)"`), `value` normalised under a
-  normalisation whose scale matches the printed one (`NORMALIZATIONS` in
-  `scorecard_db/comparables.py`), and a `quote` that prints the value as a whole number with its
-  sign. One number per claim. A printed range is two claims, `value_kind` `range_low` and
-  `range_high`, sharing a `conditions.range_group`.
+- `value_raw` exactly as printed (`"-800m"`, `"£0.80bn"`, `"(0.4)"`, `"−4.2pp"`), `value`
+  normalised under a normalisation whose scale matches the printed one (`NORMALIZATIONS` in
+  `scorecard_db/comparables.py`; `percent as printed` for a figure printed with `%` or `pp`),
+  and a `quote` that prints the value as a whole number with its sign (a dash between two
+  numbers, as in "£3-3.4bn", is a range, not a sign). One number per claim. A printed range is
+  two claims, `value_kind` `range_low` and `range_high`, sharing a `conditions.range_group`; a
+  one-sided figure ("over £1 billion") is `lower_bound` or `upper_bound`, and like a `cumulative`
+  total it is set beside an estimate, never compared with one.
 - Never re-sign a value. Put its convention in `conditions.sign_convention`, starting
   `positive =` and saying one thing, in words `signs.py` reads: `positive = yield to the
   Exchequer`, `positive = cost to the Exchequer`, `positive = gain to households`,
@@ -145,8 +155,11 @@ specific to the Autumn Budget harvest (`measure_key`, `fiscal_event`) do not.
   not read `negative = ...`, a two-sided sentence, or a phrase turned around
   (`positive = yield forgone`).
 - The same identity fields as an estimate: `period`, `time_basis`, `conditions.basis`,
-  `conditions.program`. Check each producer's year label: CenTax labels tax years by their
-  later year.
+  `conditions.program`, `conditions.prices`. A producer that does not say whether its figure
+  allows for behaviour gets basis `unstated`, and one that does not say whether it is in cash or
+  today's prices gets prices `unstated`: such a claim is never the same quantity as an estimate,
+  so it is set beside one, not compared. Check each producer's year label: CenTax labels tax
+  years by their later year.
 - `attribution`: `own` when the producer computed it, `restated` when it repeats another's
   figure. Only `own` estimates are compared.
 
