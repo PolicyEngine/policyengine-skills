@@ -54,12 +54,13 @@ command as `PYTHONPATH=. uv run python -m ...`.
 
 ### For a re-harvest or a search before a push (reharvest or prepromotion)
 
-1. Append a search to `sources/analysis-{country}-{slug}/search_log.json`: `kind: {kind}`,
+1. If the analysis's results file has changed since the last search, first move the old
+   estimates to `superseded_estimates` with `superseded_on`, and pin the new ones.
+2. Then append a search to `sources/analysis-{country}-{slug}/search_log.json`: `kind: {kind}`,
    today's date (after publication and after the first search), `results_pins` from
-   `scorecard_db.comparables pins`, and one entry for every producer on
-   `data/comparables/producers.json` for {country} added on or before today.
-2. If the analysis's results file has changed since the last search, move the old estimates to
-   `superseded_estimates` with `superseded_on`, and pin the new ones.
+   `scorecard_db.comparables pins` (run after step 1, so they name the new results), and one
+   entry for every producer on `data/comparables/producers.json` for {country} added on or
+   before today.
 3. Stage only what earlier searches did not find (check `claims_staged.jsonl` and the earlier
    searches' notes first).
 
@@ -102,7 +103,7 @@ command as `PYTHONPATH=. uv run python -m ...`.
    avoid a match; label an explained miss `concept_mismatch`.
 8. Run `scorecard_db.comparables check sources/analysis-{country}-{slug}` until it passes, apart
    from unexplained gaps, and `scorecard_db.comparables report analysis-{country}-{slug} --since
-   {date}`. For every gap over the threshold, find the cause: read the analysis's code and data,
+   {date}` (it runs while gaps are unexplained, and lists every gap over the threshold). For every gap over the threshold, find the cause: read the analysis's code and data,
    the producer's method, and open issues (microcosm, policyengine-{country}, the analysis repo).
    Write an annotation that cites a basis you read. If you cannot find one:
    - prepublish: leave the gap unexplained. Do not invent a cause. CI stays red, which is
@@ -118,7 +119,7 @@ command as `PYTHONPATH=. uv run python -m ...`.
    rm -f data/scorecard.db && PYTHONPATH=. uv run python -m scorecard_db.build_db data/scorecard.db
    PYTHONPATH=. uv run python -m scorecard_db.export_populations data/scorecard.db
    for f in lanes.json populations.json comparison.json exhibits.json; do cp data/$f app/public/data/$f; done
-   PYTHONPATH=. uv run --with pytest --with hypothesis --with pypdf --with pyyaml --with numpy --with psutil --with rfc8785==0.1.4 --with jsonschema pytest tests/test_comparables.py tests/test_export_populations.py tests/test_harvest_ingest.py -q
+   PYTHONPATH=. uv run --python 3.12 --with pytest --with hypothesis --with pypdf --with pyyaml --with numpy --with psutil --with rfc8785==0.1.4 --with jsonschema pytest tests/test_comparables.py tests/test_export_populations.py tests/test_harvest_ingest.py -q
    ```
 
    Commit everything the build rewrites (`git status` clean), push, and open a draft PR titled

@@ -313,7 +313,9 @@ export async function pollStatus(jobId) {
 }
 ```
 
-## Step 5: Initialize git and deploy
+## Step 5: Initialize git, review comparables, then deploy
+
+Nothing goes public before its comparables review: create the repository private, review, then publish.
 
 ```bash
 # Initialize repo
@@ -321,9 +323,15 @@ git init
 git add -A
 git commit -m "Initial scaffold for TOOL_TITLE"
 
-# Create GitHub repo under PolicyEngine org
-gh repo create PolicyEngine/TOOL_NAME --public --source=.
+# Create the GitHub repo under the PolicyEngine org, private until the review
+gh repo create PolicyEngine/TOOL_NAME --private --source=.
 git push -u origin main
+```
+
+Run `/comparables-review` now (`policyengine-comparables-review` skill) against the results the tool reads at this commit, and merge its scorecard PR. A household calculator that publishes no fixed estimate is still searched; its record declares `calculator`. Then publish:
+
+```bash
+gh repo edit PolicyEngine/TOOL_NAME --visibility public --accept-visibility-change-consequences
 
 # Deploy to Vercel
 vercel link --scope policy-engine
@@ -386,11 +394,11 @@ Every embeddable tool should have migration guardrails plus at least install + b
 
 ## Step 7: Register in apps.json
 
-First run `/comparables-review` (`policyengine-comparables-review` skill) and merge its scorecard PR. app-v2's CI requires a `comparables` block on every new research entry (an app shown with research or tagged `policy`), and every app route must belong to one. A household calculator that publishes no fixed estimate is still searched: its scorecard record declares `calculator` instead of pinning estimates. Apps never declare `no_estimate`.
+The comparables review ran in Step 5. app-v2's CI requires a `comparables` block on every new research entry (an app shown with research or tagged `policy`), and every page the site proxies to another deployment must belong to one. Print the block with `python -m scorecard_db.comparables record analysis-<country>-<slug>` in the scorecard. Apps never declare `no_estimate`. If the registry PR is opened more than 30 days after that search, or the results have changed since, search again first.
 
 Then add the tool entry, with that block, to `website/src/data/apps.json` in `policyengine-app-v2`. Use the auto-assigned Vercel production URL (not a custom alias).
 
-If the tool needs a rewrite/proxy path rather than a direct iframe source URL, update `website/next.config.ts` in the same repo as part of the launch.
+If the tool needs a proxy path on policyengine.org rather than a direct iframe source URL, add it to `website/src/data/appZoneRoutes.ts` in the same PR, then run `bun run scripts/build-analysis-routes.ts` in `website/` and commit the regenerated `analysisRoutes.json`.
 
 ## Step 8: Verify
 

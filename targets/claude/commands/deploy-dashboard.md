@@ -47,12 +47,12 @@ Extract:
 - `dashboard.zone_path` — for multi-zone host rewrite verification
 - `data_pattern` — determines if Modal deploy is needed (`custom-modal` needs it; `precomputed`, `precomputed-csv`, and `policyengine-api` do not)
 - `tech_stack.framework` — should be `react-nextjs` (env var prefix: `NEXT_PUBLIC_*`)
-- `embedding.register_in_apps_json` — determines if apps.json update is needed
+- `embedding.register_in_apps_json` — whether the dashboard is listed with research (`displayWithResearch`); its apps.json entry is needed either way
 - `embedding.slug` — the URL slug for policyengine.org
 
 ### 2a. Pre-flight: check for existing host rewrites (informational)
 
-If this dashboard has deployed before, the host (`policyengine-app-v2/website/next.config.ts`) may already have rewrites pointing at it. Check so we know whether Step 5 needs to add them or they're already in place.
+If this dashboard has deployed before, the host may already route to it (`policyengine-app-v2/website/src/data/appZoneRoutes.ts`, which `website/next.config.ts` turns into rewrites). Check so we know whether Step 5 needs to add the route or it is already in place.
 
 ```bash
 # Clone or pull the host repo
@@ -200,10 +200,10 @@ curl -s -o /dev/null -w "%{http_code}" https://VERCEL_PRODUCTION_URL/
 
 After the Vercel deploy in Step 4, we have a production URL. Now wire the zone into `policyengine-app-v2` so it's reachable at `policyengine.org/<zone_path>`. This is a PR to `PolicyEngine/policyengine-app-v2`.
 
-Two parts, both in the same PR:
+Two parts, both required, in the same PR:
 
-1. **Host rewrites** — required for every multi-zone dashboard. These make the zone reachable at `policyengine.org/<zone_path>`.
-2. **apps.json entry** — optional, only if `embedding.register_in_apps_json: true`. This is research-listing metadata; it does NOT affect routing.
+1. **The zone route** in `website/src/data/appZoneRoutes.ts`, which makes the zone reachable at `policyengine.org/<zone_path>`.
+2. **The apps.json entry** with its `comparables` block. app-v2's tests fail any page the site proxies to another deployment that is not a research app's page (they read the evaluated rewrites, so a route added straight to `next.config.ts` is caught too), so the entry is not optional.
 
 ### 5a. Create the PR branch
 
@@ -219,35 +219,30 @@ git pull
 git checkout -b wire-DASHBOARD_NAME-zone
 ```
 
-### 5b. Add host rewrites to `website/next.config.ts`
+### 5b. Add the zone route to `website/src/data/appZoneRoutes.ts`
 
-Add these entries to `rewrites().beforeFiles` in `website/next.config.ts` (use `VERCEL_PRODUCTION_URL` captured from Step 4 — e.g. `my-dashboard-policy-engine.vercel.app`):
+Add one entry to `appZoneRoutes` (use `VERCEL_PRODUCTION_URL` captured from Step 4, e.g. `my-dashboard-policy-engine.vercel.app`). `next.config.ts` turns it into the page rewrite and the `/:path*` rewrite for deeper pages:
 
 ```ts
-// Path-mounted zone: two route rewrites preserve the basePath in the destination
-{ source: '<zone_path>',        destination: 'https://<VERCEL_PRODUCTION_URL><zone_path>' },
-{ source: '<zone_path>/:path*', destination: 'https://<VERCEL_PRODUCTION_URL><zone_path>/:path*' },
-
-// Asset rewrite (required for zones using assetPrefix: '/_zones/<dashboard.name>')
-{ source: '/_zones/<dashboard.name>/:path*', destination: 'https://<VERCEL_PRODUCTION_URL>/_zones/<dashboard.name>/:path*' },
+{
+  source: "<zone_path>",
+  destination: "https://<VERCEL_PRODUCTION_URL><zone_path>",
+},
 ```
 
-Skip the asset rewrite only if the zone does not set `assetPrefix`. For root-served zones (no `basePath`), keep the route rewrites but map destinations to the zone root instead: `<zone_path>` → `https://<VERCEL_PRODUCTION_URL>` and `<zone_path>/:path*` → `https://<VERCEL_PRODUCTION_URL>/:path*`. See the `policyengine-tools` skill for the two valid patterns: path-mounted and root-served.
+For a root-served zone (no `basePath`), map the destination to the zone root: `"https://<VERCEL_PRODUCTION_URL>"`. If the zone sets `assetPrefix: '/_zones/<dashboard.name>'`, also add its asset rewrite (`/_zones/<dashboard.name>/:path*` to the same path on the deployment) where the file's other asset routes are. See the `policyengine-tools` skill for the two valid patterns: path-mounted and root-served.
 
-### 5c. Add apps.json entry
+### 5c. Add the apps.json entry
 
-This is research-listing metadata, and app-v2 requires it for every new zone route: its tests fail a route in `appZoneRoutes.ts` (or a rewrite in `next.config.ts`) that is not a research entry's. With `embedding.register_in_apps_json: false`, keep the entry but set `"displayWithResearch": false`; the `policy` tag still makes it a research entry, so it still needs the block.
-
-Add the block that `python -m scorecard_db.comparables record analysis-<country>-<slug>` printed in the comparables review before Step 4.
-
-Add to `app/src/data/apps/apps.json`:
+Add to `app/src/data/apps/apps.json`, with the block that `python -m scorecard_db.comparables record analysis-<country>-<slug>` printed in the comparables review before Step 4:
 
 ```json
 {
+  "type": "iframe",
   "slug": "SLUG",
   "title": "TITLE",
   "description": "DESCRIPTION",
-  "path": "/COUNTRY/SLUG",
+  "source": "https://<VERCEL_PRODUCTION_URL><zone_path>",
   "tags": ["COUNTRY", "policy", "interactives"],
   "countryId": "COUNTRY",
   "displayWithResearch": true,
@@ -258,7 +253,7 @@ Add to `app/src/data/apps/apps.json`:
 }
 ```
 
-The `path` field is the multi-zone route on `policyengine.org` (the host rewrites from 5b make it reachable). Do not use `"type": "iframe"` — that's the legacy embedding model and does not apply to multi-zone deployments.
+`source` is the deployment the zone route proxies to, as the existing zone dashboards record it. With `embedding.register_in_apps_json: false`, keep the entry but set `"displayWithResearch": false`: it leaves the research listing, but the `policy` tag still makes it a research entry, so it still needs the block. Then run `bun run scripts/build-analysis-routes.ts` in `website/` and commit the regenerated `website/src/data/analysisRoutes.json` (a test fails while it is stale).
 
 Use `AskUserQuestion` to gather required metadata:
 
@@ -283,17 +278,20 @@ options:
 ### 5d. Commit and open the PR
 
 ```bash
-git add website/next.config.ts app/src/data/apps/apps.json  # second path only if 5c ran
+git add website/src/data/appZoneRoutes.ts app/src/data/apps/apps.json website/src/data/analysisRoutes.json
 git commit -m "Wire DASHBOARD_NAME zone"
 git push -u origin wire-DASHBOARD_NAME-zone
 
 gh pr create --repo PolicyEngine/policyengine-app-v2 \
   --title "Wire DASHBOARD_NAME zone" \
-  --body "Adds host rewrites (and apps.json entry, if applicable) so DASHBOARD_NAME is reachable at policyengine.org/COUNTRY/SLUG.
+  --body "Adds the zone route and apps.json entry so DASHBOARD_NAME is reachable at policyengine.org/COUNTRY/SLUG.
 
 Zone URL: VERCEL_PRODUCTION_URL
-Public path: /COUNTRY/SLUG"
+Public path: /COUNTRY/SLUG
+Comparables: the scorecard record named in the entry's block"
 ```
+
+The app-v2 PR's comparables gate checks, on the day it runs, that the block's search is no more than 30 days old, compared the results the dashboard reads now, and has no gap pending. If the PR waits longer than that, run a new search and update the block.
 
 ## Step 6: Smoke Test
 
