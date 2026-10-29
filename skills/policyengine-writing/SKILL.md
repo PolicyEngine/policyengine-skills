@@ -7,7 +7,7 @@ description: |
   requires: no policy prescriptions dressed as findings, no speculative claims, no one-sided
   framing, and explained counterintuitive results.
   Triggers: "write a blog post", "PolicyEngine blog", "policy analysis writeup", "PR description",
-  "research report", "documentation", "social post", "changelog prose", "sounds like advocacy",
+  "research report", "documentation", "social post", "newsletter", "video description", "changelog prose", "sounds like advocacy",
   "is this neutral", "sentence case", "writing style", "make it quantitative".
 metadata:
   category: process
@@ -50,7 +50,13 @@ These rules apply to every register: blog posts, docs, READMEs, PR descriptions,
 7. **Name it or cut it.** A sentence that alludes to something the reader cannot see ("several programs interact here") carries nothing. Name the programs or delete the sentence.
 8. **One thought per sentence, varied rhythm.** Split any sentence a reader would read twice. Join clauses that share one thought. Vary sentence length within the paragraph; do not turn connected prose into a string of short declarations.
 9. **Finished work introduces itself fresh.** A published post, paper, or doc describes what the analysis shows now. It does not narrate drafts, review rounds, or fixed bugs. Keep substantive assumptions, limitations, sensitivity ranges, and uncertainty beside the claims they qualify. Preserve forecast-registration dates and evidence wherever readers need them to assess a forecast; keep full registration and review trails in supporting records. Corrections, changelogs, PR descriptions, and release notes take history as their subject: state what changed and the new numbers, and never hide a correction to a published claim.
-10. **One flagged sentence means a full pass.** When a reviewer strikes one instance of any of these, reread the whole document for the same pattern before replying.
+10. **Say what the reader gets, not how we made it.** Public copy (posts, newsletters, video descriptions, social posts, PDFs, emails to outside readers) describes the policy, the result, and what the reader can do. Cut anything that only conveys our internal decision-making:
+    - production and format choices: "silent", "captioned", "no voiceover", "automated", "phone view", "recorded from production";
+    - process: "two of us checked", "independent arithmetic checks", "we reproduced it in a separate run", "files that match the checksums", "we added it as a structural reform";
+    - work in progress: "follows with a data update", "we hold our estimate back while…", "we plan to update these results later this week", "we are rebuilding the dashboard". State the current limitation in the present tense instead: "Our estimates exclude the savings income tax rise."
+    - our reasons for choosing one option over another, unless the reason changes how a number reads.
+    Keep method that changes how a reader reads a number: assumptions ("assuming no behavioural responses"), data sources and years, what a count counts, scope limits, comparisons with official figures and why they differ, and why we withdrew a published figure. Describe media by content and length ("a two-minute tour of the dashboard"), never by the traits it lacks. Test each clause: if it tells the reader nothing about the policy, the result, or what they can do, cut it.
+11. **One flagged sentence means a full pass.** When a reviewer strikes one instance of any of these, reread the whole document for the same pattern before replying.
 
 ## Active Voice
 
