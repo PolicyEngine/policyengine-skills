@@ -686,7 +686,8 @@ If either fails, fix before proceeding.
 - [ ] If custom-modal: worker image uses `.add_local_file()` for `simulation.py` (not auto-mounted since it's imported inside function bodies)
 - [ ] If custom-modal: gateway is lightweight (no policyengine in its Modal image)
 - [ ] If custom-modal: gateway image explicitly includes `pydantic`
-- [ ] If custom-modal: workers have `cpu=8.0`, `memory=32768`, `timeout >= 3600`
+- [ ] If custom-modal: workers have `timeout >= 3600` and `cpu`/`memory` from a measured run (start
+  at `cpu=8.0`, `memory=32768` for national population runs; Modal bills the higher of request and use)
 - [ ] If custom-modal: frontend uses polling (`refetchInterval`), not synchronous await
 - [ ] If custom-modal: `/status` endpoint returns `{status, result, message}`
 - [ ] Build passes on the scaffold

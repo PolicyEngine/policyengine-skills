@@ -60,6 +60,7 @@ lints the whole tree against the failure modes that rotted the previous catalog
 |---|---|
 | **policyengine-writing** | Editorial law: neutrality, quantitative language, sentence case |
 | **policyengine-standards** | uv/bun, ruff, towncrier changelogs, CI gates, PR discipline |
+| **policyengine-cloud-costs** | What may stay warm on Cloud Run, App Engine and Modal; the org's repeated idle-deploy incidents; a deploy-config checker and an idle-spend audit |
 | **policyengine-research-lookup** | Finding existing PolicyEngine research and proof points |
 | **policyengine-user-guide** | Using the policyengine.org web app |
 | **policyengine-content** | Social image/copy generation for posts |
