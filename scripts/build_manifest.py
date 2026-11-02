@@ -196,7 +196,6 @@ REPO_KIND_OVERRIDES: dict[str, str] = {
     "policyengine-skills": "platform",
     "policyengine-bundles": "platform",
     "policyengine.dev": "platform",
-    "policyengine-data": "platform",
     "policyengine-developer-portal": "platform",
 
     # Data pipelines
@@ -217,7 +216,6 @@ REPO_KIND_OVERRIDES: dict[str, str] = {
     "microunit": "library",
     "mortality": "library",
     "rdbl": "library",
-    "reweight": "library",
     "l0": "library",
     "L0": "library",
     "linecheck": "library",
