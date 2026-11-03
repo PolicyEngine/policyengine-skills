@@ -22,6 +22,7 @@ Generates complete project structure from an approved `plan.yaml` into the curre
 - **policyengine-tools** - Mandatory framework and styling requirements (Next.js, Tailwind v4, ui-kit), scaffolding patterns, embedding boilerplate, Vercel configuration
 - **policyengine-design** - Design tokens, CSS setup
 - **policyengine-standards** - CI/CD, Git workflow
+- **policyengine-cloud-costs** - Cost checks in CI and the README's running costs (custom backend only)
 
 ## First: Load Required Skills
 
@@ -30,6 +31,7 @@ Generates complete project structure from an approved `plan.yaml` into the curre
 1. `Skill: policyengine-tools`
 2. `Skill: policyengine-design`
 3. `Skill: policyengine-standards`
+4. `Skill: policyengine-cloud-costs` (if custom backend)
 
 **CRITICAL: The `policyengine-tools` skill's "Required stack" defines the project structure, framework, and styling approach. Follow its specifications for project scaffolding. Where this document conflicts with the spec, THE SPEC WINS.**
 
@@ -162,6 +164,10 @@ make test
 ```bash
 make build
 ```
+
+## Cloud costs (custom backend only)
+- Load the policyengine-cloud-costs skill before changing `backend/` decorators, deploy commands or workflows.
+- Defaults: `min_containers=0`, `max_containers` set, CPU and memory from a measured run. Anything else gets a `# cost-ok: <rule> <reason>; until <date>` comment and a row in the README's "Running costs".
 
 ## Design standards
 - Uses Tailwind CSS v4 with @policyengine/ui-kit/theme.css (single import for all tokens)
@@ -441,6 +447,20 @@ jobs:
       - run: bun run build
 ```
 
+For the custom backend pattern, add this step after checkout (policyengine-cloud-costs skill):
+
+```yaml
+      - name: Check deploy settings for cost
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-cloud-costs/scripts/check_deploy_config.py -o /tmp/check_deploy_config.py
+          python3 /tmp/check_deploy_config.py .
+```
+
+Also for the custom backend pattern:
+- add the "Running costs" section from the policyengine-cloud-costs skill's `templates/running-costs.md` to `README.md`, filled from the plan's `cost_plan`;
+- if the plan uses PR preview apps, add `templates/stop-preview-app.yml` as `.github/workflows/stop-preview-app.yml`;
+- make sure `.gitignore` lists `.env`.
+
 #### Makefile
 
 Generate a `Makefile` that provides standard development targets. The Makefile content depends on the `data_pattern` from `plan.yaml`.
@@ -686,8 +706,8 @@ If either fails, fix before proceeding.
 - [ ] If custom-modal: worker image uses `.add_local_file()` for `simulation.py` (not auto-mounted since it's imported inside function bodies)
 - [ ] If custom-modal: gateway is lightweight (no policyengine in its Modal image)
 - [ ] If custom-modal: gateway image explicitly includes `pydantic`
-- [ ] If custom-modal: workers have `timeout >= 3600` and `cpu`/`memory` from a measured run (start
-  at `cpu=8.0`, `memory=32768` for national population runs; Modal bills the higher of request and use)
+- [ ] If custom-modal: workers use the plan's `timeout`, `cpu`, `memory` and `max_containers`, keep `min_containers=0`, and population workers keep their `# cost-ok: RS1 TODO` declarations until a measured run replaces them
+- [ ] If custom-modal: CI runs the cost check, and `README.md` has the "Running costs" section filled from the plan's `cost_plan`
 - [ ] If custom-modal: frontend uses polling (`refetchInterval`), not synchronous await
 - [ ] If custom-modal: `/status` endpoint returns `{status, result, message}`
 - [ ] Build passes on the scaffold

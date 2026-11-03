@@ -240,7 +240,9 @@ image = (
     .add_local_file(str(_BACKEND_DIR / "simulation.py"), remote_path="/root/simulation.py")
 )
 
-@app.function(image=image, cpu=8.0, memory=32768, timeout=3600)
+# Household-scale default: a US household calculation peaked at 1.4 GB. For a population
+# run, size from a measured run and declare it (policyengine-cloud-costs skill, rule RS1).
+@app.function(image=image, cpu=1.0, memory=2048, timeout=600, max_containers=10, min_containers=0)
 def compute(params: dict) -> dict:
     from simulation import run_compute
     return run_compute(params)
@@ -330,7 +332,8 @@ vercel link --scope policy-engine
 vercel --prod --yes
 ```
 
-If using Pattern C (Modal gateway + worker):
+If using Pattern C (Modal gateway + worker), first add the "Running costs" section from the
+policyengine-cloud-costs skill's `templates/running-costs.md` to the README, then:
 ```bash
 unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET
 # Deploy worker first (includes image snapshot — first build takes ~5 min)
@@ -340,6 +343,13 @@ modal deploy backend/modal_app.py
 vercel env add NEXT_PUBLIC_API_URL production
 # Enter: https://policyengine--TOOL_NAME-fastapi-app.modal.run
 vercel --prod --force --yes --scope policy-engine
+```
+
+After the scaledown window, with no requests in flight, check that nothing stays running beyond
+what the README declares (`SKILL_DIR` is the policyengine-cloud-costs skill's folder):
+```bash
+python3 SKILL_DIR/scripts/check_deployed_app.py --modal-app TOOL_NAME-workers --declared-warm 0
+python3 SKILL_DIR/scripts/check_deployed_app.py --modal-app TOOL_NAME --declared-warm 0
 ```
 
 ## Step 6: Add pull-request CI
@@ -364,6 +374,10 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/scripts/audit_next_migration.py -o /tmp/audit_next_migration.py
           python3 /tmp/audit_next_migration.py --root .
+      - name: Check deploy settings for cost
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-cloud-costs/scripts/check_deploy_config.py -o /tmp/check_deploy_config.py
+          python3 /tmp/check_deploy_config.py .
       - run: bun install --frozen-lockfile
       - name: Run lint
         run: |
@@ -382,7 +396,7 @@ jobs:
       - run: bun run build
 ```
 
-Every embeddable tool should have migration guardrails plus at least install + build on pull requests. If the repo has `lint` or `test` scripts, wire them into CI immediately rather than leaving the repo deploy-only.
+Every embeddable tool should have migration guardrails and the cost check, plus at least install + build on pull requests. If the repo has `lint` or `test` scripts, wire them into CI immediately rather than leaving the repo deploy-only.
 
 ## Step 7: Register in apps.json
 
@@ -405,6 +419,9 @@ bun run build
 # Run migration guardrails locally
 curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/scripts/audit_next_migration.py | python3 - --root .
 
+# Check deploy settings for cost
+curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-cloud-costs/scripts/check_deploy_config.py | python3 - .
+
 # Run lint/tests when the repo defines them
 if jq -e '.scripts.lint' package.json >/dev/null; then bun run lint; fi
 if jq -e '.scripts.test' package.json >/dev/null; then bun run test; fi
@@ -415,3 +432,4 @@ if jq -e '.scripts.test' package.json >/dev/null; then bun run test; fi
 See these skills for detailed guidance:
 - `policyengine-tools` — Embedding, hash sync, country detection, Vercel deployment patterns
 - `policyengine-design` — Token reference
+- `policyengine-cloud-costs` — Backend defaults, declared exceptions, the README's running costs, and the cost checks

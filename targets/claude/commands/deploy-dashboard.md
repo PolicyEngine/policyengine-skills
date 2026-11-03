@@ -11,6 +11,7 @@ Deploy a completed PolicyEngine dashboard to production. Run this AFTER merging 
 ## Skills Used
 
 - **policyengine-tools** — Vercel frontend deployment (all dashboards) and Modal backend deployment (only if `custom-modal` pattern)
+- **policyengine-cloud-costs** — What may stay running after the deploy, and the post-deploy check (only if `custom-modal` pattern)
 
 ## Step 1: Verify Prerequisites
 
@@ -156,6 +157,15 @@ curl -s -X POST https://policyengine--DASHBOARD_NAME-calculate.modal.run \
 ```
 
 **If deploy fails:** Report error and STOP. See the `policyengine-tools` skill's Modal deployment guidance.
+
+Then, after the scaledown window with no requests in flight, check what stays running against the plan's `cost_plan` (0 unless `declared_exceptions` lists a warm setting). `SKILL_DIR` is the policyengine-cloud-costs skill's folder:
+
+```bash
+python3 SKILL_DIR/scripts/check_deployed_app.py --modal-app DASHBOARD_NAME --modal-env SELECTED_ENV --declared-warm 0
+python3 SKILL_DIR/scripts/check_deployed_app.py --modal-app DASHBOARD_NAME-workers --modal-env SELECTED_ENV --declared-warm 0
+```
+
+**If it reports a problem:** report it and STOP until the setting is fixed or declared.
 
 ### 3e. Set API URL in Vercel
 
@@ -316,6 +326,7 @@ Present deployment summary to the user:
 > [If custom backend:]
 > - **API endpoint:** https://policyengine--DASHBOARD_NAME-calculate.modal.run
 > - **Modal environment:** SELECTED_ENV
+> - **Running while idle:** nothing, or each declared exception with its cost (from the README's "Running costs")
 > - **Host-wiring PR:** PR_URL (adds rewrites, and apps.json entry if applicable)
 >
 > ### Verify

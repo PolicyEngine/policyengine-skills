@@ -1,0 +1,27 @@
+# Copy to .github/workflows/stop-preview-app.yml when PRs deploy their own Modal app.
+# Replace TOOL_NAME-pr-<number> with the name the preview deploy uses.
+# Needs the repository's GitHub Actions secrets MODAL_TOKEN_ID and MODAL_TOKEN_SECRET.
+name: Stop preview app
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  stop-preview:
+    runs-on: ubuntu-latest
+    env:
+      APP_NAME: TOOL_NAME-pr-${{ github.event.pull_request.number }}
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+    steps:
+      - run: pip install modal
+      - name: Stop the preview app if this PR deployed one
+        run: |
+          deployed=$(modal app list --json | python3 -c "import json, os, sys; print(sum(app['description'] == os.environ['APP_NAME'] and app['state'] == 'deployed' for app in json.load(sys.stdin)))")
+          if [ "$deployed" = "0" ]; then
+            echo "No deployed app named $APP_NAME"
+            exit 0
+          fi
+          # -y: without it the command waits for a confirmation and aborts in CI.
+          modal app stop -y "$APP_NAME"

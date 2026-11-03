@@ -154,9 +154,12 @@ image, not at import time):
 | `backend/app.py` | only `modal` | worker functions |
 | `backend/modal_app.py` | `modal`, `fastapi`, `pydantic` | lightweight gateway |
 
-Worker functions get high CPU/memory but **must** scale to zero — never set `keep_warm` or
-`min_containers`; the image snapshot (`.run_function(snapshot_models)`) makes cold starts ~2 s.
-For a time-limited warm window and the org's cost rules, see the policyengine-cloud-costs skill.
+Worker functions scale to zero by default (`min_containers=0`, no `keep_warm`), set
+`max_containers`, and size `cpu`/`memory` from a measured run; the image snapshot
+(`.run_function(snapshot_models)`) makes cold starts ~2 s. A US household calculation peaked at
+1.4 GB (policyengine-us 2.18.0), so household workers start at `cpu=1.0, memory=2048`. A warm
+window, a minimum or a large worker is fine when declared with a `# cost-ok:` comment: see the
+policyengine-cloud-costs skill for the defaults, the README cost plan and the checker.
 
 ```python
 # backend/app.py — workers
@@ -168,8 +171,16 @@ image = (modal.Image.debian_slim(python_version="3.11")
          .run_function(snapshot_models)
          .add_local_file("backend/simulation.py", remote_path="/root/simulation.py"))
 
-@app.function(image=image, cpu=8.0, memory=32768, timeout=3600)   # no keep_warm / min_containers;
-# size cpu/memory from a measured run: Modal bills the higher of request and use
+# Population run: replace the TODO declarations with the measured peak before merging
+# (the cost checker warns until then). Modal bills the higher of request and use.
+@app.function(
+    image=image,
+    cpu=8.0,  # cost-ok: RS1 TODO cores the measured run used
+    memory=32768,  # cost-ok: RS1 TODO measured peak memory plus a fifth
+    timeout=3600,
+    max_containers=4,
+    min_containers=0,
+)
 def compute_statewide(params: dict) -> dict:
     from simulation import run_statewide
     return run_statewide(params)
