@@ -174,6 +174,17 @@ Run or Modal for a new tool.
   a workflow uses `google-github-actions/auth` with `credentials_json`: that step writes the
   key into the workspace, and a later "commit everything" step publishes it. Workload
   identity federation avoids the key file.
+- **Check credentials before anything is deployed.** A GitHub secret or variable that isn't
+  set reaches the job as an empty string, so the job fails later with a less clear error.
+  Copy the steps in `templates/check-credentials.yml` to the start of each deploy job. They:
+  - name any empty `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, `GCP_WORKLOAD_IDENTITY_PROVIDER`
+    or `GCP_DEPLOY_SERVICE_ACCOUNT`;
+  - check that Modal accepts the token (`modal token info`) and that it is for the
+    `policyengine` workspace;
+  - check that the deploy account can list Cloud Run services in the project.
+
+  Pass `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` in the job's `env`, so the check sees what
+  the deploy steps get.
 - **Secret Manager bills every stored version.** Add one only when the value changed:
   compare with `gcloud secrets versions access latest` first.
 
@@ -211,6 +222,7 @@ skipped.
 | CL1 | error | A delete, stop or untag command whose errors are hidden |
 | SE1 | error | A secret-like name in `--set-env-vars` |
 | SE3 | error | `credentials_json` with a commit-everything step and no `gha-creds` in `.gitignore` |
+| SE4 | error | A workflow job that runs `modal` without `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`, calls Google Cloud with no auth step before it, uses workload identity without `id-token: write`, or calls a local reusable workflow that reads secrets without passing them |
 | RS1 | warning | Modal or Cloud Run with 4 or more cores, or 16 GiB or more |
 | MO2 | warning | A Modal function or class without `max_containers` (scheduled functions excepted) |
 | CR2 | warning | `gcloud run deploy` with no maximum |
@@ -218,7 +230,9 @@ skipped.
 | CI1 | warning | Modal work started on push or pull request with `cancel-in-progress` |
 
 `--strict` also fails on warnings. A value set through a variable (`min_containers=MINIMUM`)
-is left to the reviewer.
+is left to the reviewer. SE4 reads the workflow files only: it cannot tell whether a secret
+exists in GitHub or still works. The steps in `templates/check-credentials.yml` check that
+when the job runs.
 
 On the commits before each incident's fix it reports:
 

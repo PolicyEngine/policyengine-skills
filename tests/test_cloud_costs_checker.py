@@ -190,3 +190,91 @@ def test_todo_declaration_keeps_the_rule_at_its_own_severity():
     assert [(finding.rule, finding.severity) for finding in findings] == [("RS1", "warning")]
     assert "not accepted" in findings[0].message
     assert declarations == []
+
+
+MODAL_DEPLOY_WORKFLOW = """name: Deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install modal
+      - name: Deploy
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: modal deploy backend/app.py
+"""
+
+
+def test_modal_job_with_tokens_passes_and_without_fails():
+    path = ".github/workflows/deploy.yml"
+    assert rules_found(path, MODAL_DEPLOY_WORKFLOW) == []
+    no_tokens = "\n".join(line for line in MODAL_DEPLOY_WORKFLOW.splitlines() if "MODAL_TOKEN" not in line)
+    assert rules_found(path, no_tokens) == [("SE4", "error")]
+    commented = no_tokens.replace("run: modal deploy backend/app.py", "run: make deploy  # runs modal deploy")
+    assert rules_found(path, commented) == []
+
+
+def test_modal_tokens_in_workflow_env_or_token_set_count():
+    no_tokens = "\n".join(line for line in MODAL_DEPLOY_WORKFLOW.splitlines() if "MODAL_TOKEN" not in line)
+    workflow_env = no_tokens.replace(
+        "jobs:", "env:\n  MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}\n  MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}\njobs:")
+    assert rules_found(".github/workflows/deploy.yml", workflow_env) == []
+    token_set = no_tokens.replace(
+        "      - name: Deploy\n",
+        "      - run: modal token set --token-id ${{ secrets.ID }} --token-secret ${{ secrets.SECRET }}\n      - name: Deploy\n")
+    assert rules_found(".github/workflows/deploy.yml", token_set) == []
+
+
+GCP_DEPLOY_WORKFLOW = """name: Deploy
+on:
+  push:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud run services list --project p --region r --limit 1
+"""
+
+
+def test_gcloud_after_auth_passes_before_or_without_fails():
+    path = ".github/workflows/deploy.yml"
+    assert rules_found(path, GCP_DEPLOY_WORKFLOW) == []
+    before_auth = GCP_DEPLOY_WORKFLOW.replace(
+        "      - uses: actions/checkout@v4\n", "      - uses: actions/checkout@v4\n      - run: gsutil ls gs://bucket\n")
+    assert rules_found(path, before_auth) == [("SE4", "error")]
+    without_auth = GCP_DEPLOY_WORKFLOW.replace("google-github-actions/auth@v2", "some/other-action@v1").replace(
+        "          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}\n", "")
+    assert rules_found(path, without_auth) == [("SE4", "error")]
+
+
+def test_workload_identity_needs_id_token_permission():
+    no_permission = GCP_DEPLOY_WORKFLOW.replace("  id-token: write\n", "")
+    assert rules_found(".github/workflows/deploy.yml", no_permission) == [("SE4", "error")]
+    job_permission = no_permission.replace(
+        "    runs-on: ubuntu-latest\n", "    runs-on: ubuntu-latest\n    permissions:\n      id-token: write\n")
+    assert rules_found(".github/workflows/deploy.yml", job_permission) == []
+
+
+def test_reusable_workflow_caller_must_pass_secrets():
+    called = MODAL_DEPLOY_WORKFLOW.replace("on:\n  push:\n    branches: [main]", "on:\n  workflow_call:")
+    workflows = {".github/workflows/deploy-modal.yml": called}
+    caller = "on:\n  push:\njobs:\n  deploy:\n    uses: ./.github/workflows/deploy-modal.yml\n"
+    findings, _ = MODULE.check_file(Path(".github/workflows/release.yml"), caller, TODAY, workflows=workflows)
+    assert [(finding.rule, finding.line) for finding in findings] == [("SE4", 5)]
+    inherit = caller + "    secrets: inherit\n"
+    findings, _ = MODULE.check_file(Path(".github/workflows/release.yml"), inherit, TODAY, workflows=workflows)
+    assert findings == []

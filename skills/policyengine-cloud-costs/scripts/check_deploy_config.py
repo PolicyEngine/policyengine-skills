@@ -29,7 +29,15 @@ from pathlib import Path
 SCANNED_SUFFIXES = {".py", ".sh", ".yml", ".yaml", ".toml", ".json", ".tf", ".bash", ""}
 SKIPPED_DIRECTORIES = {".git", "node_modules", ".venv", "venv", "dist", "build", ".next", "__pycache__"}
 SECRET_NAME = r"[A-Z0-9_]*(?:TOKEN|SECRET|PASSWORD|PASSWD|API_KEY|PRIVATE_KEY|WEBHOOK)[A-Z0-9_]*"
-RULES = {"CR1", "CR2", "CR3", "MO1", "MO2", "RS1", "CL1", "SE1", "SE2", "SE3", "CI1"}
+RULES = {"CR1", "CR2", "CR3", "MO1", "MO2", "RS1", "CL1", "SE1", "SE2", "SE3", "SE4", "CI1"}
+# Commands and actions that need credentials in a workflow job (SE4).
+MODAL_CLI = re.compile(r"(?<![\w./-])modal\s+(deploy|run|serve|app|container|volume|secret|shell|launch|dict|queue"
+                       r"|environment|nfs|token\s+info)\b")
+GCP_CLI = re.compile(r"(?<![\w./-])(gcloud\s+(?!(config|components|info|version|auth|help)\b)[a-z]|gsutil\s+[a-z]"
+                     r"|bq\s+[a-z])|uses:\s*google-github-actions/(deploy-cloudrun|deploy-cloud-functions"
+                     r"|deploy-appengine|get-secretmanager-secrets|upload-cloud-storage)@")
+GCP_AUTH = re.compile(r"uses:\s*google-github-actions/auth@|gcloud\s+auth\s+(activate-service-account|login\s+--cred-file)"
+                      r"|CLOUDSDK_AUTH_ACCESS_TOKEN|GOOGLE_APPLICATION_CREDENTIALS|service_account_key\s*:")
 # Reservations at or above these need a measured reason (RS1).
 LARGE_CPU = 4
 LARGE_MEMORY_MIB = 16 * 1024
@@ -118,6 +126,40 @@ def first_line(lines: list[str], pattern: str) -> int | None:
     return None
 
 
+def indent_of(line: str) -> int:
+    return len(line) - len(line.lstrip())
+
+
+def workflow_jobs(lines: list[str]) -> list[tuple[str, int, int]]:
+    """Return (job ID, first line index, end index) for each job under a workflow's `jobs:`."""
+    start = next((index for index, line in enumerate(lines) if re.match(r"jobs:\s*(#.*)?$", line)), None)
+    if start is None:
+        return []
+    body = [index for index in range(start + 1, len(lines)) if lines[index].strip() and not is_comment(lines[index])]
+    if not body:
+        return []
+    job_indent = indent_of(lines[body[0]])
+    end_of_jobs = next((index for index in body if indent_of(lines[index]) < job_indent), len(lines))
+    headers = [index for index in body if index < end_of_jobs and indent_of(lines[index]) == job_indent
+               and re.match(r"\s*[\w-]+:\s*(#.*)?$", lines[index])]
+    return [(lines[header].strip().split(":")[0], header,
+             headers[position + 1] if position + 1 < len(headers) else end_of_jobs)
+            for position, header in enumerate(headers)]
+
+
+def top_level_block(lines: list[str], key: str) -> str:
+    """Return the text of a workflow's top-level `key:` block, such as env or permissions."""
+    for index, line in enumerate(lines):
+        if re.match(rf"{key}:", line):
+            block = [line]
+            for following in lines[index + 1:]:
+                if following.strip() and indent_of(following) == 0:
+                    break
+                block.append(following)
+            return "\n".join(block)
+    return ""
+
+
 def mebibytes(number: str, unit: str) -> float:
     factors = {"": 1, "Mi": 1, "M": 1e6 / 1024**2, "Gi": 1024, "G": 1e9 / 1024**2, "Ti": 1024**2}
     return float(number) * factors.get(unit, 1)
@@ -140,7 +182,8 @@ def modal_decorators(lines: list[str]) -> list[tuple[int, str]]:
     return decorators
 
 
-def check_file(path: Path, text: str, today: date | None = None, ignores_gha_creds: bool = False) -> tuple[list[Finding], list[Declaration]]:
+def check_file(path: Path, text: str, today: date | None = None, ignores_gha_creds: bool = False,
+               workflows: dict[str, str] | None = None) -> tuple[list[Finding], list[Declaration]]:
     today = today or date.today()
     findings: list[Finding] = []
     declarations: list[Declaration] = []
@@ -274,6 +317,41 @@ def check_file(path: Path, text: str, today: date | None = None, ignores_gha_cre
                 "and this workflow commits everything. Add gha-creds-*.json to .gitignore, or use "
                 "workload identity federation.")
 
+        # SE4: a job that runs Modal or Google Cloud without credentials wired into it. A
+        # missing GitHub secret becomes an empty string, so the job fails later and less clearly.
+        workflow_env = top_level_block(lines, "env")
+        workflow_permissions = top_level_block(lines, "permissions")
+        for job, job_start, job_end in workflow_jobs(lines):
+            job_text = "\n".join(lines[job_start:job_end])
+            code = [(index, re.sub(r"\s#.*$", "", lines[index])) for index in range(job_start, job_end)
+                    if not is_comment(lines[index])]
+            modal_use = next((index for index, line in code if MODAL_CLI.search(line)), None)
+            modal_wired = all(name in job_text or name in workflow_env for name in ("MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET")) or (
+                re.search(r"modal\s+token\s+set", job_text) and "--token-id" in job_text and "--token-secret" in job_text)
+            if modal_use is not None and not modal_wired:
+                add("SE4", "error", modal_use,
+                    f"job {job} runs modal without MODAL_TOKEN_ID and MODAL_TOKEN_SECRET: pass both from "
+                    "secrets in the job's or step's env, or modal fails with 'Token missing'.")
+            gcp_use = next((index for index, line in code if GCP_CLI.search(line)), None)
+            gcp_auth = next((index for index, line in code if GCP_AUTH.search(line)), None)
+            if gcp_use is not None and not GCP_AUTH.search(workflow_env) and (gcp_auth is None or gcp_auth > gcp_use):
+                add("SE4", "error", gcp_use,
+                    f"job {job} calls Google Cloud with no google-github-actions/auth step before it, so "
+                    "it has no credentials.")
+            workload_identity = next((index for index, line in code if "workload_identity_provider" in line), None)
+            grants_id_token = re.search(r"id-token:\s*write|permissions:\s*write-all", job_text + "\n" + workflow_permissions)
+            if workload_identity is not None and not grants_id_token:
+                add("SE4", "error", workload_identity,
+                    f"job {job} uses workload identity federation without `permissions: id-token: write`, "
+                    "so the auth step cannot get a token.")
+            called = re.search(r"^[ \t]+uses:[ \t]*\./(\.github/workflows/[^\s#@]+)", job_text, re.M)
+            called_text = (workflows or {}).get(called.group(1)) if called else None
+            if called_text and re.search(r"secrets\.(?!GITHUB_TOKEN\b)\w+", called_text) and not re.search(
+                    r"^[ \t]+secrets:", job_text, re.M):
+                add("SE4", "error", job_start + job_text[:called.start()].count("\n"),
+                    f"job {job} calls {called.group(1)}, which reads secrets, without `secrets: inherit` "
+                    "or a `secrets:` block, so the called workflow gets them empty.")
+
     # CR2: no maximum instance count in a Cloud Run deploy (the default allows 100).
     if re.search(r"gcloud\s+run\s+deploy\b", text) and not re.search(r"--max-instances|--max[= ]", text):
         index = first_line(lines, r"gcloud\s+run\s+deploy\b") or 0
@@ -293,6 +371,9 @@ def check_file(path: Path, text: str, today: date | None = None, ignores_gha_cre
 def scan(root: Path, today: date | None = None) -> tuple[list[Finding], list[Declaration]]:
     findings: list[Finding] = []
     declarations: list[Declaration] = []
+    workflows = {}
+    for workflow in sorted((root / ".github" / "workflows").glob("*.y*ml")):
+        workflows[workflow.relative_to(root).as_posix()] = workflow.read_text(encoding="utf-8", errors="replace")
     gitignore = root / ".gitignore"
     ignores_gha_creds = gitignore.is_file() and "gha-creds" in gitignore.read_text(encoding="utf-8", errors="replace")
     for path in sorted(root.rglob("*")):
@@ -308,7 +389,7 @@ def scan(root: Path, today: date | None = None) -> tuple[list[Finding], list[Dec
             continue
         if path.resolve() == Path(__file__).resolve() or is_test_file(path.relative_to(root)):
             continue
-        file_findings, file_declarations = check_file(path.relative_to(root), text, today, ignores_gha_creds)
+        file_findings, file_declarations = check_file(path.relative_to(root), text, today, ignores_gha_creds, workflows)
         findings.extend(file_findings)
         declarations.extend(file_declarations)
     return findings, declarations
