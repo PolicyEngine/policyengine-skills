@@ -345,13 +345,6 @@ vercel env add NEXT_PUBLIC_API_URL production
 vercel --prod --force --yes --scope policy-engine
 ```
 
-After the scaledown window, with no requests in flight, check that nothing stays running beyond
-what the README declares (`SKILL_DIR` is the policyengine-cloud-costs skill's folder):
-```bash
-python3 SKILL_DIR/scripts/check_deployed_app.py --modal-app TOOL_NAME-workers --declared-warm 0
-python3 SKILL_DIR/scripts/check_deployed_app.py --modal-app TOOL_NAME --declared-warm 0
-```
-
 ## Step 6: Add pull-request CI
 
 Create `.github/workflows/ci.yml` so every new tool gets build validation before deploy:

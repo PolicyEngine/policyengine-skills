@@ -8,8 +8,8 @@ description: |
   Sets the defaults (nothing running while idle, a set maximum, CPU and memory from a
   measured run, secrets out of the repo, an end for every copy) and shows how to declare a
   deliberate exception, such as warm containers, minimum instances or large workers. Has a
-  README cost plan, copyable workflows, a pre-merge config checker and a post-deploy check
-  for one app, plus the incidents behind each rule. Triggers: "min_containers",
+  README cost plan, copyable workflows and a pre-merge config checker, plus the incidents
+  behind each rule. Triggers: "min_containers",
   "max_containers", "min instances", "--min-instances", "keep warm", "cold start", "scale
   to zero", "memory=", "modal deploy", "gcloud run deploy", "cloudbuild", "preview app",
   "launch day", "retire", "what will this cost".
@@ -92,8 +92,7 @@ A declaration:
 
 A declaration counts only when it gives a reason (not one starting `TODO`) and its date has
 not passed. Otherwise the rule reports as usual, with a note saying why. The checker prints
-every accepted declaration, so reviewers see each one. After deploying, `check_deployed_app.py` takes the number you declared (`--declared-min`,
-`--declared-warm`) and fails if more is running.
+every accepted declaration, so reviewers see each one.
 
 ## 3. Platform defaults
 
@@ -233,30 +232,7 @@ On the commits before each incident's fix it reports:
 Each rule clears once the fix is applied. After #379, uk-autumn-budget-dashboard-2026 reports
 CR3 for its Budget-week `--min 1` until that minimum is declared, which is the intended result.
 
-## 5. After deploying: check your own app
-
-Run `check_deployed_app.py` from this skill's `scripts/` folder (`SKILL_DIR` below) with the
-access you already use to deploy:
-
-```bash
-python3 SKILL_DIR/scripts/check_deployed_app.py --cloud-run TOOL_NAME --project PROJECT --region REGION --declared-min 0
-python3 SKILL_DIR/scripts/check_deployed_app.py --modal-app TOOL_NAME --declared-warm 0
-```
-
-- **Cloud Run:** it reads the service and its revisions. It reports the service-level
-  minimum and maximum, every revision kept started by traffic or a tag, and the instances
-  running while idle with an estimated cost per day. It reports a problem for a tagged
-  revision with no traffic and a minimum, a maximum left at the default 100, or more
-  instances running than declared.
-- **Modal:** it reports the containers running now for that app. Run it after the scaledown
-  window with no requests in flight; anything above the declared count is a warm setting.
-- If a command fails (expired login, wrong region, no permission), it stops with exit
-  status 2 and the error, rather than reporting an empty service.
-
-Then send one request with nothing warm, and check that it finishes within the frontend's
-timeout: `curl -s -o /dev/null -w '%{time_total}\n' URL`.
-
-## 6. Replacing or retiring a tool
+## 5. Replacing or retiring a tool
 
 The PR that moves traffic away lists everything the old version used: Cloud Run services,
 Modal apps, App Engine apps, databases, secrets, scheduler jobs, images, domains and uptime
