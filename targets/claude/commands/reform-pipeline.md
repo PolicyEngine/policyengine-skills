@@ -121,6 +121,16 @@ Apply the standard routing rules (identical to the CRM publication router):
 - otherwise (routine state bill) → **bill tracker**
 - `--publish tracker|dashboard` overrides; `--publish none` stops here.
 
+**Comparables review, both routes.** Every published score goes through the comparables
+review (`/comparables-review`, the `policyengine-comparables-review` skill) before it is public:
+
+- the dashboard route through `/deploy-dashboard`, which runs it before anything is public;
+- the tracker route before dispatch: run the review with the bill's record kind `tracker`
+  (`registry.kind: tracker` in `analysis.json`, slug `<state>-<bill>`, the tracker page as
+  `url`), search every listed producer including `state_fiscal_note`, and merge the
+  scorecard PR. Put the record's link and its gap table in `review_notes`. No registry lists
+  tracker bills, so the scorecard's re-harvest finds them by their record's `published` date.
+
 **Publication preconditions (from Phase 2's `enactment_reconciliation`):**
 consult the block before dispatching — it says whether `baseline_json` is
 required, and whether this publication SUPERSEDES an earlier entry (a
@@ -156,8 +166,10 @@ alone. Compose it from the analysis you just ran:
   was used), headline framing choice, what was scored vs held out of scope,
   model version, route choice.
 - **Validation record**: the /analyze-policy verdict with a link to the
-  archive entry; the benchmark table (each pre-registered external source,
-  its framing, estimate, and delta vs ours); this run's computed number vs
+  archive entry; the comparables record in policyengine-scorecard (every
+  producer searched, each comparable, its gap and any cause); the benchmark
+  table (each pre-registered external source, its framing, estimate, and
+  delta vs ours); this run's computed number vs
   the analysis number with the dataset difference explained; the dry-run
   rehearsal link; known limitations (e.g. unscored provisions and why).
 - **Notable findings** from the Phase 5.7 interrogation, when any exist.

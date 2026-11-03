@@ -168,5 +168,7 @@ the caveats above.
 ## Related skills
 
 - `policyengine-research-lookup` — broader blog/post discovery beyond scored reforms.
+- `policyengine-comparables-review` — the required pre-publish search; it logs every producer
+  on the scorecard's list and records what it finds in policyengine-scorecard.
 - `policyengine` — actually running the microsim to compare against these anchors.
 - `policyengine-calibration-diagnostics` — when a new run mismatches a prior, diagnose why.

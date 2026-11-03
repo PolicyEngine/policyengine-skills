@@ -25,6 +25,9 @@ runs through a command and agent.
 - The **`neutrality-reviewer`** agent then checks the generated copy for advocacy, speculation,
   or one-sided framing before anything is published.
 
+Before promoting an analysis that publishes an estimate, its comparables search must be fresh
+(policyengine-comparables-review, "Before a push"). The orchestrator checks it first.
+
 Do not hand-render assets when the command exists — invoke `/generate-content` and let the agents
 own the mechanics. Follow the **policyengine-writing** skill for the copy's tone and neutrality.
 

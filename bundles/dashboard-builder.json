@@ -2,7 +2,7 @@
   "name": "dashboard-builder",
   "description": "Orchestrated AI workflow for creating PolicyEngine dashboards from natural-language descriptions",
   "category": "development",
-  "version": "4.0.2",
+  "version": "4.1.0",
   "keywords": [
     "dashboard",
     "calculator",
@@ -26,11 +26,13 @@
     "./skills/policyengine-uk",
     "./skills/policyengine-design",
     "./skills/policyengine-standards",
-    "./skills/policyengine-writing"
+    "./skills/policyengine-writing",
+    "./skills/policyengine-comparables-review"
   ],
   "commands": [
     "./commands/create-dashboard.md",
-    "./commands/deploy-dashboard.md"
+    "./commands/deploy-dashboard.md",
+    "./commands/comparables-review.md"
   ],
   "agents": [
     "./agents/dashboard/dashboard-planner.md",

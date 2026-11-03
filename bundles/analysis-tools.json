@@ -2,7 +2,7 @@
   "name": "analysis-tools",
   "description": "Policy analysis and research - impact studies, dashboards, notebooks, and visualizations",
   "category": "analysis",
-  "version": "4.0.2",
+  "version": "4.1.0",
   "keywords": [
     "analysis",
     "research",
@@ -29,6 +29,7 @@
     "./skills/policyengine-writing",
     "./skills/policyengine-research-lookup",
     "./skills/policyengine-prior-scores",
+    "./skills/policyengine-comparables-review",
     "./skills/policyengine-calibration-diagnostics"
   ],
   "commands": [
@@ -40,7 +41,8 @@
     "./commands/prior-analysis.md",
     "./commands/text-to-reform.md",
     "./commands/create-dashboard.md",
-    "./commands/deploy-dashboard.md"
+    "./commands/deploy-dashboard.md",
+    "./commands/comparables-review.md"
   ],
   "agents": [
     "./agents/calibration-diagnostics.md",

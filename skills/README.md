@@ -61,6 +61,7 @@ lints the whole tree against the failure modes that rotted the previous catalog
 | **policyengine-writing** | Editorial law: neutrality, quantitative language, sentence case |
 | **policyengine-standards** | uv/bun, ruff, towncrier changelogs, CI gates, PR discipline |
 | **policyengine-research-lookup** | Finding existing PolicyEngine research and proof points |
+| **policyengine-comparables-review** | The required pre-publish search for external estimates, recorded in the scorecard, with every large gap explained |
 | **policyengine-user-guide** | Using the policyengine.org web app |
 | **policyengine-content** | Social image/copy generation for posts |
 | **policyengine-github-agent** | GitHub bot operating rules |
