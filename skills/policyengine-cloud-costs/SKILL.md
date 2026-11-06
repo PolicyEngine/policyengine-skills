@@ -202,8 +202,8 @@ Run or Modal for a new tool.
   project to a project per tool. A service-role key bypasses row-level security: keep it in
   a secret store, never in code.
 - **Modal Volumes** bill for what they store, $0.09 per GiB-month (`modal billing rates`).
-  Delete dataset builds and other files nothing reads any more, and name each Volume in the
-  cost plan.
+  Modal's pricing page lists 1 TiB a month as included free. Delete dataset builds and other
+  files nothing reads any more, and name each Volume in the cost plan.
 - **Vercel:** on the team's Pro plan a project has no charge of its own; function time and
   data transfer beyond the plan's included amounts are billed. Pause or delete the project
   when the tool is retired, so it stops serving.
@@ -279,7 +279,7 @@ exception ends.
   ```bash
   # Every app whose name starts with the tool's name, last calendar month
   modal billing report --for "last month" --json \
-    | jq '[.[] | select(.description | startswith("TOOL_NAME")) | .cost | tonumber] | add'
+    | jq '[.[] | select(.description | startswith("TOOL_NAME")) | .cost | tonumber] | add // 0'
 
   # Every app tagged with the project, including analysis, test and preview apps
   modal billing report --for "last month" --tag-names project --json \
@@ -288,7 +288,13 @@ exception ends.
 
   `--resolution h` gives hourly figures to compare with the plan's most expensive hour,
   `--show-resources` separates CPU from memory, and `modal billing rates` prints the current
-  prices.
+  prices. Both filters print 0 when no app matches.
+- **Modal Volumes:** storage is not in `modal billing report`, whose rows are per app and
+  cover CPU, memory and network egress only. Modal measures the workspace's total Volume
+  storage once a day. Modal's Volumes guide says to read a Volume's size in the Modal
+  dashboard (`modal volume dashboard VOLUME_NAME` opens that Volume's page), or to run `du` on
+  the mounted Volume inside a container. Multiply the size by the storage rate in the price
+  table and compare it with the Volume's row in the cost plan.
 - **Cloud Run:** the Cloud Billing reports page in the Google Cloud console, filtered to the
   tool's project and to Cloud Run, gives the cost per day.
 
@@ -310,7 +316,7 @@ deploy files does not stop what they deployed.
 | Modal memory | $0.008 per GiB-hour | 1 core / 2 GiB ≈ $0.063/hour; 8 cores / 32 GiB ≈ $0.63/hour |
 | Cloud Run idle instance (request-based billing) | (vCPU + GiB) × $0.0000025 per second | 8 vCPU / 8 GiB ≈ $3.46/day; 2 vCPU / 8 GiB ≈ $2.16/day |
 | Cloud Run busy instance | | 8 vCPU / 8 GiB ≈ $0.76/hour, so the default maximum of 100 ≈ $76/hour |
-| Modal Volume storage | $0.09 per GiB-month | 100 GiB of dataset builds ≈ $9/month |
+| Modal Volume storage | $0.09 per GiB-month; Modal's pricing page lists 1 TiB a month as included | 100 GiB of dataset builds ≈ $9/month beyond the included amount |
 | Modal network egress | $0.04 per GiB | |
 | Supabase project beyond the first (Pro organisation, Micro compute) | $0.01344/hour | ≈ $9.81/month; the plan's $10/month compute credit covers the first |
 | Global load balancer | About $18/month per forwarding rule | |
