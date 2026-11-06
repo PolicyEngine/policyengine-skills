@@ -447,12 +447,15 @@ jobs:
       - run: bun run build
 ```
 
-For the custom backend pattern, add this step after checkout (policyengine-cloud-costs skill):
+For the custom backend pattern, add this step after checkout (policyengine-cloud-costs skill). Replace `CHECKER_COMMIT_SHA` with the output of `gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha`:
 
 ```yaml
       - name: Check deploy settings for cost
+        env:
+          # A policyengine-skills commit; move it forward on purpose (policyengine-cloud-costs skill, section 4)
+          CHECKER_COMMIT: CHECKER_COMMIT_SHA
         run: |
-          curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-cloud-costs/scripts/check_deploy_config.py -o /tmp/check_deploy_config.py
+          curl -fsSL "https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/${CHECKER_COMMIT}/skills/policyengine-cloud-costs/scripts/check_deploy_config.py" -o /tmp/check_deploy_config.py
           python3 /tmp/check_deploy_config.py .
 ```
 
@@ -706,7 +709,7 @@ If either fails, fix before proceeding.
 - [ ] If custom-modal: worker image uses `.add_local_file()` for `simulation.py` (not auto-mounted since it's imported inside function bodies)
 - [ ] If custom-modal: gateway is lightweight (no policyengine in its Modal image)
 - [ ] If custom-modal: gateway image explicitly includes `pydantic`
-- [ ] If custom-modal: workers use the plan's `timeout`, `cpu`, `memory` and `max_containers`, keep `min_containers=0`, and population workers keep their `# cost-ok: RS1 TODO` declarations until a measured run replaces them
+- [ ] If custom-modal: workers use the plan's `timeout`, `cpu`, `memory` and `max_containers`, keep `min_containers=0`, and population workers keep their memory `# cost-ok: RS1 TODO` declaration until a measured run replaces it
 - [ ] If custom-modal: CI runs the cost check, and `README.md` has the "Running costs" section filled from the plan's `cost_plan`
 - [ ] If custom-modal: frontend uses polling (`refetchInterval`), not synchronous await
 - [ ] If custom-modal: `/status` endpoint returns `{status, result, message}`

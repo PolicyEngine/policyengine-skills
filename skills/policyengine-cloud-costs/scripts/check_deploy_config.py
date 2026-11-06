@@ -165,6 +165,34 @@ def mebibytes(number: str, unit: str) -> float:
     return float(number) * factors.get(unit, 1)
 
 
+# A Modal cpu or memory literal: a number, or a product such as 32 * 1024.
+MODAL_AMOUNT = r"[0-9]+(?:\.[0-9]+)?(?:\s*\*\s*[0-9]+(?:\.[0-9]+)?)*"
+
+
+def modal_amount(expression: str) -> float:
+    total = 1.0
+    for factor in expression.split("*"):
+        total *= float(factor)
+    return total
+
+
+def modal_reservation(line: str, setting: str) -> tuple[float, str, bool] | None:
+    """The most a Modal cpu= or memory= setting on this line can bill.
+
+    Returns (amount, the value as written, whether it is a (request, limit) pair). Modal bills
+    the higher of request and use, and a container may use up to its limit, so a pair can
+    bill up to the larger of its two values.
+    """
+    pair = re.search(rf"\b{setting}\s*=\s*\(\s*({MODAL_AMOUNT})\s*,\s*({MODAL_AMOUNT})\s*\)", line)
+    if pair:
+        amount = max(modal_amount(pair.group(1)), modal_amount(pair.group(2)))
+        return amount, f"({pair.group(1)}, {pair.group(2)})", True
+    single = re.search(rf"\b{setting}\s*=\s*({MODAL_AMOUNT})\b", line)
+    if single:
+        return modal_amount(single.group(1)), single.group(1), False
+    return None
+
+
 def modal_decorators(lines: list[str]) -> list[tuple[int, str]]:
     """Return (line index, full text) of each @<app>.function / @<app>.cls decorator."""
     decorators = []
@@ -239,19 +267,25 @@ def check_file(path: Path, text: str, today: date | None = None, ignores_gha_cre
                 f"Modal {match.group(1)}={match.group(2)} keeps containers running while idle. "
                 "Default to 0; for a launch window use a Cron that calls update_autoscaler with a hard stop.")
 
-        # RS1: a large CPU or memory reservation. Modal bills the higher of reserved and used.
+        # RS1: a large CPU or memory reservation. Modal bills the higher of reserved and used,
+        # and a (request, limit) pair can bill up to its limit.
         if is_modal_python:
-            cpu = re.search(r"\bcpu\s*=\s*([0-9]+(?:\.[0-9]+)?)\b", line)
-            memory = re.search(r"\bmemory\s*=\s*([0-9]+)(?:\s*\*\s*([0-9]+))?\b", line)
-            if cpu and float(cpu.group(1)) >= LARGE_CPU:
+            cpu = modal_reservation(line, "cpu")
+            memory = modal_reservation(line, "memory")
+            if cpu and cpu[0] >= LARGE_CPU:
+                amount, written, is_pair = cpu
+                billed = (f"can bill up to its limit of {amount:g} cores" if is_pair
+                          else f"reserves {written} cores")
                 add("RS1", "warning", index,
-                    f"Modal cpu={cpu.group(1)} reserves {cpu.group(1)} cores; Modal bills the higher of "
-                    "reserved and used. Size from a measured run and declare the measurement.")
-            if memory and int(memory.group(1)) * int(memory.group(2) or 1) >= LARGE_MEMORY_MIB:
-                mib = int(memory.group(1)) * int(memory.group(2) or 1)
+                    f"Modal cpu={written} {billed}; Modal bills the higher of reserved and used. "
+                    "Size from a measured run and declare the measurement.")
+            if memory and memory[0] >= LARGE_MEMORY_MIB:
+                amount, written, is_pair = memory
+                billed = (f"can bill up to its limit of {amount:g} MiB" if is_pair
+                          else f"reserves {amount:g} MiB")
                 add("RS1", "warning", index,
-                    f"Modal memory={mib} MiB; Modal bills the higher of reserved and used. Size from a "
-                    "measured peak and declare it.")
+                    f"Modal memory={written} {billed}; Modal bills the higher of reserved and used. "
+                    "Size from a measured peak and declare it.")
         cloud_run_cpu = re.search(r"--cpu[= ]+[\"']?([0-9]+(?:\.[0-9]+)?)(m?)\b", line)
         cloud_run_memory = re.search(r"--memory[= ]+[\"']?([0-9]+(?:\.[0-9]+)?)(Mi|M|Gi|G|Ti)?\b", line)
         if cloud_run_cpu and float(cloud_run_cpu.group(1)) / (1000 if cloud_run_cpu.group(2) else 1) >= LARGE_CPU:

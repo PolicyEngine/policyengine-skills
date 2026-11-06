@@ -165,17 +165,17 @@ policyengine-cloud-costs skill for the defaults, the README cost plan and the ch
 # backend/app.py — workers
 import modal
 from _image_setup import snapshot_models
-app = modal.App("my-tool-workers")
+app = modal.App("my-tool-workers", tags={"project": "my-tool"})  # tag every app of the tool, so its bill adds up in one query
 image = (modal.Image.debian_slim(python_version="3.11")
          .pip_install("policyengine[us]==X.Y.Z", "pydantic")   # top-level release (>=5.0.1): pins matched country model + certified data bundle
          .run_function(snapshot_models)
          .add_local_file("backend/simulation.py", remote_path="/root/simulation.py"))
 
-# Population run: replace the TODO declarations with the measured peak before merging
+# Population run: replace the TODO declaration with the measured peak before merging
 # (the cost checker warns until then). Modal bills the higher of request and use.
 @app.function(
     image=image,
-    cpu=8.0,  # cost-ok: RS1 TODO cores the measured run used
+    cpu=2.0,  # a simulation runs on one thread; a statewide worker has run on 2 cores
     memory=32768,  # cost-ok: RS1 TODO measured peak memory plus a fifth
     timeout=3600,
     max_containers=4,
@@ -199,7 +199,7 @@ need `HUGGING_FACE_TOKEN` — private dataset repo). Details: the `policyengine`
 # backend/modal_app.py — gateway (spawn + poll)
 import modal
 from fastapi import FastAPI
-app = modal.App("my-tool")
+app = modal.App("my-tool", tags={"project": "my-tool"})
 web_app = FastAPI()
 
 @web_app.post("/submit/{endpoint}")

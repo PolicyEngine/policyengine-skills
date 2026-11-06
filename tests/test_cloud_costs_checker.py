@@ -86,6 +86,23 @@ def test_large_modal_reservation_warns_until_declared():
     assert rules_found("backend/app.py", declared) == []
 
 
+def test_modal_request_and_limit_pair_is_checked_against_its_limit():
+    def worker(cpu: str, memory: str) -> str:
+        return MODAL_WORKER.replace("cpu=1.0,", f"cpu={cpu},").replace("memory=2048,", f"memory={memory},")
+
+    # The limit is what a container can bill, so a small request with a large limit warns.
+    findings, _ = MODULE.check_file(Path("backend/app.py"), worker("1.0", "(32768, 65536)"), TODAY)
+    assert [(finding.rule, finding.severity) for finding in findings] == [("RS1", "warning")]
+    assert "limit of 65536 MiB" in findings[0].message
+    assert rules_found("backend/app.py", worker("(1.0, 8.0)", "2048")) == [("RS1", "warning")]
+    assert rules_found("backend/app.py", worker("1.0", "(16 * 1024, 32 * 1024)")) == [("RS1", "warning")]
+
+    # Pairs that stay under the thresholds pass, and a declaration covers a pair as usual.
+    assert rules_found("backend/app.py", worker("(1.0, 2.0)", "(2048, 4096)")) == []
+    declared = worker("1.0", "(32768, 65536),  # cost-ok: RS1 measured peak 50 GB on the national run")
+    assert rules_found("backend/app.py", declared) == []
+
+
 def test_modal_function_without_maximum_warns_but_cron_does_not():
     no_maximum = MODAL_WORKER.replace("    max_containers=10,\n", "")
     assert rules_found("backend/app.py", no_maximum) == [("MO2", "warning")]

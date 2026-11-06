@@ -232,7 +232,7 @@ from pathlib import Path
 from _image_setup import snapshot_models
 
 _BACKEND_DIR = Path(__file__).parent
-app = modal.App("TOOL_NAME-workers")
+app = modal.App("TOOL_NAME-workers", tags={"project": "TOOL_NAME"})  # tag every app of the tool, so its bill adds up in one query
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install("policyengine[us]==LATEST_VERSION", "pydantic")  # pins country model + certified data bundle
@@ -256,7 +256,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-app = modal.App("TOOL_NAME")
+app = modal.App("TOOL_NAME", tags={"project": "TOOL_NAME"})
 gateway_image = modal.Image.debian_slim(python_version="3.11").pip_install("fastapi", "pydantic")
 WORKER_APP = "TOOL_NAME-workers"
 FUNCTION_MAP = {"calculate": "compute"}
@@ -347,7 +347,7 @@ vercel --prod --force --yes --scope policy-engine
 
 ## Step 6: Add pull-request CI
 
-Create `.github/workflows/ci.yml` so every new tool gets build validation before deploy:
+Create `.github/workflows/ci.yml` so every new tool gets build validation before deploy. Replace `CHECKER_COMMIT_SHA` with the output of `gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha`, so the cost checker's rules change only when the tool's maintainers move that commit:
 
 ```yaml
 name: CI
@@ -368,8 +368,11 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/scripts/audit_next_migration.py -o /tmp/audit_next_migration.py
           python3 /tmp/audit_next_migration.py --root .
       - name: Check deploy settings for cost
+        env:
+          # A policyengine-skills commit; move it forward on purpose (policyengine-cloud-costs skill, section 4)
+          CHECKER_COMMIT: CHECKER_COMMIT_SHA
         run: |
-          curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-cloud-costs/scripts/check_deploy_config.py -o /tmp/check_deploy_config.py
+          curl -fsSL "https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/${CHECKER_COMMIT}/skills/policyengine-cloud-costs/scripts/check_deploy_config.py" -o /tmp/check_deploy_config.py
           python3 /tmp/check_deploy_config.py .
       - run: bun install --frozen-lockfile
       - name: Run lint

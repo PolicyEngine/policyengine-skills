@@ -8,11 +8,11 @@ description: |
   Sets the defaults (nothing running while idle, a set maximum, CPU and memory from a
   measured run, secrets out of the repo, an end for every copy) and shows how to declare a
   deliberate exception, such as warm containers, minimum instances or large workers. Has a
-  README cost plan, copyable workflows and a pre-merge config checker, plus the incidents
-  behind each rule. Triggers: "min_containers",
+  README cost plan, copyable workflows, a pre-merge config checker and a bill check, plus
+  the incidents behind each rule. Triggers: "min_containers",
   "max_containers", "min instances", "--min-instances", "keep warm", "cold start", "scale
   to zero", "memory=", "modal deploy", "gcloud run deploy", "cloudbuild", "preview app",
-  "launch day", "retire", "what will this cost".
+  "launch day", "retire", "what will this cost", "billing", "spend".
 metadata:
   category: apps
 ---
@@ -39,7 +39,9 @@ Load this when:
 Copy `templates/running-costs.md` into the tool's README and answer five questions:
 1. **What runs while nobody uses it?** The default answer is "nothing".
 2. **What is the most it can cost in an hour?** Maximum containers or instances × the
-   hourly rate (prices at the end).
+   hourly rate (prices at the end). Where Modal CPU or memory is a `(request, limit)` pair,
+   price the limit: Modal bills the higher of request and use, and a container can use up to
+   its limit.
 3. **What makes extra copies, and what ends each one?** Traffic tags, versions, PR preview
    apps, test and drill deploys.
 4. **Where do the secrets live?** A secret store, never the repo.
@@ -110,6 +112,9 @@ every accepted declaration, so reviewers see each one.
 def compute(params: dict) -> dict: ...
 ```
 
+- **Tag every app with its project:** `modal.App("TOOL_NAME-workers", tags={"project":
+  "TOOL_NAME"})`, on analysis, test and preview apps too. `modal billing report
+  --tag-names project` then adds up every app of the tool in one query (section 5).
 - **Size from a measured run.** Modal charges "whichever is higher: your request or actual
   usage" for CPU and memory, so unused headroom is still paid for.
   - Measure one representative run: `/usr/bin/time -v` on Linux or `/usr/bin/time -l` on
@@ -190,10 +195,18 @@ Run or Modal for a new tool.
 
 ### Data and storage
 
-- **Supabase:** each project on the Pro organisation bills its compute (Micro, about
-  $9.81/month) whether used or not, and a paid project cannot be paused. Prefer a schema in
-  an existing project to a project per tool. A service-role key bypasses row-level
-  security: keep it in a secret store, never in code.
+- **Supabase:** the organisation's plan includes $10/month of compute credits, which cover
+  one Micro project. Every further project bills its compute (Micro, about $9.81/month)
+  whether used or not, and PolicyEngine's organisation already has many projects, so a new
+  one adds the full amount. A paid project cannot be paused. Prefer a schema in an existing
+  project to a project per tool. A service-role key bypasses row-level security: keep it in
+  a secret store, never in code.
+- **Modal Volumes** bill for what they store, $0.09 per GiB-month (`modal billing rates`).
+  Delete dataset builds and other files nothing reads any more, and name each Volume in the
+  cost plan.
+- **Vercel:** on the team's Pro plan a project has no charge of its own; function time and
+  data transfer beyond the plan's included amounts are billed. Pause or delete the project
+  when the tool is retired, so it stops serving.
 - **Container images and other per-deploy objects need retention.** Images reached about
   628 GiB in July 2026. Deleting Artifact Registry images needs
   `artifactregistry.versions.delete` and `artifactregistry.tags.delete`, which
@@ -203,9 +216,12 @@ Run or Modal for a new tool.
 
 ## 4. Before merging: the config checker
 
-The scaffold adds a CI step that downloads `scripts/check_deploy_config.py` from this repo's
-`main` branch and runs it (`templates/cost-checks.yml` is the same step as a workflow of its
-own). To run it locally:
+The scaffold adds a CI step that downloads `scripts/check_deploy_config.py` from a pinned
+commit of this repo and runs it (`templates/cost-checks.yml` is the same step as a workflow of
+its own, with read-only permissions). The pin is the `CHECKER_COMMIT` value: set it to the
+output of `gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha` when the step
+is added, and move it forward on purpose, so a rule added later does not fail the tool's pull
+requests before anyone has looked at what it reports. To run the latest version locally:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-cloud-costs/scripts/check_deploy_config.py | python3 - .
@@ -230,7 +246,8 @@ skipped.
 | CI1 | warning | Modal work started on push or pull request with `cancel-in-progress` |
 
 `--strict` also fails on warnings. A value set through a variable (`min_containers=MINIMUM`)
-is left to the reviewer. SE4 reads the workflow files only: it cannot tell whether a secret
+is left to the reviewer. CPU and memory written as a `(request, limit)` pair are checked
+against the limit. SE4 reads the workflow files only: it cannot tell whether a secret
 exists in GitHub or still works. The steps in `templates/check-credentials.yml` check that
 when the job runs.
 
@@ -246,7 +263,39 @@ On the commits before each incident's fix it reports:
 Each rule clears once the fix is applied. After #379, uk-autumn-budget-dashboard-2026 reports
 CR3 for its Budget-week `--min 1` until that minimum is declared, which is the intended result.
 
-## 5. Replacing or retiring a tool
+**Changing the checker:** add a new rule as a warning. Make it an error in a later change,
+after the repositories that use the checker have moved their pin and dealt with what it
+reports.
+
+## 5. After deploying: compare the bill with the plan
+
+The cost plan gives the most the tool can cost; the bill shows what it did cost. Compare the
+two a week after the first deploy, after a launch or busy period, and when a declared
+exception ends.
+
+- **Modal:** `modal billing report` lists each app's cost per day: `description` is the app
+  name and `cost` is in US dollars.
+
+  ```bash
+  # Every app whose name starts with the tool's name, last calendar month
+  modal billing report --for "last month" --json \
+    | jq '[.[] | select(.description | startswith("TOOL_NAME")) | .cost | tonumber] | add'
+
+  # Every app tagged with the project, including analysis, test and preview apps
+  modal billing report --for "last month" --tag-names project --json \
+    | jq '[.[] | select((.tags | fromjson).project == "TOOL_NAME") | .cost | tonumber] | add // 0'
+  ```
+
+  `--resolution h` gives hourly figures to compare with the plan's most expensive hour,
+  `--show-resources` separates CPU from memory, and `modal billing rates` prints the current
+  prices.
+- **Cloud Run:** the Cloud Billing reports page in the Google Cloud console, filtered to the
+  tool's project and to Cloud Run, gives the cost per day.
+
+If the bill is well above the plan, look first for something that runs while nobody uses the
+tool (section 2's defaults), then for reservations larger than the measured peak.
+
+## 6. Replacing or retiring a tool
 
 The PR that moves traffic away lists everything the old version used: Cloud Run services,
 Modal apps, App Engine apps, databases, secrets, scheduler jobs, images, domains and uptime
@@ -261,7 +310,9 @@ deploy files does not stop what they deployed.
 | Modal memory | $0.008 per GiB-hour | 1 core / 2 GiB ≈ $0.063/hour; 8 cores / 32 GiB ≈ $0.63/hour |
 | Cloud Run idle instance (request-based billing) | (vCPU + GiB) × $0.0000025 per second | 8 vCPU / 8 GiB ≈ $3.46/day; 2 vCPU / 8 GiB ≈ $2.16/day |
 | Cloud Run busy instance | | 8 vCPU / 8 GiB ≈ $0.76/hour, so the default maximum of 100 ≈ $76/hour |
-| Supabase project (Pro organisation, Micro compute) | $0.01344/hour | ≈ $9.81/month |
+| Modal Volume storage | $0.09 per GiB-month | 100 GiB of dataset builds ≈ $9/month |
+| Modal network egress | $0.04 per GiB | |
+| Supabase project beyond the first (Pro organisation, Micro compute) | $0.01344/hour | ≈ $9.81/month; the plan's $10/month compute credit covers the first |
 | Global load balancer | About $18/month per forwarding rule | |
 
 Instance-based Cloud Run billing (CPU always allocated) costs more than the idle rate above.

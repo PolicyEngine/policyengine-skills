@@ -314,7 +314,7 @@ from pathlib import Path
 from _image_setup import snapshot_models
 
 _BACKEND_DIR = Path(__file__).parent
-app = modal.App("DASHBOARD_NAME-workers")
+app = modal.App("DASHBOARD_NAME-workers", tags={"project": "DASHBOARD_NAME"})  # tag every app of the tool, so its bill adds up in one query
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install("policyengine[us]==LATEST_VERSION", "pydantic")  # Pinned — looked up from PyPI in Step 1; pins the country model + certified data bundle
@@ -327,10 +327,10 @@ def compute_household(params: dict) -> dict:
     from simulation import run_household
     return run_household(params)
 
-# Population run: replace the TODO declarations with the measured peak before merging.
+# Population run: replace the TODO declaration with the measured peak before merging.
 @app.function(
     image=image,
-    cpu=8.0,  # cost-ok: RS1 TODO cores the measured run used
+    cpu=2.0,  # a simulation runs on one thread; a statewide worker has run on 2 cores
     memory=32768,  # cost-ok: RS1 TODO measured peak memory plus a fifth
     timeout=3600,
     max_containers=4,
@@ -341,7 +341,7 @@ def compute_statewide(params: dict) -> dict:
     return run_statewide(params)
 ```
 
-Create one `@app.function` per endpoint in the plan. Set `timeout`, `cpu`, `memory` and `max_containers` from the plan's `worker_*` values, and keep `min_containers=0`. Microsimulation endpoints need at least `timeout=3600`. Any value the plan's `cost_plan.declared_exceptions` lists gets a `# cost-ok: <rule> <reason>` comment on its setting (see the policyengine-cloud-costs skill); a population worker keeps the `TODO` declarations until a measured run replaces them, and the cost checker warns until then.
+Create one `@app.function` per endpoint in the plan. Set `timeout`, `cpu`, `memory` and `max_containers` from the plan's `worker_*` values, and keep `min_containers=0`. Microsimulation endpoints need at least `timeout=3600`. Any value the plan's `cost_plan.declared_exceptions` lists gets a `# cost-ok: <rule> <reason>` comment on its setting (see the policyengine-cloud-costs skill); a population worker keeps its memory `TODO` declaration until a measured run replaces it, and the cost checker warns until then.
 
 ### Step 5: Create Gateway
 
@@ -353,7 +353,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-app = modal.App("DASHBOARD_NAME")
+app = modal.App("DASHBOARD_NAME", tags={"project": "DASHBOARD_NAME"})
 
 gateway_image = modal.Image.debian_slim(python_version="3.11").pip_install(
     "fastapi", "pydantic",
