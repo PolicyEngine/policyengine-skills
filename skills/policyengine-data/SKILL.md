@@ -5,7 +5,7 @@ description: |
   built, calibrated, versioned, and named. Covers the Microcosm stack (Frame kernel,
   microcosm-fit conditional models, microcosm-calibrate weights with L0 sparsity, build/release
   gates), the certified datasets that flow into policyengine bundles (populace_us_2024 sparse
-  ~57k default, populace_us_2024_acs_local ~1.6M local-area, populace_uk_2023 private), the
+  ~57k default, populace_us_2024_acs_local ~1.6M local-area, enhanced_frs_2024_25 UK), the
   "one national dataset filtered by geography" local-area philosophy, the calibration
   diagnostics dashboard, and where data work goes now that policyengine-us-data is archived.
   Triggers: Microcosm (formerly Populace), Frame, microcosm-fit, microcosm-calibrate, calibration target, survey
@@ -92,12 +92,14 @@ bundle/manifest.json`):
 |---|---|---|
 | `populace_us_2024` | US default. Build J, sparse, ~57k households calibrated to tens of thousands of admin targets | resolves automatically; do not pass a raw URI |
 | `populace_us_2024_acs_local` | US local-area build. Build L, ~1.6M households, ACS multispine, PUMA-assigned to CD-119 / county / state | load **by name**, never implicit |
-| `populace_uk_2023` | UK default (Microcosm, FRS+WAS) | private HF repo — set `HUGGING_FACE_TOKEN` |
+| `enhanced_frs_2024_25` | UK default since August 2026 (policyengine-uk-data Enhanced FRS; `populace_uk_2023`, Microcosm FRS+WAS, before) | private HF repo — set `HUGGING_FACE_TOKEN` |
 
 Verified manifest build ids (2026-07): US `populace_us_2024` @
 `populace-us-2024-buildj-sparse-rmloss100-75d5add-20260710`; UK `populace_uk_2023` @
 `populace-uk-2023-dd68c73-...`. The manifest also carries a `dataset_overlays` section (where the
 `acs_local` overlay lives) and per-region `region_datasets`.
+As of policyengine 6.1.2 (checked 2026-09-29): UK `enhanced_frs_2024_25` @
+`policyengine-uk-data-1.56.16`; US `populace_us_2024` @ `populace-us-2024-spm-20260915`.
 
 ### The two defaults, precisely
 
