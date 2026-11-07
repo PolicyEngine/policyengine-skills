@@ -162,39 +162,39 @@ those diagnostics into hypotheses about a score.
   IRS-PUF imputation, calibration, its enhanced-CPS H5 releases, and the per-state / per-district
   H5s) is superseded by Microcosm and its per-area files were removed. Treat that repo as
   read-only history; do not target it with PRs.
-- **`policyengine-uk-data` builds the Enhanced FRS (Family Resources Survey), which is no longer
-  the UK default.** Its imputations still run on microimpute (1.8.1 in its `uv.lock`).
-  policyengine.py loads the Enhanced FRS only by name: `enhanced_frs_2024_25` sits under the
-  bundle manifest's `dataset_overlays`, which never change the default. A release-blocking
-  Microcosm gate compares each UK candidate's weighted input totals with a pinned Enhanced FRS.
-  Microcosm imputes the UK variables itself with `microcosm-fit`, in
-  `packages/microcosm-build/src/microcosm/build/uk_runtime/`: wealth and student-loan balances
-  from the Wealth and Assets Survey (`was_wealth.py`), consumption from the Living Costs and Food
-  Survey (`lcfs_consumption.py`), VAT and public services from the Effects of Taxes and Benefits
-  data (`etb_vat.py`, `etb_services.py`), incomes from the Survey of Personal Incomes
-  (`spi_income.py`) and salary sacrifice (`salary_sacrifice.py`). Microcosm's WAS, LCFS and ETB
-  stages port uk-data's models. New UK imputation work goes in `uk_runtime`, not in
-  policyengine-uk-data.
+- **`policyengine-uk-data` builds the Enhanced FRS (Family Resources Survey) and still imputes
+  with microimpute** (1.8.1 in its `uv.lock`). policyengine.py defaults UK simulations to
+  Microcosm's `microcosm_uk_2024_25` and serves `enhanced_frs_2024_25` only by name, as one of
+  the `dataset_overlays` in its bundle manifest. A release-blocking Microcosm gate compares each
+  UK candidate's weighted input totals with a pinned Enhanced FRS. Microcosm runs its own UK
+  imputations with `microcosm-fit`, in `packages/microcosm-build/src/microcosm/build/uk_runtime/`:
+  wealth and student-loan balances from the Wealth and Assets Survey (`was_wealth.py`),
+  consumption from the Living Costs and Food Survey (`lcfs_consumption.py`), VAT and public
+  services from the Effects of Taxes and Benefits data (`etb_vat.py`, `etb_services.py`), incomes
+  from the Survey of Personal Incomes (`spi_income.py`), and salary sacrifice
+  (`salary_sacrifice.py`). Microcosm's WAS, LCFS and ETB stages port uk-data's models. New UK
+  imputation work goes in `uk_runtime`, not in policyengine-uk-data.
 
 ## Institutional knowledge (archived-repo concepts, current mechanics)
 
-Microcosm supersedes the previous stack's *packages*. Its `fit` and `calibrate` operators use the
-same families of methods, but they are not drop-in replacements: by default microimpute's QRF
-keeps quantile-forest's single sample per leaf, while `microcosm-fit` keeps every leaf sample and
-has no unweighted default. A result from an old-stack fit never stands in for what PolicyEngine
-runs. These concepts remain load-bearing:
+Microcosm's `fit` and `calibrate` operators implement the same families of methods as the
+previous stack's packages, with their own code and defaults. For example, microimpute's QRF keeps
+quantile-forest's default of one sample per leaf, while `microcosm-fit` keeps every leaf sample
+and weights every fit unless the caller passes `weights="none"`. An old-stack fit never stands in
+for what PolicyEngine runs. These concepts remain load-bearing:
 
 **Conditional-distribution imputation (QRF).** Fill a variable missing from a recipient survey by
 learning it from a donor that has it, conditioning on shared predictors. PolicyEngine uses
 **quantile regression forests**, which predict the full conditional distribution (not a point
 estimate), so imputation preserves marginal shape, conditional relationships, and uncertainty —
-you sample from `P(y | x)` rather than pasting a mean. microimpute scored numeric imputations
-with **quantile loss** (lower is better; a distributional metric, unlike MSE). microcosm-fit's one
-held-out scorer, `microcosm.fit.held_out.categorical_scores`, covers categorical models only
-(out-of-fold log loss, calibration slope, class shares). Classic US application: impute detailed
-tax-return components (capital-gains split, dividends) from the IRS PUF onto the CPS. Classic UK
-application: impute wealth from WAS onto FRS. In Microcosm this is `microcosm-fit`
-(weighted-bootstrap QRF, regime-gated), and the fit reads the frame's weights by construction.
+you sample from `P(y | x)` rather than pasting a mean. microimpute scores numeric imputations
+with **quantile loss**, which judges each predicted quantile where MSE judges a single point
+estimate. microcosm-fit's one held-out scorer, `microcosm.fit.held_out.categorical_scores`,
+covers categorical models only (out-of-fold log loss, calibration slope, class shares). Classic
+US application: impute detailed tax-return components (capital-gains split, dividends) from the
+IRS PUF onto the CPS. Classic UK application: impute wealth from WAS onto FRS. Microcosm imputes
+with `microcosm-fit`'s weighted-bootstrap, regime-gated QRF, which reads the frame's weights by
+default.
 
 **Calibration = reweighting to hit targets.** Given estimate contributions per record and known
 population totals, solve for weights so weighted sums match. The core relation:
