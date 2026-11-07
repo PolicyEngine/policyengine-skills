@@ -306,16 +306,15 @@ def test_no_stale_product_names() -> None:
     assert not violations, "Stale product names found:\n" + "\n".join(violations)
 
 
-
 MAPPING_LINE = "`populace-*` ids name Microcosm releases."
 MAPPING_LINE_HOME = "skills/policyengine-data/SKILL.md"
 
 
 def test_mapping_line_appears_once() -> None:
-    """The frozen-id mapping line is allowed once, in the data skill only (Max, 2026-11-06).
+    """The guard allows the frozen-id mapping line once, in the data skill only (Max, 2026-11-06).
 
-    The product-name guard allows the line wherever it appears in its home file, so this pins the
-    count: a second copy, or a copy in any other file, fails here.
+    The product-name guard allows the line anywhere in its home file, so this test pins the count:
+    a second copy there, or a copy in any other file the guard scans, fails here.
     """
     counts: dict[str, int] = {}
     for path in iter_product_scan_files():
@@ -324,6 +323,7 @@ def test_mapping_line_appears_once() -> None:
         if n:
             counts[rel] = n
     assert counts == {MAPPING_LINE_HOME: 1}, f"mapping line counts: {counts}"
+
 
 # --- Corpus for the product-name guard --------------------------------------
 

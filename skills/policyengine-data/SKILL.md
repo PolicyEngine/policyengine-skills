@@ -85,19 +85,20 @@ held-out, rotated evidence without degrading a protected target family beyond to
 
 Builds that pass the release gates are published to Hugging Face (`policyengine/populace-us`,
 `policyengine/populace-uk-private`) and referenced by name in the certified bundle manifest that
-ships inside the `policyengine` package. `populace-*` ids name Microcosm releases. Checked on
-2026-11-06 against policyengine 6.16.0 (`policyengine/data/bundle/manifest.json`) and the Hugging
-Face release manifests it pins:
+ships inside the `policyengine` package. `populace-*` ids name Microcosm releases. These rows match
+policyengine 6.16.0 (`policyengine/data/bundle/manifest.json`) and the Hugging Face release
+manifests it pins, as of 2026-11-06:
 
 | Dataset | What | How to load |
 |---|---|---|
-| `populace_us_2024` | US default. Build P (sparse, 57,240 households, calibrated to 5,659 targets) plus a source enrichment that adds SPM unit roles | resolves automatically; do not pass a raw URI |
-| `populace_us_2024_acs_local` | US local-area build. Build O, 1,586,908 households, ACS multispine, PUMA-assigned to congressional district / county / state | load **by name**; the manifest's `region_datasets` also makes it the dataset for state and congressional-district regions |
+| `populace_us_2024` | US default. Build P (57,240 households, calibrated to 5,659 targets) plus one person-level SPM flag, `is_spm_independent_minor_role` | resolves automatically; do not pass a raw URI |
+| `populace_us_2024_acs_local` | US local-area build. Build O, 1,586,908 households: 2024 ACS records, which keep their observed state and PUMA and draw a 119th-Congress district and county from population-weighted PUMA overlaps, plus donor records that keep their block-based district and county | load **by name**. The manifest's `region_datasets` makes it the `dataset_path` of the state and congressional-district entries in policyengine.py's region registry, but `Simulation` and the district-impact functions use whatever dataset you pass |
 | `microcosm_uk_2024_25` | UK default (Microcosm) | private HF repo — set `HUGGING_FACE_TOKEN` |
 | `microcosm_uk_2024_25_dense` | UK build for constituency and local-authority runs (the manifest's `region_datasets`) | private HF repo |
 
-Manifest build ids (bundle 6.16.0, checked 2026-11-06): US `populace_us_2024` @
-`populace-us-2024-spm-20260915`; UK `microcosm_uk_2024_25` @
+Manifest build ids (bundle 6.16.0, as of 2026-11-06): US `populace_us_2024` @
+`populace-us-2024-spm-20260915`; US `populace_us_2024_acs_local` @
+`populace-us-2024-buildo-acs-local-766b7c7-20261017T030317Z`; UK `microcosm_uk_2024_25` @
 `microcosm-uk-2024-25-national-20261025T091414Z-a6299504`. The manifest also carries per-region
 `region_datasets` and a `dataset_overlays` section that lists other UK builds (the FRS builds and
 the older `populace_uk_2023`).
@@ -118,15 +119,16 @@ assert "hf://datasets/policyengine/populace-us" in DEFAULT_DATASET
   `ensure_datasets` resolve): `populace_us_2024` at the **bundle-manifest** build —
   `populace-us-2024-spm-20260915` (bundle 6.16.0).
 - **The country-package `DEFAULT_DATASET`** (what a bare <!-- stale-ok -->
-  `from policyengine_us import Microsimulation; Microsimulation()` uses, checked on policyengine-us
-  main 2026-11-06 at `policyengine_us/system.py`): the *same dataset family* `populace_us_2024` on
-  `hf://datasets/policyengine/populace-us`, but pinned to an **earlier build**
-  (`populace-us-2024-spm-20260909`).
+  `from policyengine_us import Microsimulation; Microsimulation()` uses, in `policyengine_us/system.py`
+  on policyengine-us main as of 2026-11-06): the *same dataset family* `populace_us_2024` on
+  `hf://datasets/policyengine/populace-us`, pinned to release `populace-us-2024-spm-20260909`. That
+  release holds the same H5 bytes as the bundle's `populace-us-2024-spm-20260915` (sha256
+  `6496cc43…`, which `DEFAULT_DATASET_SHA256` also pins), so today both surfaces load identical data.
 
 Both are Microcosm `populace_us_2024` — even the country package's own test/dev default is now
-Microcosm (its `test_microsim.py` asserts `"populace" in DEFAULT_DATASET`). The takeaway: the
-country-package default can lag the certified bundle by a build. For reproducible, provenance-
-known results, go through the managed `pe.*` surface (which pins the certified bundle) rather
+Microcosm (its `test_microsim.py` asserts `"populace" in DEFAULT_DATASET`). The takeaway: the two
+pins live in separate repos, so the country-package default can drift from the certified bundle
+when a new build lands. For reproducible, provenance-known results, go through the managed `pe.*` surface (which pins the certified bundle) rather
 than a bare country-package `Microsimulation()`.
 
 ## Local-area analysis: one national dataset, filtered

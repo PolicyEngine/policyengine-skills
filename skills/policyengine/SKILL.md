@@ -244,7 +244,7 @@ Certified defaults resolve automatically — **do not pass raw `hf://` URIs**:
 | Name | What | Notes |
 |---|---|---|
 | `populace_us_2024` | US default (Microcosm, ~57k households calibrated to ~5.7k targets) | public |
-| `populace_us_2024_acs_local` | US local-area build (~1.6M households, ACS multispine, PUMA-assigned to congressional district/county/state) | load **by name**; state and congressional-district regions also select it through the bundle manifest's `region_datasets` |
+| `populace_us_2024_acs_local` | US local-area build (~1.6M households; ACS records draw a district and county from PUMA overlaps, donor records keep block-based geography) | load **by name**. It's the `dataset_path` of the state and congressional-district entries in `region_registry`, but `Simulation` uses whatever dataset you pass |
 | `microcosm_uk_2024_25` | UK default (Microcosm) | private HF repo — set `HUGGING_FACE_TOKEN` |
 
 The pre-2026 datasets are gone:

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-07T00:36:45.610845Z",
+  "generated_at": "2026-11-07T02:45:02.307005Z",
   "counts": {
     "skill": 24,
     "agent": 36,
@@ -297,7 +297,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 15022
+      "body_length": 15091
     },
     {
       "id": "policyengine-api",
@@ -587,6 +587,7 @@
         "calibration-diagnostics",
         "policyengine-us-data",
         "policyengine-us",
+        "policyengine.py",
         "microcalibrate",
         "microimpute",
         "microunit",
@@ -615,7 +616,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 13626
+      "body_length": 14226
     },
     {
       "id": "policyengine-design",
@@ -17874,12 +17875,13 @@
       "pushed_at": "2026-05-28T12:37:26Z",
       "skills": [
         "policyengine",
+        "policyengine-data",
         "policyengine-plugin-maintenance",
         "policyengine-tools"
       ],
       "agents": [],
       "commands": [],
-      "total": 3
+      "total": 4
     },
     {
       "name": "policyengine-uk",
