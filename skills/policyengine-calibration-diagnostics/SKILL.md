@@ -159,7 +159,7 @@ imputation. If your deviation signature touches any of these, widen the confiden
 | Small-state cost volatile vs prior | State CPS weight variance | Bootstrap state weights, report CI. |
 | Top-decile benefit share too low | Top-AGI under-weighted | Cross-check AGI by SOI band. |
 | Reform-vs-baseline difference flat across years | Uprating index mis-set | Verify `uprating.*` parameters. |
-| Reform touching an untargeted variable scores ~$0 | Operative base pruned by L0 sparsity | Check if the base is a calibration target; if not, try a denser build (see `policyengine-data`). |
+| Reform touching an untargeted variable scores ~$0 | Few households in the default's frozen 57,240-household support carry the operative base, or calibration left them near-zero weight | Check whether a calibration target covers the base; count the households that carry it and the weight they hold (see `policyengine-data`). |
 
 ## Sources
 
@@ -171,6 +171,7 @@ imputation. If your deviation signature touches any of these, widen the confiden
 
 ## Related skills
 
-- `policyengine-data` — how Microcosm builds targets, weights, and the sparse-vs-dense tradeoff.
+- `policyengine-data` — how Microcosm builds targets and weights, and where the US default's
+  57,240 households come from.
 - `policyengine-prior-scores` — what a run is being compared against.
 - `policyengine` — running the perturbation tests this skill recommends.
