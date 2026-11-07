@@ -243,8 +243,8 @@ Certified defaults resolve automatically — **do not pass raw `hf://` URIs**:
 
 | Name | What | Notes |
 |---|---|---|
-| `populace_us_2024` | US default (Microcosm, ~57k households calibrated to ~30k+ admin targets) | public |
-| `populace_us_2024_acs_local` | US local-area build (~1.6M households, ACS multispine, PUMA-assigned CD-119/county/state) | load **by name** for state/district work; never selected implicitly |
+| `populace_us_2024` | US default (Microcosm, ~57k households calibrated to ~5.7k targets) | public |
+| `populace_us_2024_acs_local` | US local-area build (~1.6M households, ACS multispine, PUMA-assigned to congressional district/county/state) | load **by name**; state and congressional-district regions also select it through the bundle manifest's `region_datasets` |
 | `microcosm_uk_2024_25` | UK default (Microcosm) | private HF repo — set `HUGGING_FACE_TOKEN` |
 
 The pre-2026 datasets are gone:

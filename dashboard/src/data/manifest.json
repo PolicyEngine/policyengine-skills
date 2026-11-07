@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-06T23:39:58.584914Z",
+  "generated_at": "2026-11-07T00:36:45.610845Z",
   "counts": {
     "skill": 24,
     "agent": 36,
@@ -297,7 +297,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 14955
+      "body_length": 15022
     },
     {
       "id": "policyengine-api",
@@ -615,7 +615,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 13439
+      "body_length": 13626
     },
     {
       "id": "policyengine-design",

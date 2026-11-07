@@ -85,13 +85,14 @@ held-out, rotated evidence without degrading a protected target family beyond to
 
 Builds that pass the release gates are published to Hugging Face (`policyengine/populace-us`,
 `policyengine/populace-uk-private`) and referenced by name in the certified bundle manifest that
-ships inside the `policyengine` package. `populace-*` ids name Microcosm releases. Verified in
-policyengine 6.16.0 (`policyengine/data/bundle/manifest.json`, checked 2026-11-06):
+ships inside the `policyengine` package. `populace-*` ids name Microcosm releases. Checked on
+2026-11-06 against policyengine 6.16.0 (`policyengine/data/bundle/manifest.json`) and the Hugging
+Face release manifests it pins:
 
 | Dataset | What | How to load |
 |---|---|---|
-| `populace_us_2024` | US default. Build J, sparse, ~57k households calibrated to tens of thousands of admin targets | resolves automatically; do not pass a raw URI |
-| `populace_us_2024_acs_local` | US local-area build. Build L, ~1.6M households, ACS multispine, PUMA-assigned to CD-119 / county / state | load **by name**, never implicit |
+| `populace_us_2024` | US default. Build P (sparse, 57,240 households, calibrated to 5,659 targets) plus a source enrichment that adds SPM unit roles | resolves automatically; do not pass a raw URI |
+| `populace_us_2024_acs_local` | US local-area build. Build O, 1,586,908 households, ACS multispine, PUMA-assigned to congressional district / county / state | load **by name**; the manifest's `region_datasets` also makes it the dataset for state and congressional-district regions |
 | `microcosm_uk_2024_25` | UK default (Microcosm) | private HF repo — set `HUGGING_FACE_TOKEN` |
 | `microcosm_uk_2024_25_dense` | UK build for constituency and local-authority runs (the manifest's `region_datasets`) | private HF repo |
 
