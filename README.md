@@ -119,7 +119,9 @@ npm run dev    # http://localhost:5180
 ```
 
 `uv run python scripts/build_manifest.py` regenerates the underlying manifest,
-and the `predev` / `prebuild` hooks run the script automatically.
+and the `predev` / `prebuild` hooks run the same command. CI fails when the
+committed manifest differs from a fresh build, so commit the rebuilt manifest
+with any change to skills, agents, commands, bundles or analyses.
 
 ## Sync to policyengine-claude
 
