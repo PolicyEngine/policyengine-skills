@@ -306,6 +306,22 @@ def test_check_fails_when_the_manifest_is_missing(manifests, tmp_path, capsys):
     assert not missing.exists(), "--check must not write"
 
 
+@pytest.mark.parametrize(
+    ("contents", "problem"),
+    [("{not json", "isn't valid JSON"), ("[]", "isn't a JSON object")],
+)
+def test_check_fails_cleanly_on_a_malformed_manifest(
+    manifests, tmp_path, capsys, contents, problem
+):
+    on_disk = tmp_path / "manifest.json"
+    on_disk.write_text(contents)
+    assert build_manifest.check_manifest(on_disk, manifests[HASH_SEEDS[0]]) == 1
+    err = capsys.readouterr().err
+    assert problem in err
+    assert "uv run python scripts/build_manifest.py" in err
+    assert on_disk.read_text() == contents, "--check must not write"
+
+
 # ---------------------------------------------------------------------------
 # Overlaps.
 # ---------------------------------------------------------------------------

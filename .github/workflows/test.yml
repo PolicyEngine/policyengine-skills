@@ -28,12 +28,13 @@ jobs:
     # bundles and analyses. This job rebuilds it on Linux, under the oldest
     # and newest Python the repo supports, and fails when the committed copy
     # differs anywhere but generated_at. So the manifest can't fall behind
-    # its sources, and a build on a laptop has to match a build here.
+    # its sources, and a build on a laptop has to match a build here. When a
+    # new Python ships, move the second entry up to it.
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.11", "3.14"]
+        python: ["3.11", "3.15"]
     steps:
       - uses: actions/checkout@v6
 
