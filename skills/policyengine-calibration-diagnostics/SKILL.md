@@ -23,9 +23,9 @@ real `relative_error` numbers rather than assumptions. When an `/analyze-policy`
 returns INVESTIGATE, this skill supplies the ranked candidate causes.
 
 The calibrated microdata is now a **Microcosm** build (see the `policyengine-data` skill for how
-targets, weights, and L0 sparsity work). Calibration targets live in the Microcosm build's target
-set — not in a hand-maintained loss file — and their fit is queryable per release from the
-dashboard API below.
+targets, weights and opt-in L0 pruning work, and where the US default's households come from).
+Calibration targets live in the Microcosm build's target set — not in a hand-maintained loss
+file — and their fit is queryable per release from the dashboard API below.
 
 ## When to use
 
@@ -159,14 +159,14 @@ imputation. If your deviation signature touches any of these, widen the confiden
 | Small-state cost volatile vs prior | State CPS weight variance | Bootstrap state weights, report CI. |
 | Top-decile benefit share too low | Top-AGI under-weighted | Cross-check AGI by SOI band. |
 | Reform-vs-baseline difference flat across years | Uprating index mis-set | Verify `uprating.*` parameters. |
-| Reform touching an untargeted variable scores ~$0 | Few households in the default's frozen 57,240-household support carry the operative base, or calibration left them near-zero weight | Check whether a calibration target covers the base; count the households that carry it and the weight they hold (see `policyengine-data`). |
+| Reform on an untargeted or badly fit base scores ~$0 or far too high | Few households in the default's frozen 57,240-household support carry the base, or calibration sank them to near-zero weight or pushed them to the 5x weight cap | Check whether a target covers the base and how far off it ended (a target past a 100% miss no longer pulls on the weights); count the carriers, their weight and their effective sample size (see `policyengine-data`). |
 
 ## Sources
 
 - **`calibration-diagnostics.vercel.app`** — live per-target diagnostics API and dashboard (first
   stop; reads the current Microcosm release). Source: `github.com/PolicyEngine/calibration-diagnostics`.
-- **`PolicyEngine/microcosm`** — where calibration targets, weights, and the L0 sparsity live; the
-  build that produces the certified dataset. See the `policyengine-data` skill.
+- **`PolicyEngine/microcosm`** — where calibration targets, weights, and the opt-in L0 pruning
+  live; the build that produces the certified dataset. See the `policyengine-data` skill.
 - `github.com/PolicyEngine/policyengine-us/issues` — known program-level model issues.
 
 ## Related skills

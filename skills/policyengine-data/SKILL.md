@@ -4,13 +4,13 @@ description: |
   Load for PolicyEngine's data layer — how Microcosm builds, calibrates, versions, and names the
   microdata behind population runs. Covers the Microcosm stack (Frame kernel, microcosm-fit
   conditional models, microcosm-calibrate weights with opt-in L0 pruning, build/release gates),
-  the certified datasets in policyengine bundles (populace_us_2024 57k-household default on a
-  frozen support, populace_us_2024_acs_local ~1.6M local-area, microcosm_uk_2024_25 private),
+  the certified datasets in policyengine bundles (populace_us_2024 57k-household frozen-support
+  default, populace_us_2024_acs_local ~1.6M local-area, microcosm_uk_2024_25 private),
   local-area runs as one national dataset plus a geography filter, the calibration diagnostics
   dashboard, and where data work goes since PolicyEngine archived policyengine-us-data.
   Triggers: Microcosm, Frame, microcosm-fit, microcosm-calibrate, calibration target, survey
-  weights, reweighting, imputation, QRF, quantile loss, L0 sparsity, dense_no_l0, local-area
-  data, ACS, FRS, WAS, enhanced microdata, DEFAULT_DATASET.
+  weights, reweighting, imputation, QRF, quantile loss, L0 sparsity, sparse 57k, dense_no_l0,
+  local-area data, ACS, FRS, WAS, enhanced microdata, DEFAULT_DATASET.
   NOT for: running simulations (see policyengine) or diagnosing a specific score mismatch (see
   policyengine-calibration-diagnostics).
 metadata:
@@ -41,7 +41,7 @@ shards as a constellation.
 |---|---|---|---|
 | `microcosm-frame` | `microcosm.frame` | the kernel: `Frame`, typed weights, strata, links, weighted accounting, unit structure, the RulesEngine protocol | microdf, microunit |
 | `microcosm-fit` | `microcosm.fit` | conditional models (weight-aware by construction) | ad-hoc imputation scripts |
-| `microcosm-calibrate` | `microcosm.calibrate` | targets → calibrated weights (Adam; opt-in L0 / L1 pruning) | microcalibrate |
+| `microcosm-calibrate` | `microcosm.calibrate` | targets → calibrated weights (Adam; opt-in L0 pruning, or L1 via `prox`) | microcalibrate |
 | `microcosm-build` | `microcosm.build` | build plans, donor graphs, release gates, country build stages | one-off build drivers |
 | `microcosm-data` | `microcosm.data` | published population registry + lazy engine loaders | country-specific data packages |
 
@@ -67,10 +67,9 @@ Key design facts (from `DESIGN.md`) that change how you reason about the data:
   target-matrix compilation plus APG / L0 pruning "the core, not an option" and
   generate-big-then-prune "the intended asymptotic design (300k → 3M → 30M pools)". The code
   keeps pruning opt-in: `calibrate()` defaults to `l0_lambda=0.0` and no `target_records`, and
-  treats `method="apg"` as a deprecated alias for Adam. No US national build on Hugging Face
-  since 2026-07-01 has run L0 (see "L0 sparsity" below). Its longitudinal rule: **one weight per
-  trajectory** (multi-period targets stack as `(target, period)` constraint rows over one weight
-  vector).
+  treats `method="apg"` as a deprecated alias for Adam (see "L0 sparsity" below for what the US
+  builds ran). The calibrator's longitudinal rule: **one weight per trajectory** (multi-period
+  targets stack as `(target, period)` constraint rows over one weight vector).
 - **Process rules are as binding as the architecture:** behavioral contract tests in CI from day
   one (weighted fits shift draws toward the weighted truth; calibration conserves declared mass;
   unit assignment partitions exactly); constellation versioning (consumers pin the constellation,
@@ -211,9 +210,12 @@ solver then searches `l0_lambda` until the non-zero count tracks that budget) or
 Without gates, Adam works on log-weights, so every weight stays positive. The US builder
 (`tools/build_us_fiscal_refresh_release.py`) still runs L0 + refit by default; its help text
 marks the dense arm, `--dense-default-dataset`, "Diagnostic only" and tells release builds to
-leave it unset. Yet every US national calibration run published on Hugging Face from 2026-07-01
-on records `dense_no_l0` as its default dataset's method, a label the builder writes only on that
-dense arm.
+leave it unset. Yet no US national build published on Hugging Face from 2026-07-01 on ran L0.
+The build manifests of the 2026-07-01 release, of Builds I, J, M, N, O-sparse and P, and of the
+2026-09-30 and 2026-10-24 builds all record `dense_no_l0`, a label the builder writes only on
+that dense arm. Build H's branch publishes no build manifest, but its diagnostics record
+`l0_lambda` 0 over its whole 337,704-household pool, and the SPM releases inherit Build P's
+calibration (`calibration.mode: inherited`).
 
 **Where the US default's 57,240 households come from.** No build in the default's published
 lineage ran L0; each calibration in it worked on a fixed list of households. The Hugging Face
@@ -225,50 +227,70 @@ release manifests trace that list back to a 2026-07-01 release:
   `all_preexisting_variables_exact: true`).
 - Build P froze its support before calibrating (`selection_source.mode: "frozen_support"`). It
   matched a named list of 57,240 households onto its 337,704-household candidate pool by stable
-  source identity and dropped the rest (`select_frozen_support` in
-  `microcosm.build.us_runtime.warm_start_selection`), then calibrated all 57,240 with no L0 term:
-  `method: "dense_no_l0"`, `sparse: false`, `l0_lambda: 0.0`, 6,000 Adam epochs.
+  source identity and dropped the rest (`select_frozen_support`, now in
+  `microcosm.build.us_runtime.warm_start_selection`), then calibrated all 57,240 with no L0 term.
+  Its build manifest records `method: "dense_no_l0"`, `sparse: false` and 6,000 epochs, and its
+  `calibration_diagnostics.json` records Adam with `l0_lambda` 0.0.
 - Build P's list comes from Build I's (identity hash `152baca3`) through Build M's 9-household
   swap, which adds the 9 Keogh-distribution carriers Build I lacked and drops the 9 non-carrier
   ASEC-channel households with the lowest base weights (`buildm-keogh-carrier-protect-swap`,
-  PolicyEngine/microcosm#434). Build I, in turn, swapped 100 households into the support of
-  `populace-us-2024-sparse-l0-refit-57k-71a0887-national-only-20260701` to protect
-  miscellaneous-income carriers (`buildi-warmstart-misc-protect-swap`, PolicyEngine/microcosm#359).
+  PolicyEngine/microcosm#434). Build I, in turn, swapped 100 households in the support of
+  `populace-us-2024-sparse-l0-refit-57k-71a0887-national-only-20260701`
+  (`buildi-warmstart-misc-protect-swap`). PolicyEngine/microcosm#359 says the swap removed the
+  100 negative miscellaneous-income carriers with the largest losses, which calibration had
+  pushed to the weight cap, and added 100 high-AGI households with no miscellaneous income.
 - Despite its id, that 2026-07-01 release also records `dense_no_l0`: 1,500 epochs on 57,240
   households, starting from weights in a local run file
   (`out/…/refit-selected-current-surface-a7a77c4-20260701/…`) that it did not publish. Its
   manifests do not record the pool that run chose from or how it chose.
-  PolicyEngine/microcosm#328 calls that run the "informed-L0" selection step and asked for it as
-  committed code; on main, the builder's `--selection-mode` still implements only
-  `frozen_support`.
+  PolicyEngine/microcosm#328 calls that run "the informed-L0 step", and the builder's help text
+  on main says its default `--l0-refit-lambda-share` "reproduces the current 57k-household US
+  fiscal surface run from the 337k support".
 
-So the 57k size comes from a selection that an unpublished run made by 2026-07-01 (an L0 run,
-by microcosm#328's account) and that Builds I through P carried forward by identity, not from
-pruning in the current build. Dense calibration still concentrates the weight. Build P's
-calibration artifact (`populace_us_2024_calibration.npz`, whose `household_weight` vector the H5
-ships) holds no exact zeros, but it leaves 9,144 households at or below the solver's prune
-threshold (1e-6 × the mean starting weight), together less than one ten-millionth of the total
-weight. The diagnostics count the other 48,096 as non-zero (`n_nonzero`) and report an effective
-sample size of 9,174.
+So the 57k size comes from a selection that an unpublished run produced before the 2026-07-01
+release (an L0 run, by both accounts) and that the national builds I, J, M, N, O-sparse and P
+carried forward by identity, not from pruning in the current build.
 
-**What this means for a reform.** A reform whose base no calibration target constrains can
-under-read on the default, even to near `$0`, for two reasons. First, no untargeted variable
-enters the calibration loss. Build P's loss held only the target-matching term (`l0_lambda`,
-`l1_lambda` and `l2_lambda` all 0), and its hard limits (each weight at most 5 times its
-starting value, total weight fixed) set no floor, so a weight can fall toward zero, as 9,144
-did. An untargeted variable gets whatever total those weights imply. Second, a frozen support
-holds only the records its selection kept, so an input that a later build restores can have
-almost no carriers. Build P's own manifest gives the example: Build I's list "predates the keogh
-restoration and carried ~$0.1M unweighted of the $148.97M weighted source mass" of Keogh
-distributions, which the `keogh_distribution_neutralization` reform-coverage probe caught
-(microcosm#434 reports a structural zero). When a result looks too small, check whether a
-calibration target covers the reform's base (see `policyengine-calibration-diagnostics`), then
-count the households that carry the base and the weight they hold. If few do, report the count
-with the result and raise it in `PolicyEngine/microcosm`, where microcosm#434's protect-swap
-shows the fix. As of 2026-11-06, the two newest US national builds on Hugging Face
+Dense calibration still concentrates the weight. Build P's calibration artifact
+(`populace_us_2024_calibration.npz`, whose `household_weight` vector the H5 ships) holds no exact
+zeros, but 40,600 of its 57,240 households weigh less than 1, 42,903 ended below 1% of their
+starting weight, and 12,329 hold 99% of the total weight. Build P's diagnostics report an
+effective sample size of 9,174 and count 48,096 households as non-zero (`n_nonzero`, weights
+above the solver's prune threshold of 1e-6 × the mean starting weight); the other 9,144 together
+hold less than one ten-millionth of the weight.
+
+**What this means for a reform.** A reform whose base no calibration target pins down can mis-read
+on the default in either direction, down to near `$0`, for three reasons. First, the loss sees only
+targeted quantities: Build P ran with `l0_lambda`, `l1_lambda` and `l2_lambda` all 0, and its hard
+limits keep the total fixed and cap each weight at 5 times its starting value (which already
+includes a 5.33x rescale to the Census population, so about 27 times the household's weight in the
+candidate pool) but set no floor. The solve pushed 6,139 households, holding 53% of the weight, to
+within 0.2% of that cap and sank 42,903 below 1% of their starting weight, so an untargeted variable
+can read high when its carriers sit at the cap and low when they sank. Second, each target's loss
+term stops growing at a 100% miss (`target_loss_scales.cap: 1.0`), so a target that ends further off
+no longer pulls on the weights; Build P ended with 37 such targets
+(`past_cap_census.final_past_cap`). microcosm#359 reports one case: Build H's frozen 57k run
+overshot its miscellaneous-income net-loss target by 322%, far past the loss cap, after the solve
+pushed that loss's carriers to the weight cap. Third, a frozen support holds only the records its
+selection kept, so an input that a later build restores can have almost no carriers. Build P's own
+manifest gives the example: Build I's list "predates the keogh restoration and carried ~$0.1M
+unweighted of the $148.97M weighted source mass" of Keogh distributions, which the
+`keogh_distribution_neutralization` reform-coverage probe caught (microcosm#434 reports a structural
+zero).
+
+When a result looks too small or too large, check whether a calibration target covers the
+reform's base and how far it ended from that target (`relative_error`; see
+`policyengine-calibration-diagnostics`). Then count the households that carry the base, the
+weight they hold and their effective sample size; with 40,600 households below a weight of 1, a
+raw count overstates the support. If the support looks thin, report it with the result and raise
+it in `PolicyEngine/microcosm`, where microcosm#434's protect-swap shows the fix. As of
+2026-11-06, the two newest US national builds on Hugging Face
 (`populace-us-2024-0fb05b6-4b57d15a287c-20260930T150401Z` and
 `populace-us-2024-b5db384-8b0c1950b65f-20261024T083103Z`) skip the selection and calibrate a
-352,932-household pool in full; bundle 6.16.0 pins neither, so use them only as a cross-check.
+352,932-household pool in full. Bundle 6.16.0 pins neither, but both use policyengine-us 2.2.1,
+the version the bundle pins, so they work as a cross-check: load one through the country package
+with the URI form `DEFAULT_DATASET` uses,
+`hf://datasets/policyengine/populace-us/populace_us_2024.h5@<release id>` (a 2.5 GB file).
 
 **Fast-mode builds in CI.** Data-pipeline steps (fitting, calibration) are expensive, so builds
 honor a reduced-work mode for CI — fewer epochs / trees / a sampled frame — gated on an
