@@ -22,8 +22,10 @@ writes the manifest somewhere other than the dashboard's data directory.
 
 The script needs PyYAML, which ``pyproject.toml`` lists, so run it as
 ``uv run python scripts/build_manifest.py``. Without PyYAML,
-``parse_frontmatter`` falls back to a subset parser that misreads nested
-frontmatter, such as each analysis's ``jurisdiction``.
+``parse_frontmatter`` falls back to a subset parser that reads every scalar
+as a string and drops nested fields, such as each analysis's
+``jurisdiction``. The dashboard's Analyses page then throws an error when it
+formats numbers that arrive as strings.
 """
 
 from __future__ import annotations

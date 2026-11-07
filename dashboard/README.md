@@ -48,10 +48,11 @@ overlap pairs via TF-IDF cosine, and emits
 
 The script needs PyYAML, which the repo's `pyproject.toml` lists, so run it
 as `uv run python scripts/build_manifest.py`. Without PyYAML it falls back to
-a simpler parser that misreads the analyses' nested frontmatter. For example,
-every `jurisdiction` loses its country. The `predev` / `prebuild` hooks in
-`package.json` rebuild the manifest with `python3` whenever you start or build
-the app, so that `python3` needs PyYAML too.
+a simpler parser that reads every frontmatter value as a string and drops
+nested fields. Each analysis's `jurisdiction` then loses its country, and the
+Analyses page throws an error when it formats the numbers. The `predev` /
+`prebuild` hooks in `package.json` rebuild the manifest with `python3`
+whenever you start or build the app, so that `python3` needs PyYAML too.
 
 ## Running locally
 

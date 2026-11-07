@@ -155,11 +155,14 @@ INVENTORY = build_manifest.load_org_repos()
 
 
 @settings(deadline=None, max_examples=50)
-@given(st.permutations(INVENTORY))
-def test_known_repos_ignore_inventory_order(inventory):
+@given(st.permutations(range(len(INVENTORY))))
+def test_known_repos_ignore_inventory_order(order):
     # A refresh of scripts/policyengine_repos.json can list the same repos in
     # a new order; target_repos, known_repos and repo_coverage follow
-    # build_known_repos, so its result has to stay the same.
+    # build_known_repos, so its result has to stay the same. Hypothesis
+    # permutes indices, so a failure prints a list of numbers rather than
+    # the whole inventory.
     assert len(INVENTORY) > 1
+    inventory = [INVENTORY[i] for i in order]
     with patch.object(build_manifest, "load_org_repos", return_value=inventory):
         assert build_manifest.build_known_repos() == build_manifest.KNOWN_REPO_KINDS
