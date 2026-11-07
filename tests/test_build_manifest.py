@@ -1,9 +1,10 @@
-"""The dashboard manifest must not depend on Python's string-hash seed.
+"""The dashboard manifest must not depend on incidental orderings.
 
 ``scripts/build_manifest.py`` once listed workflow edges in set-iteration
 order, which follows the per-process ``PYTHONHASHSEED``, so every rebuild
 reordered ``edges`` and rewrote hundreds of manifest lines with no content
-change. These tests hold rebuilds byte-identical apart from ``generated_at``.
+change. These tests hold rebuilds byte-identical apart from ``generated_at``
+and keep the repo lists independent of the inventory file's order.
 """
 
 from __future__ import annotations
@@ -14,14 +15,16 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from scripts import build_manifest  # noqa: E402
 from scripts.build_manifest import (  # noqa: E402
     SOURCE_KIND_ORDER,
     edge_sort_key,
@@ -137,6 +140,7 @@ def reference_cases(draw):
     return text, ids, reordered
 
 
+@settings(deadline=None)
 @given(reference_cases())
 def test_extract_references_ignores_known_id_order(case):
     # The builder passes sets, whose order follows the hash seed; lists in
@@ -145,3 +149,17 @@ def test_extract_references_ignores_known_id_order(case):
     first = extract_references(text, ids)
     second = extract_references(text, reordered)
     assert list(first.items()) == list(second.items())
+
+
+INVENTORY = build_manifest.load_org_repos()
+
+
+@settings(deadline=None, max_examples=50)
+@given(st.permutations(INVENTORY))
+def test_known_repos_ignore_inventory_order(inventory):
+    # A refresh of scripts/policyengine_repos.json can list the same repos in
+    # a new order; target_repos, known_repos and repo_coverage follow
+    # build_known_repos, so its result has to stay the same.
+    assert len(INVENTORY) > 1
+    with patch.object(build_manifest, "load_org_repos", return_value=inventory):
+        assert build_manifest.build_known_repos() == build_manifest.KNOWN_REPO_KINDS

@@ -46,9 +46,12 @@ registry metadata (status, owner, recommended use, replacements), computes
 overlap pairs via TF-IDF cosine, and emits
 `dashboard/src/data/manifest.json` — the single file the React app reads.
 
-The script has **zero third-party dependencies** so it runs on plain
-`python3`. It is automatically invoked as a `predev` / `prebuild` hook in
-`package.json`, so the manifest is always fresh when you start the app.
+The script needs PyYAML, which the repo's `pyproject.toml` lists, so run it
+as `uv run python scripts/build_manifest.py`. Without PyYAML it falls back to
+a simpler parser that misreads the analyses' nested frontmatter. For example,
+every `jurisdiction` loses its country. The `predev` / `prebuild` hooks in
+`package.json` rebuild the manifest with `python3` whenever you start or build
+the app, so that `python3` needs PyYAML too.
 
 ## Running locally
 
@@ -69,7 +72,7 @@ The output in `dist/` is a fully static site — drop it behind any web host.
 ## Updating the manifest manually
 
 ```bash
-python3 scripts/build_manifest.py
+uv run python scripts/build_manifest.py
 ```
 
 Run that whenever you add or rename artifacts and you want to refresh the
@@ -91,7 +94,7 @@ gh repo list PolicyEngine --limit 300 \
   --json name,description,isArchived,visibility,pushedAt \
   | python3 -c "import json,sys; d=[{'name':r['name'],'description':r['description'] or '','visibility':r['visibility'],'pushed_at':r['pushedAt']} for r in json.load(sys.stdin) if not r['isArchived']]; print(json.dumps(d, indent=2))" \
   > scripts/policyengine_repos.json
-python3 scripts/build_manifest.py
+uv run python scripts/build_manifest.py
 ```
 
 Each repo is auto-classified (country-model, platform, library,

@@ -15,13 +15,15 @@ emits a single JSON manifest consumed by the React dashboard under
 - Coverage gaps (skills with no bundle, agents nobody calls, commands that
   reference missing artifacts, etc.).
 
-A rebuild with no content change rewrites nothing but ``generated_at``,
-whatever the string-hash seed; ``tests/test_build_manifest.py`` checks this.
-``--output PATH`` writes the manifest somewhere other than the dashboard's
-data directory.
+With PyYAML installed, a rebuild with no content change rewrites nothing but
+``generated_at``, whatever the string-hash seed or Python version;
+``tests/test_build_manifest.py`` checks the hash seed. ``--output PATH``
+writes the manifest somewhere other than the dashboard's data directory.
 
-The script has no third-party dependencies; it ships with the rest of the
-repo so contributors only need ``python3``.
+The script needs PyYAML, which ``pyproject.toml`` lists, so run it as
+``uv run python scripts/build_manifest.py``. Without PyYAML,
+``parse_frontmatter`` falls back to a subset parser that misreads nested
+frontmatter, such as each analysis's ``jurisdiction``.
 """
 
 from __future__ import annotations
@@ -32,6 +34,7 @@ import math
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -381,7 +384,9 @@ def build_known_repos() -> list[tuple[str, str]]:
             out.append((r["name"], kind))
         # Sort longest-name first so substring matching doesn't shadow
         # longer names (e.g. "policyengine-us" vs "policyengine-us-data").
-        out.sort(key=lambda x: -len(x[0]))
+        # Break ties by name, so the inventory file's order never reaches
+        # target_repos, known_repos or repo_coverage.
+        out.sort(key=lambda x: (-len(x[0]), x[0]))
         return out
     return [(r, k) for r, k in REPO_KIND_OVERRIDES.items()]
 
@@ -689,7 +694,9 @@ def compute_overlaps(artifacts: list[Artifact]) -> list[dict]:
             vectors.append({})
             continue
         vec = {term: count * idf.get(term, 0.0) for term, count in tf.items()}
-        norm = math.sqrt(sum(v * v for v in vec.values())) or 1.0
+        # math.fsum rounds exactly. The built-in sum() rounds floats
+        # differently from Python 3.12 on, which changed shared_terms order.
+        norm = math.sqrt(math.fsum(v * v for v in vec.values())) or 1.0
         vectors.append({k: v / norm for k, v in vec.items()})
 
     pairs: list[dict] = []
@@ -706,7 +713,7 @@ def compute_overlaps(artifacts: list[Artifact]) -> list[dict]:
                 a, b = vj, vi
             else:
                 a, b = vi, vj
-            score = sum(a[t] * b[t] for t in a if t in b)
+            score = math.fsum(a[t] * b[t] for t in a if t in b)
             if score >= 0.15:
                 pairs.append(
                     {
@@ -1351,7 +1358,7 @@ def main(argv: list[str] | None = None) -> None:
         )
 
     manifest = {
-        "generated_at": __import__("datetime").datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
         "counts": {
             **{kind: len(arts) for kind, arts in artifacts_by_kind.items()},
             "analysis": len(analyses),
