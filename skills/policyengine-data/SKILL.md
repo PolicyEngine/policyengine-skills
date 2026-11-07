@@ -213,9 +213,9 @@ marks the dense arm, `--dense-default-dataset`, "Diagnostic only" and tells rele
 leave it unset. Yet no US national build published on Hugging Face from 2026-07-01 on ran L0.
 The build manifests of the 2026-07-01 release, of Builds I, J, M, N, O-sparse and P, and of the
 2026-09-30 and 2026-10-24 builds all record `dense_no_l0`, a label the builder writes only on
-that dense arm. Build H's branch publishes no build manifest, but its diagnostics record
-`l0_lambda` 0 over its whole 337,704-household pool, and the SPM releases inherit Build P's
-calibration (`calibration.mode: inherited`).
+that dense arm. Build H's published dense arm, a branch, has no build manifest, but its
+diagnostics record `l0_lambda` 0 over its whole 337,704-household pool, and the SPM releases
+inherit Build P's calibration (`calibration.mode: inherited`).
 
 **Where the US default's 57,240 households come from.** No build in the default's published
 lineage ran L0; each calibration in it worked on a fixed list of households. The Hugging Face
@@ -248,8 +248,8 @@ release manifests trace that list back to a 2026-07-01 release:
   fiscal surface run from the 337k support".
 
 So the 57k size comes from a selection that an unpublished run produced before the 2026-07-01
-release (an L0 run, by both accounts) and that the national builds I, J, M, N, O-sparse and P
-carried forward by identity, not from pruning in the current build.
+release (an L0 run, per microcosm#328 and the builder's help text) and that the national builds
+I, J, M, N, O-sparse and P carried forward by identity, not from pruning in the current build.
 
 Dense calibration still concentrates the weight. Build P's calibration artifact
 (`populace_us_2024_calibration.npz`, whose `household_weight` vector the H5 ships) holds no exact
@@ -269,28 +269,30 @@ within 0.2% of that cap and sank 42,903 below 1% of their starting weight, so an
 can read high when its carriers sit at the cap and low when they sank. Second, each target's loss
 term stops growing at a 100% miss (`target_loss_scales.cap: 1.0`), so a target that ends further off
 no longer pulls on the weights; Build P ended with 37 such targets
-(`past_cap_census.final_past_cap`). microcosm#359 reports one case: Build H's frozen 57k run
-overshot its miscellaneous-income net-loss target by 322%, far past the loss cap, after the solve
-pushed that loss's carriers to the weight cap. Third, a frozen support holds only the records its
-selection kept, so an input that a later build restores can have almost no carriers. Build P's own
-manifest gives the example: Build I's list "predates the keogh restoration and carried ~$0.1M
-unweighted of the $148.97M weighted source mass" of Keogh distributions, which the
+(`past_cap_census.final_past_cap`). microcosm#359 reports one case: Build H's unpublished frozen-57k
+arm overshot its miscellaneous-income net-loss target by 322%, more than three times the loss cap,
+after the solve pushed that loss's carriers to the weight cap. Third, a frozen support holds only
+the records its selection kept, so an input that a later build restores can have almost no carriers.
+Build P's own manifest gives the example: Build I's list "predates the keogh restoration and carried
+~$0.1M unweighted of the $148.97M weighted source mass" of Keogh distributions, which the
 `keogh_distribution_neutralization` reform-coverage probe caught (microcosm#434 reports a structural
 zero).
 
-When a result looks too small or too large, check whether a calibration target covers the
-reform's base and how far it ended from that target (`relative_error`; see
-`policyengine-calibration-diagnostics`). Then count the households that carry the base, the
-weight they hold and their effective sample size; with 40,600 households below a weight of 1, a
-raw count overstates the support. If the support looks thin, report it with the result and raise
-it in `PolicyEngine/microcosm`, where microcosm#434's protect-swap shows the fix. As of
-2026-11-06, the two newest US national builds on Hugging Face
+When a result looks too small or too large, check whether a calibration target covers the reform's
+base and how far it ended from that target (`relative_error`; see
+`policyengine-calibration-diagnostics`). Then count the households that carry the base, the weight
+they hold and their effective sample size; with 40,600 households below a weight of 1, a raw count
+overstates the support. If the support looks thin, report it with the result and raise it in
+`PolicyEngine/microcosm`, where microcosm#434's protect-swap shows one fix. As of 2026-11-06, the
+two newest US national builds on Hugging Face
 (`populace-us-2024-0fb05b6-4b57d15a287c-20260930T150401Z` and
 `populace-us-2024-b5db384-8b0c1950b65f-20261024T083103Z`) skip the selection and calibrate a
-352,932-household pool in full. Bundle 6.16.0 pins neither, but both use policyengine-us 2.2.1,
-the version the bundle pins, so they work as a cross-check: load one through the country package
-with the URI form `DEFAULT_DATASET` uses,
-`hf://datasets/policyengine/populace-us/populace_us_2024.h5@<release id>` (a 2.5 GB file).
+352,932-household pool in full. Bundle 6.16.0 pins neither, but both use policyengine-us 2.2.1, the
+version the bundle pins, so they work as a cross-check: load one through the country package with
+the URI form `DEFAULT_DATASET` uses,
+`hf://datasets/policyengine/populace-us/populace_us_2024.h5@<release id>` (a 2.5 GB file). They also
+fit different target sets (5,694 and 6,102 targets, against Build P's 5,659), so a gap between
+either one and the default flags a support question without measuring the support effect.
 
 **Fast-mode builds in CI.** Data-pipeline steps (fitting, calibration) are expensive, so builds
 honor a reduced-work mode for CI — fewer epochs / trees / a sampled frame — gated on an

@@ -159,7 +159,7 @@ imputation. If your deviation signature touches any of these, widen the confiden
 | Small-state cost volatile vs prior | State CPS weight variance | Bootstrap state weights, report CI. |
 | Top-decile benefit share too low | Top-AGI under-weighted | Cross-check AGI by SOI band. |
 | Reform-vs-baseline difference flat across years | Uprating index mis-set | Verify `uprating.*` parameters. |
-| Reform on an untargeted or badly fit base scores ~$0 or far too high | Few households in the default's frozen 57,240-household support carry the base, or calibration sank them to near-zero weight or pushed them to the 5x weight cap | Check whether a target covers the base and how far off it ended (a target past a 100% miss no longer pulls on the weights); count the carriers, their weight and their effective sample size (see `policyengine-data`). |
+| Reform on an untargeted or badly fit base scores ~$0 or too high | Few households in the default's frozen 57,240-household support carry the base, or calibration sank them to near-zero weight or pushed them to the 5x weight cap | Check whether a target covers the base and how far off it ended (a target past a 100% miss no longer pulls on the weights); count the carriers, their weight and their effective sample size (see `policyengine-data`). |
 
 ## Sources
 
