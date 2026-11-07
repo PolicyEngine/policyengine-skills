@@ -1399,17 +1399,21 @@ def check_manifest(path: Path, fresh_text: str) -> int:
 
     print(f"{shown} differs from a fresh build.", file=sys.stderr)
     try:
-        old, new = json.loads(on_disk), json.loads(fresh)
+        old = json.loads(on_disk)
     except json.JSONDecodeError:
         print(f"{shown} isn't valid JSON.", file=sys.stderr)
     else:
-        keys = list(new) + [key for key in old if key not in new]
-        sections = [key for key in keys if old.get(key) != new.get(key)]
-        print(
-            "Sections that differ: "
-            + (", ".join(sections) or "none, only formatting or key order"),
-            file=sys.stderr,
-        )
+        if isinstance(old, dict):
+            new = json.loads(fresh)
+            keys = list(new) + [key for key in old if key not in new]
+            sections = [key for key in keys if old.get(key) != new.get(key)]
+            print(
+                "Sections that differ: "
+                + (", ".join(sections) or "none, only formatting or key order"),
+                file=sys.stderr,
+            )
+        else:
+            print(f"{shown} isn't a JSON object.", file=sys.stderr)
     diff = list(
         difflib.unified_diff(
             on_disk.splitlines(keepends=True),
