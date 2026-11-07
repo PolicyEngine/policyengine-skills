@@ -75,6 +75,10 @@ python3 scripts/build_manifest.py
 Run that whenever you add or rename artifacts and you want to refresh the
 dashboard without restarting the dev server.
 
+A rebuild with no content change rewrites only `generated_at`, so a
+manifest diff shows real changes. Pass `--output PATH` to write the manifest
+somewhere else.
+
 ## Refreshing the GitHub org inventory
 
 `scripts/policyengine_repos.json` caches the list of every active repo in
