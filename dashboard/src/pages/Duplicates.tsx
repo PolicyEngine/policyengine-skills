@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { manifest, getArtifact, kindLabel } from "../data";
+import { manifest, getArtifact, kindLabel, overlapsByScore } from "../data";
 import type {
   Artifact,
   ArtifactKind,
@@ -212,7 +212,7 @@ export default function DuplicatesPage() {
   }, [overlapsByCategory, activeCategories]);
 
   const filteredRaw = useMemo(() => {
-    return manifest.overlaps.filter((o) => {
+    return overlapsByScore.filter((o) => {
       if (o.score < rawMinScore) return false;
       if (rawSameKind && o.a.kind !== o.b.kind) return false;
       if (!rawSameKind && o.a.kind === o.b.kind) return false;
