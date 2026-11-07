@@ -1,7 +1,20 @@
 import manifestRaw from "./data/manifest.json";
-import type { Artifact, ArtifactKind, Manifest, RegistryStatus } from "./types";
+import type {
+  Artifact,
+  ArtifactKind,
+  Manifest,
+  OverlapPair,
+  RegistryStatus,
+} from "./types";
 
 export const manifest = manifestRaw as unknown as Manifest;
+
+// The manifest lists overlap pairs in artifact order, so an edit to one skill
+// rewrites only the scores it moves. Views that rank pairs use this copy,
+// highest score first; the sort is stable, so equal scores keep artifact order.
+export const overlapsByScore: OverlapPair[] = [...manifest.overlaps].sort(
+  (x, y) => y.score - x.score,
+);
 
 export const artifactKey = (kind: ArtifactKind, id: string) => `${kind}:${id}`;
 

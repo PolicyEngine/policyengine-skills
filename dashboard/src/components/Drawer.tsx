@@ -1,5 +1,5 @@
 import type { Artifact, ArtifactKind } from "../types";
-import { kindLabel, manifest, getArtifact } from "../data";
+import { kindLabel, manifest, getArtifact, overlapsByScore } from "../data";
 import { RepoChip } from "./RepoChip";
 import { StatusChip } from "./StatusChip";
 
@@ -20,7 +20,7 @@ export function ArtifactDrawer({
   const outgoing = manifest.edges.filter(
     (e) => e.source_kind === artifact.kind && e.source === artifact.id,
   );
-  const relatedOverlaps = manifest.overlaps
+  const relatedOverlaps = overlapsByScore
     .filter(
       (o) =>
         (o.a.kind === artifact.kind && o.a.id === artifact.id) ||
