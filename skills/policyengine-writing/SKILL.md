@@ -473,12 +473,12 @@ renders it (headless Chromium at 2x). A re-plot drifts from the post's labels, s
 and styling.
 
 **Covers.** Give research posts a photographic cover: a still life of objects from the
-post's subject, with PolicyEngine teal (`#319795`, `#285E61`) only in the objects, and
-nothing legible or recognizable: no text, numbers, currency, logos, charts, portraits or
-faces. Generate it with an image model, crop the result to 2.14:1 around the objects,
-inspect every object for stray lettering, and save it as an 1800×840 WebP beside the post's
-other assets. Never use a chart or an infographic as a cover. A product or tool launch may
-use a 1200×630 typographic card with no data graphic instead.
+post's subject, with PolicyEngine teal (`#319795`, `#285E61`) only in the objects. Keep
+everything legible or recognizable out of it: no text, numbers, currency, logos, charts,
+portraits or faces. Generate it with an image model, crop the result to 2.14:1 around the
+objects, inspect every object for stray lettering, and save it as an 1800×840 WebP beside
+the post's other assets. Never use a chart or an infographic as a cover. A product or tool
+launch may use a 1200×630 typographic card with no data graphic instead.
 
 **Scene.** Choose the setting, camera angle and light from the post's subject, so each post
 gets its own scene. Before you commit the cover, put it on a contact sheet with the covers
@@ -489,7 +489,7 @@ angle and arrangement), change the scene and generate it again. The research pag
 eight covers at a time and the home page shows five, so readers see neighbors side by side.
 
 **Crops.** The website fills fixed boxes with the cover (`object-fit: cover`, centered), so
-several views show only part of it:
+the research and home page cards show only part of it:
 
 - Research cards (`ResearchClient.tsx` under `website/src/app/[countryId]/research/`) give
   the cover a box 260 px tall. On a 375 px phone the box runs 341 px wide and shows the
@@ -497,21 +497,21 @@ several views show only part of it:
   runs 543 px wide and shows nearly the whole cover.
 - The home page's "Expert policy analysis" block (`HomeBlogPreview.tsx` under
   `website/src/components/home/`) shows the country's five newest posts and research apps.
-  Its three smaller cards stand 180 px tall and, on tablets and desktops, run wider than
-  2.14:1, so they cut the top and bottom: a 1440 px desktop shows the middle 57% of the
-  cover's height, and tablets from 768 to 991 px wide the middle 40% to 53%.
+  Its three smaller cards stand 180 px tall. On tablets and desktops they run wider than
+  2.14:1 and cut the top and bottom. A 1440 px desktop shows the middle 57% of the cover's
+  height, and tablets from 768 to 991 px wide show the middle 40% to 53%.
 - The article page shows the whole cover, and the post's social cards use it as their
   image.
 
-Keep the objects that carry the scene inside the central 60% of the width and the middle
-half of the height, and let the edges hold only surface, light and shadow. A launch card's
-words belong in the same zone.
+Keep the main objects inside the central 60% of the width and the middle half of the
+height, and leave only surface, light and shadow near the edges. Set a launch card's words
+in the same zone.
 
 Borrow the constraints of the two prompts below, not their scenes.
 
-The oak desk adapts the prompt for the graded 2025 SPM prediction post's cover. It groups
-the objects on the right two-thirds, and on a phone the research card cuts off most of that
-cover's teal notebook and folder:
+The first prompt, adapted from the graded 2025 SPM prediction post's cover, asks for an oak
+desk by a window with the objects on the right two-thirds. On a phone, the research card
+cuts off most of that cover's teal notebook and folder:
 
 > Photorealistic editorial still life, high three-quarter angle, on a light oak table beside
 > a window, soft diffuse morning light from the left, shallow depth of field. Objects grouped
@@ -520,10 +520,10 @@ cover's teal notebook and folder:
 > only in [two or three objects]. No legible text, numbers, currency, logos, charts or faces
 > anywhere. Wide 2.14:1 landscape (1800×840).
 
-The porch comes from the cover prompt for a Veterans Day post on state income taxes on
-military retired pay (PolicyEngine/veterans-day-2026, `post/cover_prompt.md`). It puts the
-camera at floor level in low autumn sun and holds the objects just right of center, clear of
-both edges:
+The second prompt asks for a porch, with the camera at floor level in low autumn sun and the
+objects just right of center, clear of both edges. It comes from the cover prompt for a
+Veterans Day post on state income taxes on military retired pay
+(PolicyEngine/veterans-day-2026, `post/cover_prompt.md`):
 
 > Photorealistic editorial still life, camera low and close to the floor of a pale weathered
 > wooden front porch, late-afternoon November sun low from the right, warm raking light and
