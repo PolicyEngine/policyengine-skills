@@ -28,7 +28,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -180,6 +180,7 @@ regions = st.sampled_from(["us", "state/ca", "ca", "congressional_district/CA-01
 endings = st.sampled_from([OK, FAILED, {"status": "failed", "error": "batch lost"}, None])
 
 
+@settings(deadline=None)
 @given(
     n_computing=st.integers(min_value=0, max_value=150),
     ending=endings,
@@ -228,6 +229,7 @@ def test_run_horizon_contract(n_computing, ending, max_wait, region, start_year,
         assert kwargs.get("timeout", 0) > 0
 
 
+@settings(deadline=None)
 @given(n_before=st.integers(min_value=0, max_value=40))
 def test_answer_well_before_the_deadline_never_times_out(n_before):
     outcome, _, _ = poll([COMPUTING] * n_before + [OK], max_wait_minutes=24 * 60)

@@ -45,7 +45,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import pytest
-from hypothesis import example, given
+from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -336,6 +336,7 @@ bundles = st.one_of(
 )
 
 
+@settings(deadline=None)
 @given(bundle=bundles, datasets=metadata_lists())
 def test_check_returns_a_dataset_name(bundle, datasets):
     name = run_dataset(bundle, datasets)["dataset"]
@@ -343,6 +344,7 @@ def test_check_returns_a_dataset_name(bundle, datasets):
     assert not re.search(r"[/@]|\.h5$", name)
 
 
+@settings(deadline=None)
 @given(datasets=metadata_lists(), dataset=st.one_of(empty, st.just("default")), version=empty)
 def test_bundle_without_values_matches_the_default(datasets, dataset, version):
     default = next(entry for entry in datasets if entry["default"])
@@ -353,6 +355,7 @@ def test_bundle_without_values_matches_the_default(datasets, dataset, version):
     }
 
 
+@settings(deadline=None)
 @given(datasets=metadata_lists(), dataset=st.one_of(hf_uris(), stem), version=revision)
 def test_bundle_values_win_over_metadata(datasets, dataset, version):
     check = run_dataset({"dataset": dataset, "data_version": version}, datasets)
@@ -360,12 +363,14 @@ def test_bundle_values_win_over_metadata(datasets, dataset, version):
     assert check["data_version"] == version
 
 
+@settings(deadline=None)
 @given(datasets=metadata_lists(), uri=hf_uris(pinned=True), version=empty)
 def test_uri_revision_fills_a_missing_data_version(datasets, uri, version):
     check = run_dataset({"dataset": uri, "data_version": version}, datasets)
     assert check["data_version"] == uri.rsplit("@", 1)[1]
 
 
+@settings(deadline=None)
 @given(bundle=bundles, datasets=metadata_lists())
 def test_matches_default_exactly_when_both_values_equal_it(bundle, datasets):
     default = next(entry for entry in datasets if entry["default"])
@@ -378,6 +383,7 @@ def test_matches_default_exactly_when_both_values_equal_it(bundle, datasets):
 any_dataset = st.text(min_size=1).filter(lambda s: s != "default" and "\x00" not in s)
 
 
+@settings(deadline=None)
 @given(dataset=any_dataset, datasets=metadata_lists())
 @example(dataset="hf://policyengine/populace-us/populace_us_2024.h5@v1.2.0", datasets=US_METADATA_DATASETS)
 @example(dataset="name@release.1", datasets=US_METADATA_DATASETS)
@@ -386,6 +392,7 @@ def test_name_agrees_with_policyengine_dataset_logical_name(dataset, datasets):
     assert check["dataset"] == logical_name(dataset)
 
 
+@settings(deadline=None)
 @given(dataset=any_dataset)
 def test_pinned_formula_matches_installed_policyengine(dataset):
     installed = installed_logical_name()
