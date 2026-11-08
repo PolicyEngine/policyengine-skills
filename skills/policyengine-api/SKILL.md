@@ -40,6 +40,7 @@ path segment. Verified route surface (`policyengine_api/routes/`, `api.py`):
 | `/{country}/household/{id}/policy/{policyId}` | GET | household calc under a stored policy |
 | `/{country}/policy` · `/{country}/policy/{id}` | POST · GET | store / fetch a reform policy |
 | `/{country}/economy/{policyId}/over/{baselinePolicyId}` | GET | society-wide reform impact |
+| `/{country}/economy/{policyId}/over/{baselinePolicyId}/budget-window` | GET | budget impact for each year of a window |
 | `/{country}/simulation`, `/{country}/report` | POST/GET/PATCH | stored simulations / report output |
 | `/specification` | GET | OpenAPI spec (also `/liveness-check`, `/readiness-check`) |
 
@@ -48,13 +49,21 @@ finishes; the response is a status envelope, not the result on the first call:
 
 ```json
 { "status": "computing" | "ok" | "error",
-  "queue_position": 3, "average_time": 42.0,
-  "result": { /* deciles, poverty, budget… once status == "ok" */ },
-  "policyengine_bundle": { "model_version": "…", "data_version": "…" } }
+  "message": null,
+  "result": { /* budget, poverty, deciles…, plus model_version, data_version and
+                 policyengine_bundle, once status == "ok" */ } }
 ```
 
-Query params on the economy call: `region` (`us`, or a two-letter state code; `uk`, etc.),
-`time_period` (four-digit year), optional `dataset`. The household `POST /{country}/calculate`
+While the job runs, the envelope also carries stage fields (`stage`, `progress`,
+`progress_max`, `segments`), and a failed run answers HTTP 502 with `status: "error"`.
+
+Query params on the annual economy call: `region` (`us`, `state/ca` or a bare `ca`,
+`congressional_district/CA-01`, `uk`, etc.), `time_period` (a four-digit year that
+`/{country}/metadata` lists under `economy_options.time_period`), and optional `version`,
+`target` and `spm`; UK runs also take `breakdown`. The budget-window route takes `start_year`
+and `window_size` in place of `time_period`. The API answers HTTP 400 to any other parameter,
+`dataset` included, and runs every reform on the one dataset `/{country}/metadata` lists under
+`economy_options.datasets`. The household `POST /{country}/calculate`
 body nests values by year (`{"people": {"you": {"age": {"2026": 40}}}, "households": {...}}`);
 read `/{country}/metadata` for the exact variable and entity names rather than guessing.
 

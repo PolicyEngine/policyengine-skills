@@ -67,7 +67,8 @@ analyses/2026-07-01-us-standard-deduction-plus-1k.json      # NEW
     "ten_year_actual_state_billion": -2.36,
     "gini_pct_change_per_year": { "2026": -0.026, "...": "..." },
     "poverty_pct_change_per_year": { "...": "..." },
-    "dataset_backing": "populace-us-2024",
+    "dataset": "populace_us_2024",
+    "data_version": "populace-us-2024-cd-concept-budget-dbbdcec-512e-b2500-r2-20260627T022640Z",
     "model_version": "1.745.0"
   },
   "comparison": {

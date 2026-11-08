@@ -102,8 +102,10 @@ curl -sS -X POST https://api.policyengine.org/us/policy \
 Capture `policy_id`. Then submit the economy run:
 
 ```bash
-curl -sS "https://api.policyengine.org/us/economy/{mirror_policy_id}/over/{baseline_policy_id}?region=us&time_period=2026&dataset=enhanced_cps"
+curl -sS "https://api.policyengine.org/us/economy/{mirror_policy_id}/over/{baseline_policy_id}?region=us&time_period=2026"
 ```
+
+Send no `dataset` parameter. The API answers it with HTTP 400 and runs every mirror on the default dataset `/us/metadata` lists. When the original run used a named dataset on the local path, say in the corroboration block that the mirrors ran on the default.
 
 Run multiple mirrors in parallel (background poll loops). Each takes 5-10 min.
 

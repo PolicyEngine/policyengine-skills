@@ -20,7 +20,7 @@ Flags:
   - `custom:YYYY-YYYY` — year range (e.g. `custom:2026-2028`) — mapped to `budget-window` with `start_year`+`window_size`.
 - `--year YYYY` (only used with `--horizon 1`; default current year)
 - `--mode {api|local}` (default `api` for microsim execution)
-- `--dataset <name>`: run on a named dataset from policyengine.py's bundle, such as `enhanced_frs_2024_25`, in place of the certified default. The API runs only the default, so `--dataset` needs `--mode local`.
+- `--dataset <name>`: run on a named dataset from policyengine.py's bundle, such as `populace_us_2024_acs_local` or `enhanced_frs_2024_25`, in place of the certified default. The API runs only the default, so microsim-runner takes the local path for a named dataset whatever `--mode` says.
 - `--skip-microsim` (process-test mode — stops at Stage 5, predicts from prior anchor)
 - `--auto-investigate` (if Stage 5 returns INVESTIGATE, auto-run top calibration hypothesis)
 - `--write-report PATH` (default `/tmp/analyze-policy-{policy_id}.md`)
