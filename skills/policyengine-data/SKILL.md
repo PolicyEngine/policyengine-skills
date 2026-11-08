@@ -162,6 +162,9 @@ those diagnostics into hypotheses about a score.
   IRS-PUF imputation, calibration, its enhanced-CPS H5 releases, and the per-state / per-district
   H5s) is superseded by Microcosm and its per-area files were removed. Treat that repo as
   read-only history; do not target it with PRs.
+- **PolicyEngine archived microimpute on 2026-11-08.** Treat that repo as read-only history and
+  open no PRs or issues there. PyPI keeps all of its releases, including the 1.8.1 that
+  policyengine-uk-data pins.
 - **`policyengine-uk-data` builds the Enhanced FRS (Family Resources Survey) and still imputes
   with microimpute** (1.8.1 in its `uv.lock`). policyengine.py defaults UK simulations to
   Microcosm's `microcosm_uk_2024_25` and serves `enhanced_frs_2024_25` only by name, as one of
