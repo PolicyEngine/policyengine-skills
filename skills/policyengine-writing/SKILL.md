@@ -472,16 +472,46 @@ to the table or text beside it.
 renders it (headless Chromium at 2x). A re-plot drifts from the post's labels, source line
 and styling.
 
-**Covers.** Give research posts a photographic cover: a still life of relevant objects on a
-light wooden table in soft natural light, with PolicyEngine teal (`#319795`, `#285E61`) only
-in the objects, and nothing legible or recognizable: no text, numbers, currency, logos,
-charts, portraits or faces. Generate it with an image model, inspect every object for stray lettering, and save
-it as an 1800×840 WebP beside the post's other assets. Never use a chart or an infographic
-as a cover. A product or tool launch may use a 1200×630 typographic card with no data
-graphic instead.
+**Covers.** Give research posts a photographic cover: a still life of objects from the
+post's subject, with PolicyEngine teal (`#319795`, `#285E61`) only in the objects, and
+nothing legible or recognizable: no text, numbers, currency, logos, charts, portraits or
+faces. Generate it with an image model, crop the result to 2.14:1 around the objects,
+inspect every object for stray lettering, and save it as an 1800×840 WebP beside the post's
+other assets. Never use a chart or an infographic as a cover. A product or tool launch may
+use a 1200×630 typographic card with no data graphic instead.
 
-Prompt adapted from the one used for the graded 2025 SPM prediction post (swap the objects
-for the post's subject):
+**Scene.** Choose the setting, camera angle and light from the post's subject, so each post
+gets its own scene. Before you commit the cover, put it on a contact sheet with the covers
+of the 20 newest posts (the `image` fields in policyengine-app-v2's
+`app/src/data/posts/posts.json`; the files sit under `app/public/assets/posts/`). If it
+repeats a recent cover's setting (a desk by a window, say) or composition (the same camera
+angle and arrangement), change the scene and generate it again. The research page loads
+eight covers at a time and the home page shows five, so readers see neighbors side by side.
+
+**Crops.** The website fills fixed boxes with the cover (`object-fit: cover`, centered), so
+several views show only part of it:
+
+- Research cards (`ResearchClient.tsx` under `website/src/app/[countryId]/research/`) give
+  the cover a box 260 px tall. On a 375 px phone the box runs 341 px wide and shows the
+  central 61% of the cover's width (58% on a 360 px phone). On screens 1408 px and wider it
+  runs 543 px wide and shows nearly the whole cover.
+- The home page's "Expert policy analysis" block (`HomeBlogPreview.tsx` under
+  `website/src/components/home/`) shows the country's five newest posts and research apps.
+  Its three smaller cards stand 180 px tall and, on tablets and desktops, run wider than
+  2.14:1, so they cut the top and bottom: a 1440 px desktop shows the middle 57% of the
+  cover's height, and tablets from 768 to 991 px wide the middle 40% to 53%.
+- The article page shows the whole cover, and the post's social cards use it as their
+  image.
+
+Keep the objects that carry the scene inside the central 60% of the width and the middle
+half of the height, and let the edges hold only surface, light and shadow. A launch card's
+words belong in the same zone.
+
+Borrow the constraints of the two prompts below, not their scenes.
+
+The oak desk adapts the prompt for the graded 2025 SPM prediction post's cover. It groups
+the objects on the right two-thirds, and on a phone the research card cuts off most of that
+cover's teal notebook and folder:
 
 > Photorealistic editorial still life, high three-quarter angle, on a light oak table beside
 > a window, soft diffuse morning light from the left, shallow depth of field. Objects grouped
@@ -489,6 +519,25 @@ for the post's subject):
 > palette of warm wood, white paper and soft gray, with teal (#319795 and #285E61) appearing
 > only in [two or three objects]. No legible text, numbers, currency, logos, charts or faces
 > anywhere. Wide 2.14:1 landscape (1800×840).
+
+The porch comes from the cover prompt for a Veterans Day post on state income taxes on
+military retired pay (PolicyEngine/veterans-day-2026, `post/cover_prompt.md`). It puts the
+camera at floor level in low autumn sun and holds the objects just right of center, clear of
+both edges:
+
+> Photorealistic editorial still life, camera low and close to the floor of a pale weathered
+> wooden front porch, late-afternoon November sun low from the right, warm raking light and
+> long soft shadows, shallow depth of field with the background falling into soft blur.
+> Grouped just right of center, with open space on both sides and nothing important near the
+> left or right edges: a pair of worn tan leather military boots standing side by side,
+> laces loosened; a pair of blank, unembossed steel dog tags on a ball chain draped over the
+> top of one boot; a neatly folded olive wool blanket beside them; a teal enamel camp mug
+> with a thin wisp of steam resting on the blanket; a teal knit watch cap folded next to it;
+> a plain white envelope, blank and unopened, tucked under the mug; and a few fallen oak
+> leaves scattered on the boards. Muted autumn palette of pale wood, olive, tan and soft
+> gray, with teal (#319795 and #285E61) appearing only in the mug and the knit cap. No
+> legible text, numbers, logos, brand marks, flags, stars, insignia, charts, people or faces
+> anywhere. Wide 2.14:1 landscape (1800x840); use the widest landscape format you can.
 
 **Replication detail.** Name the model and its version in the body, as in the
 methodological transparency example below. Put other package versions, script paths, commit
@@ -834,7 +883,8 @@ Before publishing, verify:
 - [ ] Remove self-referential clauses, empty contrasts, and unintroduced names or roles
 - [ ] Check mechanism claims against the code, test, or primary source
 - [ ] Draw charts as ```` ```chart ```` blocks; no chart PNGs or Plotly JSON in new posts
-- [ ] Use a photographic cover with nothing legible, never a chart
+- [ ] Use a photographic cover with nothing legible, never a chart, and unlike recent covers
+- [ ] Keep the cover's main objects inside the central 60% of its width and the middle half of its height
 - [ ] Name the model and its version in the body; put other package versions, script paths and rerun steps in footnotes
 - [ ] For graded forecasts: totals first, order-dependent splits labeled, sampling error shown for any pattern
 
