@@ -43,7 +43,7 @@ COMPUTING = {
     "progress": 30,
     "error": None,
 }
-# The live answer that never moved on 2026-11-08 (19:26Z to past 19:59Z).
+# The live answer from 19:27Z to past 19:59Z on 2026-11-08.
 STALLED = {
     "status": "computing",
     "message": "Scoring 2026, 2027 (0 of 2 complete)...",
