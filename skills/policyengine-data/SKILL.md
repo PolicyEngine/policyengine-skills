@@ -175,9 +175,9 @@ those diagnostics into hypotheses about a score.
   `was_wealth.py`), consumption from the Living Costs and Food Survey (LCFS,
   `lcfs_consumption.py`), and VAT and public services from the Effects of Taxes and Benefits data
   (ETB, `etb_vat.py` and `etb_services.py`). It also imputes incomes from the Survey of Personal
-  Incomes (`spi_income.py`) and salary sacrifice from the paid FRS respondents the survey asked
-  about it (`salary_sacrifice.py`). Microcosm's WAS, LCFS and ETB stages port
-  policyengine-uk-data's models. New UK imputation work goes in `uk_runtime`, not in
+  Incomes (`spi_income.py`). Its salary-sacrifice stage (`salary_sacrifice.py`) trains on the FRS
+  respondents with pay whom the survey asked about salary sacrifice. Microcosm's WAS, LCFS and ETB
+  stages port policyengine-uk-data's models. New UK imputation work goes in `uk_runtime`, not in
   policyengine-uk-data.
 
 ## Institutional knowledge (previous-stack concepts, current mechanics)
@@ -187,7 +187,7 @@ previous stack's packages, with their own code and defaults. For example, microi
 quantile-forest's default of one sample per leaf and fits unweighted unless the caller passes
 `weight_col`. Microcosm's QRF keeps every leaf sample, up to 4,096 per leaf when a forest's target
 takes 2 to 32 distinct values, and weights every fit unless the caller passes `weights="none"`.
-Don't let an old-stack fit stand in for a Microcosm one: an experiment about how PolicyEngine
+Don't let a previous-stack fit stand in for a Microcosm one: an experiment about how PolicyEngine
 imputes uses `microcosm-fit`. These concepts remain load-bearing:
 
 **Conditional-distribution imputation (QRF).** Fill a variable missing from a recipient survey by
@@ -195,11 +195,12 @@ learning it from a donor that has it, conditioning on shared predictors. PolicyE
 **quantile regression forests**, which predict the full conditional distribution (not a point
 estimate), so imputation preserves marginal shape, conditional relationships, and uncertainty —
 you sample from `P(y | x)` rather than pasting a mean. microimpute scores numeric imputations
-with **quantile loss**. microcosm-fit's one held-out scorer, `microcosm.fit.held_out.categorical_scores`,
-covers categorical models only (out-of-fold log loss, calibration slope, class shares). Classic
-US application: impute detailed tax-return components (capital-gains split, dividends) from the
-IRS PUF onto the CPS. Classic UK application: impute wealth from WAS onto FRS. Microcosm imputes
-with `microcosm-fit`'s weighted-bootstrap, regime-gated QRF.
+with **quantile loss**. microcosm-fit's one held-out scorer,
+`microcosm.fit.held_out.categorical_scores`, covers categorical models only (out-of-fold log
+loss, calibration slope, class shares). Classic US application: impute detailed tax-return
+components (capital-gains split, dividends) from the IRS PUF onto the CPS. Classic UK
+application: impute wealth from WAS onto FRS. Microcosm imputes with `microcosm-fit`'s
+weighted-bootstrap, regime-gated QRF.
 
 **Calibration = reweighting to hit targets.** Given estimate contributions per record and known
 population totals, solve for weights so weighted sums match. The core relation:
