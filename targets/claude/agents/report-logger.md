@@ -275,14 +275,17 @@ See archived report.
 
 ```bash
 # Send the data issue to the repo that builds the dataset the run used.
-# `dataset` holds dataset_at_run: a dataset name or an hf:// URI, whose last
-# path segment ${dataset##*/} keeps. An empty value means the bundle default.
+# `dataset` holds dataset_at_run: a dataset name or an hf:// URI. An empty
+# value means the bundle default. Like policyengine.py's dataset_logical_name,
+# drop any @revision, then keep the last path segment.
+dataset_name=${dataset%@*}
+dataset_name=${dataset_name##*/}
 case "$country" in
   us) DATA_REPO="PolicyEngine/microcosm" ;;
   uk)
     # policyengine-uk-data builds the Enhanced FRS and FRS files; Microcosm
     # builds the UK default and the bundle's other UK datasets.
-    case "${dataset##*/}" in
+    case "$dataset_name" in
       enhanced_frs_*|frs_*) DATA_REPO="PolicyEngine/policyengine-uk-data" ;;
       *) DATA_REPO="PolicyEngine/microcosm" ;;
     esac

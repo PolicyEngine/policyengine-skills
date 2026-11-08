@@ -21,7 +21,9 @@ Invariants, checked for any dataset string:
 - only INVESTIGATE and structural verdicts route to an issue;
 - structural routing and US INVESTIGATE routing ignore the dataset;
 - UK INVESTIGATE routing lands in microcosm or policyengine-uk-data and reads
-  only the dataset's last path segment, so a name and its hf:// URI agree;
+  only the dataset's name, which it takes the way policyengine.py's
+  `dataset_logical_name` does (drop any @revision, keep the last path
+  segment), so a name and its hf:// URI agree;
 - report-logger's bash and `resolve_issue_repo` agree for `us` and `uk`.
 """
 from __future__ import annotations
@@ -80,11 +82,18 @@ UK_DEFAULT_URI = (
     "@microcosm-uk-2024-25-national-20261025T091414Z-a6299504"
 )
 ENHANCED_FRS_URI = "hf://policyengine/policyengine-uk-data-private/enhanced_frs_2024_25.h5@1.58.1"
+ENHANCED_FRS_BRANCH_URI = (
+    "hf://policyengine/policyengine-uk-data-private/enhanced_frs_2024_25.h5@refs/pr/3"
+)
 
 
-def dataset_file_name(dataset: str | None) -> str:
-    """Return the last path segment of a dataset name or hf:// URI."""
-    return (dataset or "").rsplit("/", 1)[-1]
+def dataset_name(dataset: str | None) -> str:
+    """Return the name report-logger routes by: drop any @revision, keep the last path segment.
+
+    policyengine.py's `dataset_logical_name` also cuts at the last "@" before it
+    takes the file name, so a dataset name and its hf:// URI share a prefix.
+    """
+    return (dataset or "").rsplit("@", 1)[0].rsplit("/", 1)[-1]
 
 
 def resolve_issue_repo(verdict: str, country: str, dataset: str | None = None) -> str | None:
@@ -99,7 +108,7 @@ def resolve_issue_repo(verdict: str, country: str, dataset: str | None = None) -
     if country == "us":
         return MICROCOSM
     if country == "uk":
-        if dataset_file_name(dataset).startswith(UK_DATA_FILE_PREFIXES):
+        if dataset_name(dataset).startswith(UK_DATA_FILE_PREFIXES):
             return UK_DATA
         return MICROCOSM
     return f"PolicyEngine/{OTHER_DATA_REPOS[country]}"
@@ -139,8 +148,9 @@ any_dataset = st.text(
     max_size=80,
 )
 known_dataset = st.sampled_from(UK_MICROCOSM_DATASETS + UK_DATA_FILES)
+# Hugging Face revisions: commit hashes, tags or branch names such as refs/pr/1.
 revision = st.text(
-    alphabet=st.characters(min_codepoint=33, max_codepoint=126, blacklist_characters="/"),
+    alphabet=st.characters(min_codepoint=33, max_codepoint=126, blacklist_characters="@"),
     min_size=1,
     max_size=40,
 )
@@ -169,7 +179,7 @@ def test_uk_investigate_on_microcosm_data_routes_to_microcosm(dataset):
     assert "us-data" not in result
 
 
-@pytest.mark.parametrize("dataset", [ENHANCED_FRS_URI, *UK_DATA_FILES])
+@pytest.mark.parametrize("dataset", [ENHANCED_FRS_URI, ENHANCED_FRS_BRANCH_URI, *UK_DATA_FILES])
 def test_uk_investigate_on_an_frs_file_routes_to_uk_data(dataset):
     assert resolve_issue_repo("INVESTIGATE", "uk", dataset) == UK_DATA
 
@@ -243,7 +253,14 @@ def test_uk_investigate_routes_a_uri_like_its_dataset_name(name, path, rev):
 @pytest.mark.parametrize("country", ["us", "uk"])
 @pytest.mark.parametrize(
     "dataset",
-    ["", UK_DEFAULT_URI, ENHANCED_FRS_URI, *UK_MICROCOSM_DATASETS, *UK_DATA_FILES],
+    [
+        "",
+        UK_DEFAULT_URI,
+        ENHANCED_FRS_URI,
+        ENHANCED_FRS_BRANCH_URI,
+        *UK_MICROCOSM_DATASETS,
+        *UK_DATA_FILES,
+    ],
 )
 def test_report_logger_bash_matches_reference(country, dataset):
     assert run_routing_snippet(country, dataset) == resolve_issue_repo(

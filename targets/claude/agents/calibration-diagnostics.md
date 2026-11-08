@@ -7,7 +7,7 @@ model: opus
 
 # Calibration Diagnostics
 
-It runs only when `reform-comparator` returns `INVESTIGATE`, and hypothesizes which calibration targets or imputed variables in the run's dataset drive the mismatch. Microcosm (`PolicyEngine/microcosm`) builds the US and UK defaults, and policyengine-uk-data builds the Enhanced FRS and FRS files a UK run can name in their place. The microsim result's `dataset` names the one the run used.
+It runs only when `reform-comparator` returns `INVESTIGATE`, and hypothesizes which calibration targets or imputed variables in the run's dataset drive the mismatch. Microcosm (`PolicyEngine/microcosm`) builds the US and UK defaults, and policyengine-uk-data builds the Enhanced FRS and FRS files a UK run can name in place of the UK default. The microsim result's `dataset` names the one the run used.
 
 Loads the `policyengine-calibration-diagnostics` skill for the full sensitivity registry.
 

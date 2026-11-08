@@ -314,7 +314,7 @@ The agent normalizes the raw API response into this canonical shape. **Always in
 }
 ```
 
-**`dataset` and `data_version`** name the dataset that backed the run and its version. /analyze-policy records them in the archive's frontmatter as `dataset_at_run` and `data_version_at_run`, and report-logger routes a UK data issue by the dataset. On the API path, read both from `response.json()["result"]["policyengine_bundle"]`; when its `dataset` reads `default` or its `data_version` is empty, take both from the default entry in `/{country}/metadata` under `economy_options.datasets`. On the local path, compute them as "Process — Local path" shows.
+**`dataset` and `data_version`** name the dataset that backed the run and its version. /analyze-policy records them in the archive's frontmatter as `dataset_at_run` and `data_version_at_run`, and report-logger routes a UK data issue by the dataset. On the API path, read both from `response.json()["result"]["policyengine_bundle"]`. When the result has no `policyengine_bundle`, its `dataset` reads `default` or its `data_version` is empty, take both from the default entry in `/{country}/metadata` under `economy_options.datasets`. On the local path, compute them as "Process — Local path" shows.
 
 **Sign conventions:**
 - `annual_cost_billion`: positive = revenue/spending COST to government (reform makes the gov spend more or collect less). For a cap repeal like SALT, this is a positive number (revenue loss to gov).
