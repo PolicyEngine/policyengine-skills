@@ -45,7 +45,8 @@ Invariants, checked for any dataset string and any set of repo labels:
 - report-logger's block files the issue in the reference's repo with the
   reference's labels, on any string and on the strings `edge_dataset` builds
   around those prefixes, reads the labels of that same repo, and calls gh not
-  at all for ca.
+  at all for ca;
+- when `gh label list` fails, the block still files the issue, without labels.
 """
 from __future__ import annotations
 
@@ -187,12 +188,18 @@ def swap_ascii_case(text: str) -> str:
 
 # Stand-in for gh, defined as a shell function ahead of the block: it records
 # the call (its argument count, then each argument, NUL-terminated), answers
-# `gh label list`, and accepts `gh issue create`. A function saves a process
-# per call, which keeps the property tests fast.
+# `gh label list` (or fails it, when FAKE_GH_LABEL_LIST_FAILS is set), and
+# accepts `gh issue create`. A function saves a process per call, which keeps
+# the property tests fast.
 FAKE_GH_FUNCTION = r"""gh() {
   printf '%s\0' "$#" "$@" >> "$FAKE_GH_LOG"
   case "$1 $2" in
-    "label list") printf '%s' "$FAKE_GH_LABEL_LIST" ;;
+    "label list")
+      if [ -n "$FAKE_GH_LABEL_LIST_FAILS" ]; then
+        printf '%s\n' "stand-in gh: HTTP 502: Bad Gateway" >&2
+        return 1
+      fi
+      printf '%s' "$FAKE_GH_LABEL_LIST" ;;
     "issue create") printf '%s\n' "https://github.com/PolicyEngine/stand-in/issues/1" ;;
     *) printf 'stand-in gh: unexpected call: %s\n' "$*" >&2; return 2 ;;
   esac
@@ -248,21 +255,31 @@ def label_list_call(repo: str) -> list[str]:
     return ["label", "list", "--repo", repo, "--limit", "1000", "--json", "name", "--jq", ".[].name | ascii_downcase"]
 
 
-def run_issue_block(shell: str, fake_gh_dir: Path, country: str, dataset: str, repo_labels) -> list[list[str]]:
+def run_issue_block(
+    shell: str,
+    fake_gh_dir: Path,
+    country: str,
+    dataset: str,
+    repo_labels,
+    label_lookup_fails: bool = False,
+) -> list[list[str]]:
     """Run report-logger's issue-filing block; return the gh calls it made, in order."""
     lowered = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
     with tempfile.TemporaryDirectory() as tmp:
         log = Path(tmp) / "gh-calls"
+        env = {
+            "PATH": f"{fake_gh_dir}{os.pathsep}{os.environ.get('PATH', '/usr/bin:/bin')}",
+            "LC_ALL": "C",
+            "country": country,
+            "dataset": dataset,
+            "FAKE_GH_LOG": str(log),
+            "FAKE_GH_LABEL_LIST": "\n".join(name.translate(lowered) for name in repo_labels),
+        }
+        if label_lookup_fails:
+            env["FAKE_GH_LABEL_LIST_FAILS"] = "1"
         result = subprocess.run(
             [*SHELLS[shell], FAKE_GH_FUNCTION + issue_block()],
-            env={
-                "PATH": f"{fake_gh_dir}{os.pathsep}{os.environ.get('PATH', '/usr/bin:/bin')}",
-                "LC_ALL": "C",
-                "country": country,
-                "dataset": dataset,
-                "FAKE_GH_LOG": str(log),
-                "FAKE_GH_LABEL_LIST": "\n".join(name.translate(lowered) for name in repo_labels),
-            },
+            env=env,
             capture_output=True,
             text=True,
         )
@@ -579,6 +596,17 @@ def test_report_logger_bash_files_no_issue_for_ca(shell, fake_gh_dir, dataset):
 def test_report_logger_bash_passes_only_labels_the_repo_has(shell, fake_gh_dir, labels):
     calls = run_issue_block(shell, fake_gh_dir, "us", "", labels)
     assert filed_issue(calls) == (MICROCOSM, issue_labels(labels))
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@settings(max_examples=50, deadline=None)
+@given(country=st.sampled_from(["us", "uk", "ca"]), dataset=any_dataset, labels=repo_labels)
+def test_report_logger_bash_files_the_issue_when_the_label_lookup_fails(
+    shell, fake_gh_dir, country, dataset, labels
+):
+    """A failed `gh label list` costs the issue its labels, not the issue itself."""
+    calls = run_issue_block(shell, fake_gh_dir, country, dataset, labels, label_lookup_fails=True)
+    assert filed_issue(calls) == expected_issue(country, dataset, [])
 
 
 @pytest.mark.parametrize("shell", SHELL_PARAMS)

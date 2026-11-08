@@ -320,7 +320,7 @@ EOF
 fi
 ```
 
-gh looks up every `--label` name among the repo's labels before it creates the issue, and it stops without creating one when a name is missing (`could not add label: '<name>' not found`). So the block passes only the labels the repo has, and gh files the issue even in a repo with neither label. Follow the same rule for any other issue you file, such as a structural one or an `issue:<repo>` destination.
+gh looks up every `--label` name among the repo's labels before it creates the issue, and it stops without creating one when a name is missing (`could not add label: '<name>' not found`). So the block passes only the labels the repo has, and gh files the issue even in a repo with neither label. If `gh label list` fails, the block still files the issue, without the labels it could not confirm. Follow the same rule for any other issue you file, such as a structural one or an `issue:<repo>` destination.
 
 Capture the returned issue URL/number and append to the archive's `issues_opened` frontmatter list. When `DATA_REPO` is empty (`ca`), the block files nothing: list the issue under `skipped` in the output, with the reason.
 
