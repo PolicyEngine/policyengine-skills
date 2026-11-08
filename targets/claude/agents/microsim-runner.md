@@ -169,20 +169,23 @@ When `status: "ok"`, `result` holds `kind: "budgetWindow"`, `startYear`, `endYea
 
 **Polling cadence:** the endpoint returns quickly; poll every 30-60s while `status == "computing"`. Wall-clock for a full 10-year US run is typically 15-25 min (depends on API queue).
 
-**Fallback:** if the budget-window run fails (`status: "error"`, or an HTTP 502), fall back to N parallel calls to the single-year endpoint. Log the fallback so the analyst knows the runner degraded gracefully.
+**Fallback:** if the budget-window run fails (`status: "error"`, or an HTTP 502) or keeps computing past 45 minutes, fall back to N parallel calls to the single-year endpoint. Log the fallback so the analyst knows the runner degraded gracefully.
 
 ```python
-def run_horizon(country, region, policy_id, baseline_id, start_year, window_size):
+def run_horizon(country, region, policy_id, baseline_id, start_year, window_size, max_wait_minutes=45):
     url = (
         f"https://api.policyengine.org/{country}/economy/{policy_id}/over/{baseline_id}/budget-window"
         f"?region={region}&start_year={start_year}&window_size={window_size}"
     )
+    deadline = time.monotonic() + 60 * max_wait_minutes
     while True:
-        r = requests.get(url).json()
+        r = requests.get(url, timeout=120).json()
         if r["status"] == "ok":
             return r["result"]
         if r["status"] != "computing":
             raise RuntimeError(r.get("error") or r.get("message"))
+        if time.monotonic() >= deadline:
+            raise TimeoutError(f"still computing after {max_wait_minutes} minutes: {r.get('message')}")
         time.sleep(60)
 ```
 

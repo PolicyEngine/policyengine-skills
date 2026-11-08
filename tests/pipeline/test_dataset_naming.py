@@ -23,7 +23,8 @@ name, `default` or empty:
   or an `.h5` suffix;
 - an empty bundle, or one that reads `default` with no data version, gives the
   metadata default and matches it;
-- the bundle's own dataset and data version win over the metadata;
+- the bundle's own dataset and data version win over the metadata, and a
+  missing data version comes from the URI's `@revision` before the metadata;
 - `dataset_matches_default` holds exactly when both values equal the default
   entry's.
 For any string at all, the name agrees with policyengine.py's
@@ -44,7 +45,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import pytest
-from hypothesis import given
+from hypothesis import example, given
 from hypothesis import strategies as st
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -264,6 +265,27 @@ def test_bundle_from_another_release_does_not_match():
     }
 
 
+def test_uri_revision_names_the_release_when_data_version_is_missing():
+    bundle = {
+        "dataset": "hf://policyengine/populace-us/populace_us_2024.h5@populace-us-2024-rev2",
+        "data_version": None,
+    }
+    assert run_dataset(bundle, US_METADATA_DATASETS) == {
+        "dataset": "populace_us_2024",
+        "data_version": "populace-us-2024-rev2",
+        "dataset_matches_default": False,
+    }
+
+
+def test_dotted_revision_stays_out_of_the_name():
+    bundle = {"dataset": "hf://policyengine/populace-us/populace_us_2024.h5@v1.2.0", "data_version": None}
+    assert run_dataset(bundle, US_METADATA_DATASETS) == {
+        "dataset": "populace_us_2024",
+        "data_version": "v1.2.0",
+        "dataset_matches_default": False,
+    }
+
+
 def test_other_dataset_never_borrows_the_default_release():
     bundle = {"dataset": "populace_us_2024_acs_local", "data_version": None}
     assert run_dataset(bundle, US_METADATA_DATASETS) == {
@@ -281,9 +303,10 @@ revision = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789_.-", min_size=
 
 
 @st.composite
-def hf_uris(draw):
+def hf_uris(draw, pinned=None):
     uri = f"hf://{draw(segment)}/{draw(segment)}/{draw(stem)}.h5"
-    return uri + f"@{draw(revision)}" if draw(st.booleans()) else uri
+    keep_revision = draw(st.booleans()) if pinned is None else pinned
+    return uri + f"@{draw(revision)}" if keep_revision else uri
 
 
 @st.composite
@@ -337,6 +360,12 @@ def test_bundle_values_win_over_metadata(datasets, dataset, version):
     assert check["data_version"] == version
 
 
+@given(datasets=metadata_lists(), uri=hf_uris(pinned=True), version=empty)
+def test_uri_revision_fills_a_missing_data_version(datasets, uri, version):
+    check = run_dataset({"dataset": uri, "data_version": version}, datasets)
+    assert check["data_version"] == uri.rsplit("@", 1)[1]
+
+
 @given(bundle=bundles, datasets=metadata_lists())
 def test_matches_default_exactly_when_both_values_equal_it(bundle, datasets):
     default = next(entry for entry in datasets if entry["default"])
@@ -350,6 +379,8 @@ any_dataset = st.text(min_size=1).filter(lambda s: s != "default" and "\x00" not
 
 
 @given(dataset=any_dataset, datasets=metadata_lists())
+@example(dataset="hf://policyengine/populace-us/populace_us_2024.h5@v1.2.0", datasets=US_METADATA_DATASETS)
+@example(dataset="name@release.1", datasets=US_METADATA_DATASETS)
 def test_name_agrees_with_policyengine_dataset_logical_name(dataset, datasets):
     check = run_dataset({"dataset": dataset, "data_version": "v"}, datasets)
     assert check["dataset"] == logical_name(dataset)
