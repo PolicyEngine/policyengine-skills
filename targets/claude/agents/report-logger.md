@@ -1,6 +1,6 @@
 ---
 name: report-logger
-description: Routes a completed /analyze-policy report to the right destination — local archive, GitHub issue, tracker DB, or research draft PR — based on verdict + flags. Country-aware routing (INVESTIGATE → an issue in the repo that builds the run's dataset, PolicyEngine/microcosm for us and uk, or policyengine-uk-data when a uk run named an Enhanced FRS or FRS file; structural → policyengine-{country} issue; everything → archive).
+description: Routes a completed /analyze-policy report to the right destination — local archive, GitHub issue, tracker DB, or research draft PR — based on verdict + flags. Country-aware routing (INVESTIGATE → an issue in the repo that builds the run's dataset, PolicyEngine/microcosm for us and uk, or policyengine-uk-data when a uk run named an Enhanced FRS or FRS file, and no issue for ca, which has no microdata; structural → an issue in the country's model repo, policyengine-us, -uk or -canada; everything → archive).
 tools: Read, Write, Bash
 model: sonnet
 ---
@@ -58,8 +58,8 @@ Append context-specific options:
 |---|---|
 | Inside `policyengine-app-v2` repo (HAS_POSTS_DIR) | "Save as draft research post: `app/src/data/posts/articles/{slug}.md` + update `app/src/data/posts/posts.json`" |
 | Inside `policyengine-skills` or any repo with `analyses/` | "Just the archive in `analyses/`" (already covered by local archive but make the path explicit) |
-| Verdict is `INVESTIGATE` | "Open GitHub issue in the repo that builds the run's dataset (`us` and `uk` → `PolicyEngine/microcosm`; a `uk` run that named an Enhanced FRS or FRS file → `PolicyEngine/policyengine-uk-data`; other countries → `policyengine-{country}-data`) — calibration hypothesis" |
-| Verdict is `structural` | "Open GitHub issue in `PolicyEngine/policyengine-{country}` (model-change estimate)" |
+| Verdict is `INVESTIGATE` | "Open GitHub issue in the repo that builds the run's dataset (`us` and `uk` → `PolicyEngine/microcosm`; a `uk` run that named an Enhanced FRS or FRS file → `PolicyEngine/policyengine-uk-data`) — calibration hypothesis". None for `ca`, which has no microdata |
+| Verdict is `structural` | "Open GitHub issue in the country's model repo (`PolicyEngine/policyengine-us`, `-uk` or `-canada`) — model-change estimate" |
 | Verdict is `PASS*` AND inside `policyengine-app-v2` | "Open draft PR to policyengine-app-v2 with the post body" |
 | Always | "Custom path / repo — type a destination spec" |
 
@@ -96,8 +96,8 @@ If the analyst picks `edit`, drop them into `$EDITOR` (or open the file path if 
 | Verdict | Pre-selected |
 |---|---|
 | `PASS` / `PASS-WITH-NOTES` / `PASS-WITH-CORROBORATION` | local archive only |
-| `INVESTIGATE` | local archive + GH issue in the repo that builds the run's dataset (`us` and `uk` → `microcosm`) |
-| `structural` | local archive + GH issue in `policyengine-{country}` |
+| `INVESTIGATE` | local archive + GH issue in the repo that builds the run's dataset (`us` and `uk` → `microcosm`); local archive only for `ca` |
+| `structural` | local archive + GH issue in the country's model repo (`policyengine-us`, `-uk` or `-canada`) |
 | `not-possible` / `deployed-model-lag` | local archive only |
 
 The analyst can override the pre-selection in the prompt.
@@ -201,8 +201,8 @@ Always print the resolved path to the agent's output so the user can find the fi
 - `INVESTIGATE` → the repo that builds the dataset the run used:
   - `us` → `PolicyEngine/microcosm`. Microcosm builds the US datasets, and PolicyEngine archived `policyengine-us-data`.
   - `uk` → `PolicyEngine/microcosm`, unless the run named an Enhanced FRS or FRS file. policyengine.py loads Microcosm's `microcosm_uk_2024_25` whenever the caller names no dataset, and the API runs only that default. A local run can name an Enhanced FRS or FRS file instead (`enhanced_frs_2024_25`, `frs_2024_25`, and their 2023-24 and `_tiny` siblings), which policyengine.py serves as dataset overlays and policyengine-uk-data builds. That run's data issue goes to `PolicyEngine/policyengine-uk-data`.
-  - Other countries map to `policyengine-{country}-data`: `ca` → `policyengine-canada-data`.
-- `structural` → `PolicyEngine/policyengine-{country}` (the live model repo — `us` → `policyengine-us`, `uk` → `policyengine-uk`, etc.)
+  - `ca` → no issue, and the archive keeps the report. PolicyEngine has no Canada microdata: policyengine.py's bundle holds data for `us` and `uk` only, and microsim-runner supports only household calculations for `ca`. `--log-to issue:<repo>` still files one in the repo the analyst names.
+- `structural` → the live model repo: `us` → `PolicyEngine/policyengine-us`, `uk` → `PolicyEngine/policyengine-uk`, `ca` → `PolicyEngine/policyengine-canada`.
 - Explicit `issue:<repo>` → use that repo
 
 **CRITICAL:** never hardcode a single data repo. Route by the reform's country and, for `uk`, by `dataset_at_run`. Microcosm builds both the US and the UK datasets, so the issue body names the dataset and its data version.
@@ -291,20 +291,38 @@ case "$country" in
       *) DATA_REPO="PolicyEngine/microcosm" ;;
     esac
     ;;
-  *) DATA_REPO="PolicyEngine/policyengine-${country}-data" ;;
+  # policyengine.py's bundle holds data for us and uk only, so no repo takes
+  # a data issue for ca (or any other country); the archive keeps the report.
+  *) DATA_REPO="" ;;
 esac
 
-gh issue create \
-  --repo "$DATA_REPO" \
-  --title "{title}" \
-  --body "$(cat <<'EOF'
+if [ -n "$DATA_REPO" ]; then
+  # gh stops before it creates the issue when any --label names a label the
+  # repo lacks, so pass only the labels the repo has. gh ignores case when it
+  # matches label names, so compare them in lower case. --limit 1000: gh
+  # lists only 30 labels by default.
+  REPO_LABELS="$(gh label list --repo "$DATA_REPO" --limit 1000 --json name --jq '.[].name | ascii_downcase')"
+  LABEL_ARGS=()
+  for label in calibration auto-filed; do
+    if printf '%s\n' "$REPO_LABELS" | grep -qxF -- "$label"; then
+      LABEL_ARGS+=(--label "$label")
+    fi
+  done
+
+  gh issue create \
+    --repo "$DATA_REPO" \
+    --title "{title}" \
+    --body "$(cat <<'EOF'
 {body}
 EOF
 )" \
-  --label "calibration,auto-filed"
+    "${LABEL_ARGS[@]}"
+fi
 ```
 
-Capture the returned issue URL/number and append to the archive's `issues_opened` frontmatter list.
+gh looks up every `--label` name among the repo's labels before it creates the issue, and it stops without creating one when a name is missing (`could not add label: '<name>' not found`). So the block passes only the labels the repo has, and gh files the issue even in a repo with neither label. Follow the same rule for any other issue you file, such as a structural one or an `issue:<repo>` destination.
+
+Capture the returned issue URL/number and append to the archive's `issues_opened` frontmatter list. When `DATA_REPO` is empty (`ca`), the block files nothing: list the issue under `skipped` in the output, with the reason.
 
 **Confirm before opening** unless `--auto-confirm` is set — the user may want to edit the body or pick a different repo.
 
