@@ -55,6 +55,7 @@ verdict: PASS-WITH-NOTES
 run_id: 97833
 model_version_at_run: 1.745.0
 data_version_at_run: populace-us-2024-cd-concept-budget-...
+dataset_at_run: populace_us_2024    # the microsim result's dataset; report-logger routes a UK data issue by it
 command_args: "flat $100K SALT cap, no phase-out, 2026-2035"
 
 # Horizon (added by the Phase 0 horizon prompt)

@@ -139,7 +139,7 @@ Verdict → follow-up mapping:
 |---|---|
 | `PASS` | `/generate-content` → blog post draft |
 | `PASS-WITH-NOTES` / `PASS-WITH-CORROBORATION` | `/generate-content` → blog post draft (with notes/caveats section) |
-| `INVESTIGATE` | already handled: GH issue in the country's data repo (`us` → `PolicyEngine/microcosm`; others → `policyengine-{country}-data`) |
+| `INVESTIGATE` | already handled: GH issue in the repo that builds the run's dataset (`us` and `uk` → `PolicyEngine/microcosm`; a `uk` run on a named Enhanced FRS or FRS file → `PolicyEngine/policyengine-uk-data`; others → `policyengine-{country}-data`) |
 | `structural` | `/encode-policy-v2` → scaffold the required model extension |
 | `not-possible` | none |
 | `deployed-model-lag` | re-run scheduled for next release (cron-style: after the next `uv pip install -U policyengine-{country}`) |

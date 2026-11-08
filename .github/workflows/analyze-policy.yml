@@ -28,7 +28,7 @@ on:
         type: choice
         options: ['1', '10']
       log_to:
-        description: 'Override destination routing. Blank = auto-routing by verdict (INVESTIGATE → policyengine-{country}-data, structural → policyengine-{country}). Example: "archive,issue:policyengine-us-data"'
+        description: 'Override destination routing. Blank = auto-routing by verdict (INVESTIGATE → PolicyEngine/microcosm for us and uk, structural → policyengine-{country}). Example: "archive,issue:microcosm"'
         required: false
         default: ''
         type: string
@@ -81,8 +81,8 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # PAT with `repo` scope so report-logger can open issues/PRs in the
-          # target repos (policyengine-{country}-data, policyengine-{country},
-          # policyengine-app for blog draft PRs, etc.).
+          # target repos (microcosm, policyengine-{country},
+          # policyengine-app-v2 for blog draft PRs, etc.).
           GH_TOKEN: ${{ secrets.ANALYSIS_GH_TOKEN }}
           # Inputs come in via env (NOT inline ${{ }} interpolation into the
           # shell line) so quotes in the reform text can't split the command.
