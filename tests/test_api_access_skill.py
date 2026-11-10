@@ -218,6 +218,8 @@ def load_token_module() -> ModuleType:
     assert TOKEN_TEMPLATE.is_file(), f"{TOKEN_TEMPLATE.relative_to(REPO_ROOT)} is missing"
     spec = importlib.util.spec_from_file_location("public_api_token", TOKEN_TEMPLATE)
     module = importlib.util.module_from_spec(spec)
+    # dataclasses resolves the module's annotations through sys.modules.
+    sys.modules["public_api_token"] = module
     spec.loader.exec_module(module)
     return module
 

@@ -2,7 +2,7 @@
   "name": "app-development",
   "description": "React app development - app-v2, standalone tools, Vercel deployment, and PolicyEngine-specific patterns",
   "category": "development",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "keywords": [
     "react",
     "frontend",
@@ -21,6 +21,7 @@
   "skills": [
     "./skills/policyengine-app",
     "./skills/policyengine-tools",
+    "./skills/policyengine-api-access",
     "./skills/policyengine-model-development",
     "./skills/policyengine-us",
     "./skills/policyengine-uk",

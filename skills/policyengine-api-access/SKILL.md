@@ -1,0 +1,264 @@
+---
+name: policyengine-api-access
+description: |
+  Load before writing or reviewing code that reaches the PolicyEngine Public API
+  (api.policyengine.org) from a dashboard, tool, backend, Modal app, Vercel function or CI
+  job. The Public API serves only PolicyEngine's servers: pages call www.policyengine.org's
+  dashboard API through @policyengine/api-client, and servers send their own Auth0
+  client-credentials token. Covers the rules, the four dashboard operations, polling, allowed
+  origins, cached server tokens, getting a client, local development and previews, asking for a
+  new operation, and 401/403/429/503.
+  Triggers: api.policyengine.org, Public API, dashboard API, @policyengine/api-client, household
+  calculate from the browser, economy comparison polling, NEXT_PUBLIC_API_URL, VITE_API_URL,
+  Auth0 client credentials, server token, PUBLIC_API_SERVER_CLIENT_IDS, Authentication is
+  required, CORS error from the API.
+  NOT for: Python analysis (policyengine skill) or the Public API's own endpoints and code
+  (policyengine-api).
+metadata:
+  category: apps
+---
+
+# Reaching the Public API from dashboards and servers
+
+The Public API (`PolicyEngine/policyengine-api`, https://api.policyengine.org) is becoming
+callable only by PolicyEngine's own servers. Once its credential requirement is switched on, it
+answers every request without a server credential with 401, except `GET`/`HEAD /health`,
+`GET /v2/openapi.json` and CORS preflights. Anything in browser code is public, so a page cannot hold that
+credential. Pages go through a server that does.
+
+## The rules
+
+1. **Browser code never calls the Public API**: not `api.policyengine.org`, and not its Cloud
+   Run addresses (`policyengine-api-….a.run.app`, `policyengine-api-staging-….a.run.app`,
+   or a tagged revision's `…---policyengine-api-….a.run.app`). Browser code is everything that
+   runs in the page: components, hooks, client modules, static exports and anything a bundler
+   puts in the page.
+2. **No Public API credential or address goes in a `NEXT_PUBLIC_*` or `VITE_*` variable.**
+   Next.js and Vite copy those values into the page's JavaScript. That covers the Auth0
+   client ID and secret, tokens, and the Public API's URL.
+3. **One Auth0 client per calling server**, never shared between callers or copied into
+   another repository. The client ID is how the Public API's records identify the caller.
+
+## Which route to use
+
+| Where the code runs | How it reaches the Public API |
+|---|---|
+| A dashboard page (browser) | www.policyengine.org's dashboard API, through `@policyengine/api-client` |
+| A dashboard's own backend (Modal, Cloud Run, a Vercel function) | Its own Auth0 client, token in `Authorization: Bearer` |
+| A CI job or script | Its own Auth0 client, one token per job run |
+| Python analysis or a notebook | The `policyengine` package (policyengine skill), not REST |
+
+If a backend exists only to relay one of the four dashboard operations, drop it and call the
+dashboard API from the page instead.
+
+## From pages: the dashboard API
+
+www.policyengine.org (`website/` in `PolicyEngine/policyengine-app-v2`) serves four operations.
+Its server adds PolicyEngine's credential, so a dashboard needs none, and dashboards never see
+the Public API's paths.
+
+```bash
+npm install @policyengine/api-client
+```
+
+```ts
+import {
+  createPolicyEngineApiClient,
+  EconomyComparisonTimeoutError,
+  PolicyEngineApiError,
+} from "@policyengine/api-client";
+
+const policyengine = createPolicyEngineApiClient();
+
+const household = await policyengine.calculateHousehold({
+  country: "us",
+  household: {
+    people: { you: { age: { 2026: 40 }, employment_income: { 2026: 50000 } } },
+    households: { your_household: { members: ["you"] } },
+  },
+  policy: { "gov.irs.credits.ctc.amount.base[0].amount": { "2026-01-01.2100-12-31": 3000 } },
+});
+
+const reformId = await policyengine.createPolicy({
+  country: "us",
+  parameters: { "gov.irs.credits.ctc.amount.base[0].amount": { "2026-01-01.2100-12-31": 3000 } },
+});
+const impact = await policyengine.compareEconomy(
+  { country: "us", policy: reformId, baseline: 2, region: "us", year: 2026 },
+  { onProgress: (answer) => console.log(answer.status) },
+);
+
+const metadata = await policyengine.getMetadata("uk");
+```
+
+| Operation | Request | Answer |
+|---|---|---|
+| `POST /api/household/calculate` | JSON `{country, household, policy?}`; `policy` is parameter changes, current law when omitted | The Public API's `{status, message, result}`; `calculateHousehold` resolves with `result` |
+| `POST /api/policies` | JSON `{country, parameters}` | `{id}`: 201 for a new policy, 200 for an identical stored one; `createPolicy` resolves with the ID |
+| `GET /api/economy/compare` | Query `country`, `policy`, `baseline`, `region`, `year`, each exactly once | `{status: "computing" \| "ok" \| "error", result, …}`, never cached |
+| `GET /api/metadata/{country}` | — | `{status, message, result}`, cached by browsers for an hour (`max-age=3600`) |
+
+- `country` is `us` or `uk`. Any other field or query parameter is refused with 400, and a
+  body whose `Content-Type` is not JSON with 415.
+- `policy` and `baseline` are policy IDs (whole numbers). `baseline` is current law's ID:
+  2 for `us`, 1 for `uk` (`result.current_law_id` in the metadata). `year` is four digits;
+  `region` is `us`, `uk` or a sub-national region such as `state/ca`, at most 200 characters.
+- The household and parameter shapes are the Public API's (`household` nests values by year;
+  read variable and parameter names from the metadata). See the policyengine-api skill.
+- Each method takes `{ signal }` to cancel. The result type is a type argument
+  (`calculateHousehold<MyHousehold>(…)`), not checked at run time.
+
+**Polling.** `compareEconomy` reads the comparison every 5 seconds until `status` is `ok`, and
+gives up after 30 minutes with `EconomyComparisonTimeoutError`. It waits for `Retry-After` on a
+429 and one interval after a 502, 503 or 504, and stops after a fourth such answer in a row. A
+comparison that failed (502 with `status: "error"` and `retry_after_seconds`) is thrown at once:
+the Public API keeps that failure for `retry_after_seconds`, so polling sooner returns it again.
+Keep `intervalMilliseconds` at a few seconds. Use `getEconomyComparison` for one read.
+
+**Where pages may call it from.** The client's default `baseUrl` is
+`https://www.policyengine.org`. The dashboard API answers browser requests from:
+- pages on www.policyengine.org itself, which is how dashboards served through the website's
+  rewrites (`website/src/data/appZoneRoutes.ts`) reach it: same origin, no CORS;
+- `http://localhost` and `http://127.0.0.1` on any port;
+- the PolicyEngine team's Vercel previews, `*-policy-engine.vercel.app`;
+- each dashboard's own `*.vercel.app` host named in `appZoneRoutes.ts`.
+
+Every other origin gets 403, "Pages on this origin may not call the dashboard API.", and the
+request never reaches the Public API. A new dashboard's own host is allowed once its rewrite is
+in `appZoneRoutes.ts` and that change is deployed. A dashboard served from anywhere else, such
+as a Modal URL, reaches the dashboard API only through its www.policyengine.org path. Allowed
+request headers are `Content-Type`, `Authorization` and `PolicyEngine-Unauthenticated-User`;
+the client sends no cookies (`credentials: "omit"`).
+
+**Rate limits.** The dashboard API limits each IP address per minute: 30 household
+calculations, 120 economy-comparison reads and 300 other requests. Calculate on a user's
+action or after a debounce, not on every keystroke.
+
+## From servers: your own Auth0 client
+
+A server (a Modal backend, a Vercel function, a Cloud Run service, a CI job) calls the Public
+API directly with an Auth0 client-credentials token from the Public API's own tenant:
+
+| | Production | Staging |
+|---|---|---|
+| Auth0 tenant (`POLICYENGINE_API_AUTH0_DOMAIN`) | `policyengine-api.uk.auth0.com` | `policyengine-api-staging.uk.auth0.com` |
+| Audience (`POLICYENGINE_API_AUTH0_AUDIENCE`) | `https://api.policyengine.org/` | `https://staging-api.policyengine.org/` |
+| Public API (`POLICYENGINE_API_URL`) | `https://api.policyengine.org` | the staging Cloud Run service, given with the client |
+
+The token request is `POST https://<tenant>/oauth/token` with JSON
+`{"grant_type": "client_credentials", "client_id": …, "client_secret": …, "audience": …}`.
+Send the answer's `access_token` as `Authorization: Bearer <token>` on every request.
+A client token from the sign-in tenants (`auth.policyengine.org`,
+`policyengine-dev.uk.auth0.com`) is refused with 401.
+
+Other headers, when a server acts for a browser:
+- a signed-in user's Auth0 token goes in `PolicyEngine-User-Authorization: Bearer <token>`,
+  never in `Authorization`;
+- `PolicyEngine-Unauthenticated-User: <uuid>` is passed on unchanged;
+- send at most one of each; two `Authorization` headers are refused.
+
+**Cache the token across instances.** Tokens last 24 hours, and Auth0 counts the
+machine-to-machine tokens it issues per tenant per month. Never request a token per request,
+per container start or per cold start:
+- **Python (Modal, Cloud Run, scripts):** copy `templates/public_api_token.py`. It keeps the
+  token in memory and in a store the instances share (a `modal.Dict` on Modal), replaces it five
+  minutes before it expires, retries a 401 once with a new token, and never follows a
+  redirect. Its docstring has the Modal wiring.
+- **Vercel functions:** keep it in Vercel Runtime Cache, as app-v2's
+  `packages/public-api-forwarding/src/accessToken.ts` does:
+
+  ```ts
+  import { getCache } from "@vercel/functions";
+
+  const tokenCache = getCache({ namespace: "policyengine-public-api" });
+  const cached = (await tokenCache.get(cacheKey)) as { accessToken: string; refreshAt: number } | undefined;
+  // On a miss, or within five minutes of expiry: request a token, then
+  await tokenCache.set(cacheKey, { accessToken, refreshAt }, { ttl: expiresIn - 300 });
+  ```
+
+  The key is the tenant, audience and client ID, never the secret. Requests that arrive while a
+  token is being fetched should wait for that one request.
+- **CI:** request one token at the start of the job and reuse it for every request in the job.
+
+Also:
+- **Store the five variables in a secret store**, under the names app-v2 and the template use:
+  `POLICYENGINE_API_URL`, `POLICYENGINE_API_AUTH0_DOMAIN`, `POLICYENGINE_API_AUTH0_AUDIENCE`,
+  `POLICYENGINE_API_AUTH0_CLIENT_ID` and `POLICYENGINE_API_AUTH0_CLIENT_SECRET`. That is a Modal
+  secret, Vercel environment variables (the secret marked sensitive), or GitHub Actions secrets
+  and variables. Never the repository, never a `NEXT_PUBLIC_*` or `VITE_*` name.
+- **Never follow redirects.** A followed 307 or 308 re-sends the token request's body, client
+  secret included, to wherever it points, and Python's `urllib` also copies `Authorization` to a
+  redirect's target. The template turns redirects off for both requests; in `fetch`, pass
+  `redirect: "error"`.
+- **Cache what does not change.** `/{country}/metadata` is about 10 MB compressed; read it once
+  per deployment or hour, not per request.
+
+### Getting a client
+
+1. Ask the Public API's maintainers for a client for your caller. Say which repository and
+   service it is, and which environments it needs: production, and staging if previews or local
+   work call the Public API too.
+2. They create a machine-to-machine application in each tenant, with only the
+   `client_credentials` grant and a grant for that tenant's audience, and put the secret straight
+   into your caller's secret store. A secret never goes in an issue, a chat message, a PR or a
+   file.
+3. They add the client ID to `PUBLIC_API_SERVER_CLIENT_IDS` in policyengine-api's GitHub
+   `production` (and `staging`) environment and redeploy the Public API.
+4. **Only then deploy code that sends the token.** A valid token of a client that is not on the
+   list gets 401 today, even while requests without any `Authorization` header are still served.
+5. Check it: `GET /health` with the token answers 200. The Public API checks a sent token on
+   every route, including `/health`, so 401 there means the client, tenant or audience is wrong.
+
+## Local development and previews
+
+- **Dashboard pages:** a dashboard on `http://localhost:<port>` or on its team preview
+  (`*-policy-engine.vercel.app`) calls the production dashboard API at www.policyengine.org
+  through CORS, with nothing to configure and no credential on the developer's machine. To try a
+  change to the dashboard API before it is deployed, pass that website preview's URL as
+  `baseUrl`; website previews call the Public API's staging service.
+- **Servers:** production deployments use the production tenant, client and Public API;
+  preview and development deployments use the staging tenant, a staging client and the
+  staging service. On Vercel, set the five variables per environment (Production; Preview and
+  Development), then run `vercel env pull .env.local` for local work, which writes the
+  Development values. Vercel cannot mark Development values sensitive, so only staging values go
+  there. On Modal, keep production and staging values in separate secrets.
+- Never point a preview or a local run at the production Public API with the production client.
+
+## Asking for a new dashboard operation
+
+The dashboard API has exactly the four operations above. Adding one is a change to
+`PolicyEngine/policyengine-app-v2`: a route under `website/src/app/api/` and its check in
+`website/src/lib/dashboardApi/operations.ts`, a method in `packages/api-client`, and a new
+release of `@policyengine/api-client`. Ask for it in an issue in
+`PolicyEngine/policyengine-app-v2` that names the Public API call it maps to, the request and
+answer shapes the dashboard needs, how often a page calls it, and whether its answers can be
+cached. Until it ships, do not call the Public API from the page as a stopgap; precompute the
+data, or use a backend with its own client.
+
+## Errors
+
+`@policyengine/api-client` throws `PolicyEngineApiError` with `status` (`null` when no answer
+could be read), `message`, `body` and `retryAfterSeconds`. Error bodies from the dashboard API
+and the Public API share one shape: `{"status": "error", "message": …, "result": null}`.
+
+| Status | From | Meaning | What to do |
+|---|---|---|---|
+| 400 | Dashboard API | A missing or unknown field, or a malformed value | Fix the request; `message` names the field |
+| 401 | Public API | `{"status":"error","message":"Authentication is required"}` with `WWW-Authenticate: Bearer`: an invalid or expired token, a client not on the allow list, a client token from another tenant, two `Authorization` headers, or, once the requirement is on, no server credential | Server: drop the cached token and retry once with a new one (the template does this); a second 401 means the client is not listed in that environment, or the tenant or audience is wrong, so stop and report it. Page: the website's own credential failed; show an error, do not retry in a loop |
+| 403 | Dashboard API | "Pages on this origin may not call the dashboard API." The page's origin is not allowed | Serve the page from an allowed origin. A cross-origin page cannot read this answer: the browser reports a CORS error and the client throws with `status` `null` |
+| 403 | Public API user routes | A forwarded `PolicyEngine-User-Authorization` token is a machine-to-machine token, not a user's | Forward only a signed-in user's own token there |
+| 404 | Dashboard API | An unknown country in `/api/metadata/{country}` | Use `us` or `uk` |
+| 415 | Dashboard API | The body's `Content-Type` is not JSON | Send `Content-Type: application/json`; the client does |
+| 429 | Dashboard API firewall, or the Public API's load balancer | Too many requests from one IP address | Wait `Retry-After` when present, otherwise back off (5 s, then doubling); `compareEconomy` already does. The load balancer's 429 is not JSON. A server's requests with a bearer token skip its per-address limits on `/{country}/metadata`, `/{country}/calculate` and `/{country}/calculate-full` |
+| 502 | Dashboard API | Auth0 or the Public API could not be reached, or the Public API answered with a redirect | Retry later with back-off |
+| 502 | Public API, economy comparison | `status: "error"` with `retry_after_seconds`: the comparison failed | Show the failure; do not ask again before `retry_after_seconds` |
+| 503 | Public API | `{"status":"error","message":"Authentication is unavailable"}`: it could not check the token (Auth0's signing keys unreachable, or its own settings) | Keep the token; retry with back-off. It is not a refusal of the client |
+| 503 | Dashboard API | Its own settings are missing or incomplete, for example on a website preview | Not retryable; report it to the website's maintainers |
+| 504 | Dashboard API | The Public API did not answer in time (100 s for a household calculation, 40 s for a policy or a comparison read, 60 s for metadata) | Retry later with back-off |
+
+## Related skills
+
+- policyengine-api — the Public API's endpoints, household and policy shapes, and the v2 alpha
+- policyengine-tools — building and embedding a standalone tool; its data patterns
+- policyengine-app — policyengine.org itself, including `appZoneRoutes.ts`
+- policyengine-cloud-costs — Modal and Cloud Run settings and secrets for a backend
