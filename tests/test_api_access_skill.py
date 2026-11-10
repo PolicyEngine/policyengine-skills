@@ -412,3 +412,20 @@ def test_template_never_follows_a_redirect() -> None:
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_skill_describes_the_dashboard_api_firewall_refusal() -> None:
+    # Vercel's firewall rules on www.policyengine.org (tracker 2.3 · 6), observed in
+    # production on 2026-11-10: over a limit it answers 429 itself, as text/plain
+    # "Too Many Requests", with no Retry-After and no CORS headers.
+    text = skill_text()
+    for fact in (
+        "fixed 60-second windows",
+        "Too Many Requests",
+        "no `Retry-After`",
+        "no CORS headers",
+        "DEFAULT_RATE_LIMIT_WAIT_MILLISECONDS",
+    ):
+        assert fact in text, fact
+    error_rows = [row for row in text.split("## Errors", 1)[1].splitlines() if row.startswith("| 429 ")]
+    assert len(error_rows) == 2, "the errors table needs a 429 row for the firewall and one for the load balancer"
