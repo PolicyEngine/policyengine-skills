@@ -109,11 +109,14 @@ const metadata = await policyengine.getMetadata("uk");
   (`calculateHousehold<MyHousehold>(…)`), not checked at run time.
 
 **Polling.** `compareEconomy` reads the comparison every 5 seconds until `status` is `ok`, and
-gives up after 30 minutes with `EconomyComparisonTimeoutError`. It waits for `Retry-After` on a
-429 and one interval after a 502, 503 or 504, and stops after a fourth such answer in a row. A
-comparison that failed (502 with `status: "error"` and `retry_after_seconds`) is thrown at once:
-the Public API keeps that failure for `retry_after_seconds`, so polling sooner returns it again.
-Keep `intervalMilliseconds` at a few seconds. Use `getEconomyComparison` for one read.
+gives up after 30 minutes with `EconomyComparisonTimeoutError`. It waits one interval after a
+502, 503 or 504, and stops after a fourth such answer in a row. After a 429 it waits for
+`Retry-After`; the firewall sends none, so versions that export
+`DEFAULT_RATE_LIMIT_WAIT_MILLISECONDS` wait 60 seconds instead, and earlier ones wait one
+interval and count the 429 towards those four. A comparison that failed (502 with
+`status: "error"` and `retry_after_seconds`) is thrown at once: the Public API keeps that
+failure for `retry_after_seconds`, so polling sooner returns it again. Keep
+`intervalMilliseconds` at a few seconds. Use `getEconomyComparison` for one read.
 
 **Where pages may call it from.** The client's default `baseUrl` is
 `https://www.policyengine.org`. The dashboard API answers browser requests from:
@@ -130,9 +133,15 @@ as a Modal URL, reaches the dashboard API only through its www.policyengine.org 
 request headers are `Content-Type`, `Authorization` and `PolicyEngine-Unauthenticated-User`;
 the client sends no cookies (`credentials: "omit"`).
 
-**Rate limits.** The dashboard API limits each IP address per minute: 30 household
-calculations, 120 economy-comparison reads and 300 other requests. Calculate on a user's
-action or after a debounce, not on every keystroke.
+**Rate limits.** www.policyengine.org's Vercel firewall limits each IP address in
+fixed 60-second windows, counted per Vercel region: 30 household calculations, 120
+economy-comparison reads, and 300 policy creations and metadata reads together. Everyone behind one address, such
+as an office network, shares them. Over a limit the firewall answers before the dashboard API
+runs: 429, text/plain "Too Many Requests", no `Retry-After` (so `retryAfterSeconds` is `null`)
+and no CORS headers. A page on www.policyengine.org reads that 429; a page on another origin,
+such as `http://localhost` in development, gets a network failure (`status` `null`). Requests
+are accepted again when the window ends. Calculate on a user's action or after a debounce, not
+on every keystroke.
 
 ## From servers: your own Auth0 client
 
@@ -291,7 +300,8 @@ and the Public API share one shape: `{"status": "error", "message": …, "result
 | 403 | Public API user routes | A forwarded `PolicyEngine-User-Authorization` token is a machine-to-machine token, not a user's | Forward only a signed-in user's own token there |
 | 404 | Dashboard API | An unknown country in `/api/metadata/{country}` | Use `us` or `uk` |
 | 415 | Dashboard API | The body's `Content-Type` is not JSON | Send `Content-Type: application/json`; the client does |
-| 429 | Dashboard API firewall, or the Public API's load balancer | Too many requests from one IP address | Wait `Retry-After` when present, otherwise back off (5 s, then doubling); `compareEconomy` already does. The load balancer's 429 is not JSON. A server's requests with a bearer token skip its per-address limits on `/{country}/metadata`, `/{country}/calculate` and `/{country}/calculate-full` |
+| 429 | Dashboard API firewall | "Too Many Requests" as text/plain, with no `Retry-After` and no CORS headers: one IP address passed a per-minute limit | Wait for the 60-second window to end before sending again; never retry at once. On another origin (localhost) the page sees a network failure with `status` `null` instead, so treat repeated `null` statuses during heavy use the same way |
+| 429 | The Public API's load balancer | Too many requests from one IP address, not JSON | Server: wait `Retry-After` when present, otherwise back off (5 s, then doubling). Requests with a bearer token skip its per-address limits on `/{country}/metadata`, `/{country}/calculate` and `/{country}/calculate-full` |
 | 502 | Dashboard API | Auth0 or the Public API could not be reached, or the Public API answered with a redirect | Retry later with back-off |
 | 502 | Public API, economy comparison | `status: "error"` with `retry_after_seconds`: the comparison failed | Show the failure; do not ask again before `retry_after_seconds` |
 | 503 | Public API | `{"status":"error","message":"Authentication is unavailable"}`: it could not check the token (Auth0's signing keys unreachable, or its own settings) | Keep the token; retry with back-off. It is not a refusal of the client |
