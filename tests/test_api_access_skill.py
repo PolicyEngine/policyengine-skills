@@ -466,3 +466,62 @@ def test_errors_table_tells_a_refused_server_token_from_a_refused_user_token() -
     assert len(rows_401) == 2, "the errors table needs a 401 row for each credential"
     assert any('error="invalid_token"' in row and "PolicyEngine-User-Authorization" in row for row in rows_401)
     assert not any("retry once with a new" in row for row in rows_401)
+
+
+# --- Review round 2 ------------------------------------------------------------
+
+
+def test_template_modal_wiring_adds_the_module_to_the_image() -> None:
+    # Modal 1.0 stopped copying imported local modules into containers, so the
+    # image must add the template's module, or the function fails at start.
+    token_module = load_token_module()
+    docstring = token_module.__doc__
+    assert 'add_local_python_source("public_api_token")' in docstring
+    assert "image=" in docstring
+
+
+def test_template_settings_never_print_the_client_secret() -> None:
+    token_module = load_token_module()
+    settings = make_settings(token_module)
+    assert "placeholder-client-secret" not in repr(settings)
+    assert settings.client_secret == "placeholder-client-secret"
+
+
+def test_template_keeps_working_when_the_shared_store_fails() -> None:
+    token_module = load_token_module()
+
+    class FailingStore:
+        def get(self, key, default=None):  # noqa: ANN001, ANN201
+            raise ConnectionError("store unavailable")
+
+        def __setitem__(self, key, value):  # noqa: ANN001
+            raise ConnectionError("store unavailable")
+
+    opener = RecordingOpener()
+    tokens = token_module.PublicApiTokenProvider(
+        make_settings(token_module), shared_store=FailingStore(), clock=Clock(), opener=opener
+    )
+    assert [tokens.access_token() for _ in range(3)] == ["token-1"] * 3
+    assert len(opener.token_requests) == 1
+
+
+def test_template_replaces_a_short_token_halfway_through_its_life() -> None:
+    token_module = load_token_module()
+    clock = Clock()
+    opener = RecordingOpener(token_lifetime_seconds=400)
+    tokens = token_module.PublicApiTokenProvider(
+        make_settings(token_module), shared_store={}, clock=clock, opener=opener
+    )
+    assert tokens.access_token() == "token-1"
+    clock.now += 199
+    assert tokens.access_token() == "token-1"
+    clock.now += 2
+    assert tokens.access_token() == "token-2"
+
+
+def test_skill_says_the_calculation_returns_only_the_variables_asked_for() -> None:
+    # The dashboard API's calculation is API v1's /{country}/calculate, which adds no
+    # omitted variables (add_missing=False): outputs are asked for with null.
+    text = skill_text()
+    assert "/{country}/calculate" in text
+    assert "with `null` for the year" in text

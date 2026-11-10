@@ -146,6 +146,7 @@ def test_guards_catch_the_patterns_they_name() -> None:
         "```svelte\n<script>fetch('https://api.policyengine.org/uk/metadata')</script>\n```\n",
         "```cjs\nfetch('https://api.policyengine.org/uk/metadata')\n```\n",
         "````markdown\nAn example:\n```ts\nfetch('https://api.policyengine.org/us/metadata')\n```\n````\n",
+        "``` ts\nfetch('https://api.policyengine.org/us/metadata')\n```\n",
     ]
     for example in browser_examples:
         assert browser_blocks_naming_the_public_api(example), example
@@ -167,6 +168,12 @@ def test_guards_catch_the_patterns_they_name() -> None:
         "VITE_PE_API_KEY",
         "VITE_AUTH0_CLIENT_SECRET",
         "VITE_API_TOKEN_SECRET",
+        "`process.env.NEXT_PUBLIC_API_URL ?? 'https://api.policyengine.org'`",
+        "NEXT_PUBLIC_API_KEY",
+        "NEXT_PUBLIC_API_TOKEN",
+        "NEXT_PUBLIC_BEARER_TOKEN",
+        "VITE_ACCESS_TOKEN",
+        "VITE_POLICYENGINE_TOKEN",
     ):
         assert PUBLIC_PREFIX_SET_TO_PUBLIC_API.search(unsafe) or PUBLIC_PREFIX_CREDENTIAL.search(unsafe), unsafe
     for safe in (
@@ -179,6 +186,10 @@ def test_guards_catch_the_patterns_they_name() -> None:
         "VITE_AUTH0_CLIENT_ID",
         "NEXT_PUBLIC_AUTH0_AUDIENCE",
         "NEXT_PUBLIC_MAPBOX_TOKEN",
+        "NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN",
+        # The browser sign-in audience is API v1's identifier, not an address to call.
+        "NEXT_PUBLIC_AUTH0_AUDIENCE=https://api.policyengine.org/",
+        "VITE_AUTH0_AUDIENCE: 'https://api.policyengine.org/'",
     ):
         assert not PUBLIC_PREFIX_SET_TO_PUBLIC_API.search(safe), safe
         assert not PUBLIC_PREFIX_CREDENTIAL.search(safe), safe
@@ -230,3 +241,28 @@ def test_tools_skill_pattern_b_uses_the_dashboard_api() -> None:
     assert pattern_b, "the tools skill has no Pattern B entry"
     assert "@policyengine/api-client" in pattern_b.group(0)
     assert "https://api.policyengine.org" not in pattern_b.group(0)
+
+
+def test_vue_and_svelte_files_are_scanned() -> None:
+    assert {".vue", ".svelte"} <= TEXT_SUFFIXES
+
+
+INTEGRATOR = REPO_ROOT / "targets/claude/agents/dashboard/dashboard-integrator.md"
+
+
+def test_integrator_varies_a_household_in_one_calculation() -> None:
+    # The dashboard API allows 30 household calculations a minute from one address,
+    # so a chart over 20 incomes is one calculation with axes, not 20.
+    step = INTEGRATOR.read_text().split("### Step 6", 1)
+    assert len(step) == 2
+    variation = step[1].split("\n### ", 1)[0]
+    assert "axes" in variation
+    assert "30 household calculations a minute" in variation
+
+
+def test_integrator_types_the_household_for_the_client() -> None:
+    assert "`buildHouseholdDict` returns `Household`" in INTEGRATOR.read_text()
+
+
+def test_contributing_documents_the_server_code_marker() -> None:
+    assert SERVER_CODE_MARKER in (REPO_ROOT / "CONTRIBUTING.md").read_text()
