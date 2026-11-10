@@ -106,15 +106,22 @@ const metadata = await policyengine.getMetadata("uk");
   `region` is `us`, `uk` or a sub-national region such as `state/ca`, at most 200 characters.
 - The household and parameter shapes are the Public API's (`household` nests values by year;
   read variable and parameter names from the metadata). See the policyengine-api skill.
+- `POST /api/household/calculate` is the Public API's `/{country}/calculate`, which adds no
+  variables the household leaves out: ask for each output by naming it on its entity
+  with `null` for the year (`income_tax: { 2026: null }`). To vary an input for a chart, send
+  one household with `axes` (`[[{ name: "employment_income", period: "2026", min: 0, max:
+  200000, count: 41 }]]`) and its value `null`; each output comes back as a list over the
+  points. Never send one calculation per point: the limit is 30 a minute.
 - Each method takes `{ signal }` to cancel. The result type is a type argument
   (`calculateHousehold<MyHousehold>(…)`), not checked at run time.
 
 **Polling.** `compareEconomy` reads the comparison every 5 seconds until `status` is `ok`, and
 gives up after 30 minutes with `EconomyComparisonTimeoutError`. After a 429 it waits for
 `Retry-After`, or 60 seconds (`RATE_LIMIT_WAIT_MILLISECONDS`, the firewall's window) when there
-is none, and keeps polling. A page on another origin cannot read the firewall's 429 (see rate
-limits below), so there polling stops with `status` `null`. After a 502, 503 or 504 it waits
-one interval, and the fourth such failure since the last answer ends polling. A comparison
+is none, but never less than one interval or one second, and keeps polling. A page on another
+origin cannot read the firewall's 429 (see rate limits below), so there polling stops with
+`status` `null`. After a 502, 503 or 504 it waits for `Retry-After`, or one interval, and the
+fourth such failure since the last answer ends polling. A comparison
 that failed (502 with
 `status: "error"` and `retry_after_seconds`) is thrown at once: the Public API keeps that
 failure for `retry_after_seconds`, so polling sooner returns it again. Keep
@@ -266,7 +273,7 @@ could be read), `message`, `body` and `retryAfterSeconds`. The dashboard API's o
 | Status | From | Meaning | What to do |
 |---|---|---|---|
 | 400 | Dashboard API | A missing or unknown field, or a malformed value | Fix the request; `message` names the field |
-| 401 | Public API, the server's own token | `{"status":"error","message":"Authentication is required"}` with `WWW-Authenticate: Bearer`: an invalid or expired token, a client not on the allow list, a client token from another tenant, two `Authorization` headers, or, once the requirement is on, no server credential | Server: do not request another token, which would be refused too and counts against the tenant's monthly allowance; check that the client is listed in that environment and that its tenant and audience match, and report it. Page: the website's own credential failed; show an error, do not retry in a loop |
+| 401 | Public API | `{"status":"error","message":"Authentication is required"}` with `WWW-Authenticate: Bearer`. Usually the server's own token: an invalid or expired token, a client not on the allow list, a client token from another tenant, two `Authorization` headers, or, once the requirement is on, no server credential. A user route answers the same when the server forwards no user credential, or a malformed `PolicyEngine-Unauthenticated-User` | Server: do not request another token, which would be refused too and counts against the tenant's monthly allowance. On a user route, check first that the request forwarded the user's credential; otherwise check that the client is listed in that environment and that its tenant and audience match, and report it. Page: the website's own credential failed; show an error, do not retry in a loop |
 | 401 | Public API user routes | `WWW-Authenticate: Bearer error="invalid_token"` and "The bearer access token is invalid": the forwarded `PolicyEngine-User-Authorization` token is invalid or expired | Keep the server token; the user signs in again |
 | 403 | Dashboard API | "Pages on this origin may not call the dashboard API." The page's origin is not allowed | Serve the page from an allowed origin. A cross-origin page cannot read this answer: the browser reports a CORS error and the client throws with `status` `null` |
 | 403 | Public API user routes | A forwarded `PolicyEngine-User-Authorization` token is a machine-to-machine token, not a user's | Forward only a signed-in user's own token there |

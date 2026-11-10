@@ -88,14 +88,6 @@ SERVER_CONTRACT_FACTS = (
 )
 HANDLED_STATUSES = ("401", "403", "429", "503")
 
-BROWSER_LANGUAGES = {"ts", "tsx", "js", "jsx", "javascript", "typescript"}
-PUBLIC_API_HOST = re.compile(r"api\.policyengine\.org|policyengine-api[a-z0-9-]*\.[a-z0-9.-]*run\.app")
-# A credential-looking name with a prefix that bundlers put into browser code.
-PUBLIC_PREFIX_CREDENTIAL = re.compile(
-    r"\b(?:NEXT_PUBLIC|VITE)_[A-Z0-9_]*(?:AUTH0|SECRET|TOKEN|CLIENT|CREDENTIAL|POLICYENGINE_API)[A-Z0-9_]*"
-)
-FENCE = re.compile(r"^```([A-Za-z0-9_+-]*)\n(.*?)^```", re.DOTALL | re.MULTILINE)
-
 
 def skill_text() -> str:
     assert SKILL_FILE.is_file(), f"{SKILL_FILE.relative_to(REPO_ROOT)} is missing"
@@ -107,10 +99,6 @@ def skill_frontmatter() -> dict:
     match = re.match(r"\A---\n(.*?)\n---\n", text, re.DOTALL)
     assert match, "SKILL.md has no YAML frontmatter"
     return yaml.safe_load(match.group(1))
-
-
-def fenced_blocks(text: str) -> list[tuple[str, str]]:
-    return [(language.lower(), body) for language, body in FENCE.findall(text)]
 
 
 def test_frontmatter_names_the_skill_and_its_category() -> None:
@@ -180,31 +168,6 @@ def test_skill_says_how_to_handle_each_refusal(status_code: str) -> None:
     assert re.search(rf"^\| {status_code} ", error_section[1], re.MULTILINE), (
         f"the errors table has no row for {status_code}"
     )
-
-
-def test_no_browser_language_example_names_a_public_api_host() -> None:
-    offenders = [
-        body
-        for language, body in fenced_blocks(skill_text())
-        if language in BROWSER_LANGUAGES and PUBLIC_API_HOST.search(body)
-    ]
-    assert offenders == []
-
-
-def test_skill_never_puts_a_credential_in_a_public_prefix_variable() -> None:
-    assert PUBLIC_PREFIX_CREDENTIAL.findall(skill_text()) == []
-
-
-def test_public_prefix_credential_pattern_catches_bundled_names() -> None:
-    for unsafe in (
-        "NEXT_PUBLIC_POLICYENGINE_API_AUTH0_CLIENT_SECRET",
-        "VITE_AUTH0_CLIENT_ID",
-        "NEXT_PUBLIC_API_TOKEN",
-        "VITE_POLICYENGINE_API_URL",
-    ):
-        assert PUBLIC_PREFIX_CREDENTIAL.search(unsafe), unsafe
-    for safe in ("NEXT_PUBLIC_*", "VITE_*", "NEXT_PUBLIC_MODAL_URL", "POLICYENGINE_API_AUTH0_CLIENT_SECRET"):
-        assert not PUBLIC_PREFIX_CREDENTIAL.search(safe), safe
 
 
 def test_skill_points_servers_at_the_token_template() -> None:
@@ -364,7 +327,9 @@ def test_template_turns_a_redirected_token_request_into_an_error() -> None:
 
     class RedirectingTokenEndpoint(RecordingOpener):
         def open(self, request, timeout=None):  # noqa: ANN001 - urllib's opener signature
-            raise urllib.error.HTTPError(request.full_url, 307, "Temporary Redirect", {"Location": "https://elsewhere.test/"}, None)
+            raise urllib.error.HTTPError(
+                request.full_url, 307, "Temporary Redirect", {"Location": "https://elsewhere.test/"}, None
+            )
 
     shared_store: dict = {}
     tokens = token_module.PublicApiTokenProvider(

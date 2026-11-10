@@ -34,7 +34,8 @@ client, and the errors.
 
 Flask (`policyengine_api`, Python 3.10/3.11). Country id (`us`, `uk`, `ca`, …) is the first
 path segment. Every route except the public ones below needs a server credential once the
-requirement is on. Verified route surface (`policyengine_api/routes/`, `api.py`):
+requirement is on. Verified route surface (`policyengine_api/routes/` and `api.py`; the public
+`/health` and `/v2/openapi.json` are in `policyengine_api/fastapi_routes/`):
 
 | Route | Method | Purpose |
 |---|---|---|

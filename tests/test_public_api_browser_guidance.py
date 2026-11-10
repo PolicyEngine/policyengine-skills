@@ -27,7 +27,9 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCAN_DIRS = ("skills", "targets", "docs")
-TEXT_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".py", ".sh", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".html"}
+TEXT_SUFFIXES = {
+    ".md", ".json", ".yaml", ".yml", ".py", ".sh", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".html", ".vue", ".svelte",
+}
 BROWSER_FILE_SUFFIXES = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".html", ".vue", ".svelte"}
 
 BROWSER_LANGUAGES = {
@@ -45,20 +47,25 @@ PUBLIC_API_HOST = re.compile(
 )
 # ``` or ~~~ fences of three or more characters, closed by the same fence.
 FENCE = re.compile(
-    r"^[ \t]*(?P<fence>`{3,}|~{3,})(?P<language>[A-Za-z0-9_+-]*)[^\n]*\n(?P<body>.*?)^[ \t]*(?P=fence)[ \t]*$",
+    r"^[ \t]*(?P<fence>`{3,}|~{3,})[ \t]*(?P<language>[A-Za-z0-9_+-]*)[^\n]*\n(?P<body>.*?)^[ \t]*(?P=fence)[ \t]*$",
     re.DOTALL | re.MULTILINE,
 )
+# An *_AUDIENCE name holds API v1's Auth0 identifier for a browser's sign-in, not an
+# address to call, so it is left out.
 PUBLIC_PREFIX_SET_TO_PUBLIC_API = re.compile(
-    r"\b(?:NEXT_PUBLIC|VITE|REACT_APP)_[A-Z0-9_]+[\"']?\s*(?:[=:]|\|\|)\s*[\"'`]?https?://"
+    r"\b(?:NEXT_PUBLIC|VITE|REACT_APP)_(?![A-Z0-9_]*AUDIENCE)[A-Z0-9_]+[\"']?\s*(?:[=:]|\|\||\?\?)\s*[\"'`]?https?://"
     r"(?:api\.policyengine\.org|(?:[a-z0-9-]+---)?policyengine-api[a-z0-9-]*\.[a-z0-9.-]*run\.app)"
 )
-# A public-prefix name that holds a secret, or that is named for the Public API's
+# A public-prefix name that holds a secret, that is an unqualified token or key
+# (NEXT_PUBLIC_API_KEY, VITE_ACCESS_TOKEN), or that is named for the Public API's
 # address or server client. A browser's own sign-in settings (VITE_AUTH0_DOMAIN,
 # VITE_AUTH0_CLIENT_ID, NEXT_PUBLIC_AUTH0_AUDIENCE) and other services' public
-# tokens are public by design.
+# tokens named for their service (NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) are public by design.
 PUBLIC_PREFIX_CREDENTIAL = re.compile(
-    r"\b(?:NEXT_PUBLIC|VITE|REACT_APP)_(?=[A-Z0-9_]*(?:SECRET|PASSWORD|PRIVATE_KEY|CREDENTIAL"
-    r"|(?<![A-Z])(?:POLICYENGINE_API|PE_API|PUBLIC_API|API_V1)|AUTH0[A-Z0-9_]*(?:TOKEN|M2M)))[A-Z0-9_]+"
+    r"\b(?:NEXT_PUBLIC|VITE|REACT_APP)_(?=(?:API_|ACCESS_|BEARER_|AUTH_)?(?:TOKEN|KEY)\b"
+    r"|[A-Z0-9_]*(?:SECRET|PASSWORD|PRIVATE_KEY|CREDENTIAL"
+    r"|(?<![A-Z])(?:POLICYENGINE_API|PE_API|PUBLIC_API|API_V1)|(?<![A-Z])POLICYENGINE[A-Z0-9_]*(?:TOKEN|KEY|CLIENT)"
+    r"|AUTH0[A-Z0-9_]*(?:TOKEN|M2M)))[A-Z0-9_]+"
 )
 
 ACCESS_SKILL = "policyengine-api-access"

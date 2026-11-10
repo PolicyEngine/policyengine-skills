@@ -19,20 +19,22 @@ per tenant per month.
     POLICYENGINE_API_AUTH0_CLIENT_SECRET  that client's secret
 
 On Modal, the shared store is a Dict, and each container builds one provider the
-first time it needs one (the secret's variables exist only inside the container):
+first time it needs one (the secret's variables exist only inside the container).
+Modal copies only the app's own module into containers, so the image adds this one:
 
     import functools
 
     import modal
     from public_api_token import PublicApiSettings, PublicApiTokenProvider, call_public_api
 
+    image = modal.Image.debian_slim().add_local_python_source("public_api_token")
     TOKEN_STORE = modal.Dict.from_name("TOOL_NAME-public-api-token", create_if_missing=True)
 
     @functools.cache
     def public_api_tokens() -> PublicApiTokenProvider:
         return PublicApiTokenProvider(PublicApiSettings.from_environment(), shared_store=TOKEN_STORE)
 
-    @app.function(secrets=[modal.Secret.from_name("TOOL_NAME-policyengine-api")])
+    @app.function(image=image, secrets=[modal.Secret.from_name("TOOL_NAME-policyengine-api")])
     def household(situation: dict) -> dict:
         return call_public_api(public_api_tokens(), "POST", "/us/calculate", {"household": situation})
 
@@ -59,7 +61,7 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 LOGGER = logging.getLogger(__name__)
@@ -86,6 +88,12 @@ class SharedTokenStore(Protocol):
     def __setitem__(self, key: str, value: Any) -> None: ...
 
 
+class Opener(Protocol):
+    """What the provider needs to send a request: urllib's OpenerDirector, or a fake in tests."""
+
+    def open(self, request: urllib.request.Request, timeout: float) -> Any: ...
+
+
 class PublicApiSettingsError(ValueError):
     """A setting is missing or malformed."""
 
@@ -108,7 +116,8 @@ class PublicApiSettings:
     token_endpoint_host: str
     audience: str
     client_id: str
-    client_secret: str
+    # Kept out of repr(), so a logged or printed settings object never shows it.
+    client_secret: str = field(repr=False)
 
     @classmethod
     def from_environment(cls, environment: Mapping[str, str] | None = None) -> PublicApiSettings:
@@ -133,7 +142,7 @@ class PublicApiTokenProvider:
         settings: PublicApiSettings,
         shared_store: SharedTokenStore | None = None,
         clock: Callable[[], float] = time.time,
-        opener: Any = NO_REDIRECT_OPENER,
+        opener: Opener = NO_REDIRECT_OPENER,
     ) -> None:
         self.settings = settings
         self.shared_store = shared_store
@@ -233,14 +242,19 @@ def call_public_api(
     path: str,
     body: Any = None,
     *,
-    opener: Any = None,
+    opener: Opener | None = None,
     timeout_seconds: float = PUBLIC_API_TIMEOUT_SECONDS,
 ) -> Any:
     """Sends one request with the server token and returns the parsed JSON answer.
 
-    Every error is raised as urllib's HTTPError, with the status and the answer's
-    body. A 401 is raised too, without asking Auth0 for another token (see the
-    module docstring).
+    Raises:
+        PublicApiTokenError: no token could be obtained from Auth0.
+        urllib.error.HTTPError: the Public API answered 3xx (never followed) or an
+            error status; ``error.code`` is the status and ``error.read()`` the body.
+            A 401 is raised without asking Auth0 for another token (see the module
+            docstring).
+        urllib.error.URLError, TimeoutError: the Public API could not be reached in time.
+        ValueError: the answer was not JSON.
     """
     opener = tokens.opener if opener is None else opener
     data = None if body is None else json.dumps(body).encode()

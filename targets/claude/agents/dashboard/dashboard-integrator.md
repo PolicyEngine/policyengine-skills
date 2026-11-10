@@ -106,7 +106,7 @@ function buildHouseholdDict(values: FormValues): Record<string, unknown> {
 }
 ```
 
-For `data_pattern: policyengine-api`, pass `buildHouseholdDict(values)` to the backend-builder's `useCalculation(countryId)` mutation: `@policyengine/api-client` takes the country and the household, not `buildHouseholdRequest`'s shape. Its result is the calculated household itself, keyed by entity, not `HouseholdSimulationResult`.
+For `data_pattern: policyengine-api`, declare it so that `buildHouseholdDict` returns `Household` (from `lib/api/types`), with each output the plan needs named on its entity as `null` for the year, and pass it to the backend-builder's `useCalculation(countryId)` mutation: `@policyengine/api-client` takes the country and the household, not `buildHouseholdRequest`'s shape. The result is the calculated household in the same shape, so the transformers read `result.people.head.income_tax[year]` and `result.households.household.household_net_income[year]` rather than `HouseholdSimulationResult`'s `household[0]` and `person[0]`.
 
 ### Step 3: Build Response Transformers
 
@@ -194,7 +194,29 @@ For every component that displays data:
 
 ### Step 6: Variation Calculations (if applicable)
 
-If the plan includes charts that vary a parameter (e.g., "tax by income"), implement the variation logic:
+If the plan includes charts that vary a parameter (e.g., "tax by income"), implement the variation logic.
+
+For `data_pattern: policyengine-api`, send one calculation with `axes`, never one per point: the dashboard API allows 30 household calculations a minute from one address, and a refused one shows as `status` `null` on localhost and previews. Each output then comes back as a list over the points:
+
+```typescript
+export function useIncomeVariation(baseValues: FormValues, countryId: 'us' | 'uk') {
+  return useQuery({
+    queryKey: ['income-variation', countryId, baseValues],
+    queryFn: ({ signal }) => {
+      const year = String(baseValues.year);
+      const household = buildHouseholdDict(baseValues);
+      household.people.head.employment_income = { [year]: null };
+      household.axes = [[{ name: 'employment_income', period: year, min: 0, max: 500000, count: 21 }]];
+      return calculate(countryId, household, signal);
+    },
+    enabled: !!baseValues.state, // Only run when required inputs are set
+    retry: 1,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+```
+
+For a custom backend, which has no such limit:
 
 ```typescript
 export function useIncomeVariation(baseValues: FormValues, countryId: string) {

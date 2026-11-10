@@ -132,17 +132,16 @@ Read the plan's endpoints and write the household and result types. Use `type` a
 ```typescript
 // types.ts
 
-/** A group entity: its members, and its variables keyed by year */
-export type GroupEntity = { members: string[]; [variable: string]: unknown };
-
 /**
- * A household in PolicyEngine's situation format: values keyed by year. The group
- * entities differ by country (US: tax_units, spm_units, families, marital_units,
- * households; UK: benunits, households); read them from the country's metadata.
+ * A household in PolicyEngine's situation format: values keyed by year, and null for
+ * each output to calculate. The group entities differ by country (US: tax_units,
+ * spm_units, families, marital_units, households; UK: benunits, households); read them
+ * from the country's metadata. `axes` varies one input over a range (integrator Step 6).
  */
 export type Household = {
   people: Record<string, Record<string, Record<string, number | boolean | string | null>>>;
-  [groupEntities: string]: Record<string, unknown>;
+  axes?: Array<Array<{ name: string; period: string; min: number; max: number; count: number }>>;
+  [groupEntities: string]: unknown;
 };
 
 /** The calculated household: the same shape, with the requested variables filled in */

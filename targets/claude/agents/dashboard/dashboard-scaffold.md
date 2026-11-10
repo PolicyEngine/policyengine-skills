@@ -329,7 +329,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 #### API Client Stubs
 
-Generate `lib/api/types.ts` with TypeScript interfaces matching the plan's endpoint inputs/outputs.
+Generate `lib/api/types.ts` with TypeScript types matching the plan's endpoint inputs/outputs. Declare anything passed to `@policyengine/api-client` as a `type` alias, not an `interface`: the client takes `Record<string, unknown>`, which an interface is not assignable to.
 
 Generate `lib/api/fixtures.ts` with mock data from `plan.yaml`'s `stub_fixtures`.
 
