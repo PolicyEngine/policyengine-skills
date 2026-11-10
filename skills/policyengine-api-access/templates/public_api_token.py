@@ -45,7 +45,10 @@ replace it are stored, never the client secret.
 A 401 is raised, never answered with a new token: it means the client is not on
 the Public API's allow list in this environment, or its tenant or audience is
 wrong, so a new token would be refused too and would only use up the tenant's
-monthly allowance.
+monthly allowance. So a token that Auth0 has revoked stays in use until it is
+replaced, at most 24 hours later. To drop it sooner, delete its entry from the
+shared store (the key is "public-api-token <tenant> <audience> <client ID>") and
+restart the instances.
 
 Requests never follow redirects: a followed redirect would send the client
 secret, or the token, to wherever it points.
@@ -62,7 +65,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeGuard
 
 LOGGER = logging.getLogger(__name__)
 
@@ -91,7 +94,9 @@ class SharedTokenStore(Protocol):
 class Opener(Protocol):
     """What the provider needs to send a request: urllib's OpenerDirector, or a fake in tests."""
 
-    def open(self, request: urllib.request.Request, timeout: float) -> Any: ...
+    # The request by position and the timeout by keyword, as OpenerDirector.open
+    # (fullurl, data=None, timeout=...) accepts them.
+    def open(self, request: urllib.request.Request, /, *, timeout: float) -> Any: ...
 
 
 class PublicApiSettingsError(ValueError):
@@ -103,7 +108,9 @@ class PublicApiTokenError(RuntimeError):
 
 
 class _RefuseRedirects(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001, ANN201
+    def redirect_request(
+        self, req: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, newurl: str
+    ) -> None:
         return None  # urllib then raises HTTPError with the 3xx status
 
 
@@ -158,16 +165,17 @@ class PublicApiTokenProvider:
     def access_token(self) -> str:
         with self._lock:
             if self._is_usable(self._remembered):
-                return self._remembered["access_token"]
+                return str(self._remembered["access_token"])
             shared_token = self._read_shared_token()
             if self._is_usable(shared_token):
                 self._remembered = shared_token
-                return shared_token["access_token"]
-            self._remembered = self._request_token()
-            self._write_shared_token(self._remembered)
-            return self._remembered["access_token"]
+                return str(shared_token["access_token"])
+            fresh_token = self._request_token()
+            self._remembered = fresh_token
+            self._write_shared_token(fresh_token)
+            return str(fresh_token["access_token"])
 
-    def _is_usable(self, token: dict[str, Any] | None) -> bool:
+    def _is_usable(self, token: dict[str, Any] | None) -> TypeGuard[dict[str, Any]]:
         return (
             isinstance(token, dict)
             and isinstance(token.get("access_token"), str)
@@ -180,10 +188,11 @@ class PublicApiTokenProvider:
         if self.shared_store is None:
             return None
         try:
-            return self.shared_store.get(self.cache_key)
+            stored = self.shared_store.get(self.cache_key)
         except Exception as error:  # a store outage must not stop requests
             LOGGER.warning("Could not read the Public API token from the shared store: %s", error)
             return None
+        return stored if isinstance(stored, dict) else None
 
     def _write_shared_token(self, token: dict[str, Any]) -> None:
         if self.shared_store is None:

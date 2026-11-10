@@ -144,8 +144,28 @@ export type Household = {
   [groupEntities: string]: unknown;
 };
 
-/** The calculated household: the same shape, with the requested variables filled in */
-export type CalculatedHousehold = Household;
+/** A calculated value: one value, or a list over the points when the household has axes */
+export type CalculatedValue = number | boolean | string | null | Array<number | boolean | string | null>;
+
+/** The calculated household: the request's shape, with the requested variables filled in */
+export type CalculatedHousehold = Record<string, unknown>;
+
+/**
+ * One variable from a calculated household, for example
+ * readVariable(result, 'households', 'household', 'household_net_income', '2026').
+ * Null when the household did not ask for it.
+ */
+export function readVariable(
+  result: CalculatedHousehold,
+  entityGroup: string,
+  entity: string,
+  variable: string,
+  year: string,
+): CalculatedValue {
+  const entities = result[entityGroup] as Record<string, Record<string, unknown>> | undefined;
+  const values = entities?.[entity]?.[variable] as Record<string, CalculatedValue> | undefined;
+  return values?.[year] ?? null;
+}
 
 // Add dashboard-specific types for the variables in the plan
 ```

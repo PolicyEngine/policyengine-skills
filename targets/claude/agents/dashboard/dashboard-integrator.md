@@ -106,7 +106,7 @@ function buildHouseholdDict(values: FormValues): Record<string, unknown> {
 }
 ```
 
-For `data_pattern: policyengine-api`, declare it so that `buildHouseholdDict` returns `Household` (from `lib/api/types`), with each output the plan needs named on its entity as `null` for the year, and pass it to the backend-builder's `useCalculation(countryId)` mutation: `@policyengine/api-client` takes the country and the household, not `buildHouseholdRequest`'s shape. The result is the calculated household in the same shape, so the transformers read `result.people.head.income_tax[year]` and `result.households.household.household_net_income[year]` rather than `HouseholdSimulationResult`'s `household[0]` and `person[0]`.
+For `data_pattern: policyengine-api`, declare it so that `buildHouseholdDict` returns `Household` (from `lib/api/types`), with each output the plan needs named on its entity as `null` for the year, and pass it to the backend-builder's `useCalculation(countryId)` mutation: `@policyengine/api-client` takes the country and the household, not `buildHouseholdRequest`'s shape. The result is the calculated household in the same shape, so the transformers read it with backend-builder's `readVariable(result, 'people', 'head', 'income_tax', year)` and `readVariable(result, 'households', 'household', 'household_net_income', year)` rather than `HouseholdSimulationResult`'s `household[0]` and `person[0]`. With `axes`, each value is a list over the points.
 
 ### Step 3: Build Response Transformers
 
@@ -141,7 +141,34 @@ export function buildChartData(
 
 ### Step 4: Wire React Query Hooks
 
-Ensure the hooks in `useCalculation.ts` are correctly used by components:
+For `data_pattern: policyengine-api`, calculate from debounced form values, so typing or dragging a slider sends one calculation when the user pauses, not one per keystroke: the dashboard API allows 30 household calculations a minute from one address. A query keyed on the debounced values also skips values it has already calculated:
+
+```typescript
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+/** The value, once it has stopped changing for delayMilliseconds. */
+export function useDebouncedValue<Value>(value: Value, delayMilliseconds = 500): Value {
+  const [debounced, setDebounced] = useState(value);
+  const serialized = JSON.stringify(value); // compares by content, not object identity
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(JSON.parse(serialized) as Value), delayMilliseconds);
+    return () => clearTimeout(timer);
+  }, [serialized, delayMilliseconds]);
+  return debounced;
+}
+
+export function useHouseholdCalculation(values: FormValues, countryId: 'us' | 'uk') {
+  const debouncedValues = useDebouncedValue(values);
+  return useQuery({
+    queryKey: ['household', countryId, debouncedValues],
+    queryFn: ({ signal }) => calculate(countryId, buildHouseholdDict(debouncedValues), signal),
+    retry: 1,
+  });
+}
+```
+
+For a custom backend, ensure the hooks in `useCalculation.ts` are correctly used by components:
 
 1. Mutation hooks for on-demand calculations (user clicks "Calculate")
 2. Query hooks for auto-fetching data (loads on mount or input change)
@@ -200,16 +227,18 @@ For `data_pattern: policyengine-api`, send one calculation with `axes`, never on
 
 ```typescript
 export function useIncomeVariation(baseValues: FormValues, countryId: 'us' | 'uk') {
+  const debouncedValues = useDebouncedValue(baseValues); // Step 4
   return useQuery({
-    queryKey: ['income-variation', countryId, baseValues],
+    queryKey: ['income-variation', countryId, debouncedValues],
     queryFn: ({ signal }) => {
-      const year = String(baseValues.year);
-      const household = buildHouseholdDict(baseValues);
+      const year = String(debouncedValues.year);
+      const household = buildHouseholdDict(debouncedValues);
       household.people.head.employment_income = { [year]: null };
       household.axes = [[{ name: 'employment_income', period: year, min: 0, max: 500000, count: 21 }]];
       return calculate(countryId, household, signal);
     },
-    enabled: !!baseValues.state, // Only run when required inputs are set
+    // Only run when required inputs are set; UK households have no state.
+    enabled: countryId === 'uk' || !!debouncedValues.state,
     retry: 1,
     staleTime: 30 * 60 * 1000,
   });

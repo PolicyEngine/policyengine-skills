@@ -74,7 +74,7 @@ const household = await policyengine.calculateHousehold({
   country: "us",
   household: {
     people: { you: { age: { 2026: 40 }, employment_income: { 2026: 50000 } } },
-    households: { your_household: { members: ["you"] } },
+    households: { your_household: { members: ["you"], household_net_income: { 2026: null } } },
   },
   policy: { "gov.irs.credits.ctc.amount.base[0].amount": { "2026-01-01.2100-12-31": 3000 } },
 });
@@ -273,7 +273,7 @@ could be read), `message`, `body` and `retryAfterSeconds`. The dashboard API's o
 | Status | From | Meaning | What to do |
 |---|---|---|---|
 | 400 | Dashboard API | A missing or unknown field, or a malformed value | Fix the request; `message` names the field |
-| 401 | Public API | `{"status":"error","message":"Authentication is required"}` with `WWW-Authenticate: Bearer`. Usually the server's own token: an invalid or expired token, a client not on the allow list, a client token from another tenant, two `Authorization` headers, or, once the requirement is on, no server credential. A user route answers the same when the server forwards no user credential, or a malformed `PolicyEngine-Unauthenticated-User` | Server: do not request another token, which would be refused too and counts against the tenant's monthly allowance. On a user route, check first that the request forwarded the user's credential; otherwise check that the client is listed in that environment and that its tenant and audience match, and report it. Page: the website's own credential failed; show an error, do not retry in a loop |
+| 401 | Public API | `{"status":"error","message":"Authentication is required"}` with `WWW-Authenticate: Bearer`. Usually the server's own token: an invalid or expired token, a client not on the allow list, a client token from another tenant, two `Authorization` headers, or, once the requirement is on, no server credential. A user route answers the same when the server forwards no user credential | Server: do not request another token, which would be refused too and counts against the tenant's monthly allowance. On a user route, check first that the request forwarded the user's credential; otherwise check that the client is listed in that environment and that its tenant and audience match, and report it. Page: the website's own credential failed; show an error, do not retry in a loop |
 | 401 | Public API user routes | `WWW-Authenticate: Bearer error="invalid_token"` and "The bearer access token is invalid": the forwarded `PolicyEngine-User-Authorization` token is invalid or expired | Keep the server token; the user signs in again |
 | 403 | Dashboard API | "Pages on this origin may not call the dashboard API." The page's origin is not allowed | Serve the page from an allowed origin. A cross-origin page cannot read this answer: the browser reports a CORS error and the client throws with `status` `null` |
 | 403 | Public API user routes | A forwarded `PolicyEngine-User-Authorization` token is a machine-to-machine token, not a user's | Forward only a signed-in user's own token there |
