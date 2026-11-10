@@ -99,7 +99,8 @@ server credential and forwards only the operations in `app/src/libs/publicApiRou
 anything else gets 404. New calculator code goes through that route, and an operation the app
 has not called before needs an allow-list entry in the same PR. Never add a browser call to
 api.policyengine.org. Dashboards use the website's dashboard API (`website/src/app/api/`)
-instead; see policyengine-api-access. Verified shapes (the route keeps these paths):
+instead; see policyengine-api-access. Verified shapes, as Public API paths (through the route,
+each sits under `/api/policyengine`, for example `/api/policyengine/us/household/{id}`):
 
 - `GET  {BASE_URL}/{country}/household/{id}` and `.../household/{id}/policy/{policyId}` — household calc
 - `POST {BASE_URL}/{country}/household` — create household

@@ -141,8 +141,10 @@ Never paste ad-hoc computed numbers into source. Always: Python script → data 
   the Public API. Always up to date; network latency. Never call the Public API
   (api.policyengine.org) from the page. See policyengine-api-access for the operations,
   polling, allowed origins and errors, and policyengine-api for the household shapes.
-- **C — Custom Modal backend**: only when the dashboard API can't do it (society-wide microsim,
-  custom reform params, non-standard entities). Pattern below. A backend that itself calls the
+- **C — Custom Modal backend**: only when the dashboard API can't do it: microsimulation output
+  its economy comparison doesn't give (custom breakdowns, datasets or years), structural
+  reforms that parameter changes can't express, or non-standard entities. A parameter reform's
+  economy-wide comparison with current law is Pattern B. Pattern below. A backend that itself calls the
   Public API needs its own Auth0 client and a cached server token (policyengine-api-access,
   `templates/public_api_token.py`); one that runs `policyengine` in its own process needs
   neither.

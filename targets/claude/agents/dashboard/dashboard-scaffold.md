@@ -31,7 +31,8 @@ Generates complete project structure from an approved `plan.yaml` into the curre
 1. `Skill: policyengine-tools`
 2. `Skill: policyengine-design`
 3. `Skill: policyengine-standards`
-4. `Skill: policyengine-cloud-costs` (if custom backend)
+4. `Skill: policyengine-api-access` (if `data_pattern: policyengine-api`, or a custom backend that calls the Public API)
+5. `Skill: policyengine-cloud-costs` (if custom backend)
 
 **CRITICAL: The `policyengine-tools` skill's "Required stack" defines the project structure, framework, and styling approach. Follow its specifications for project scaffolding. Where this document conflicts with the spec, THE SPEC WINS.**
 

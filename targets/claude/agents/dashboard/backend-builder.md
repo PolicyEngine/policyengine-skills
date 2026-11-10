@@ -132,12 +132,17 @@ Read the plan's endpoints and write the household and result types. Use `type` a
 ```typescript
 // types.ts
 
-/** A household in PolicyEngine's situation format: values keyed by year */
+/** A group entity: its members, and its variables keyed by year */
+export type GroupEntity = { members: string[]; [variable: string]: unknown };
+
+/**
+ * A household in PolicyEngine's situation format: values keyed by year. The group
+ * entities differ by country (US: tax_units, spm_units, families, marital_units,
+ * households; UK: benunits, households); read them from the country's metadata.
+ */
 export type Household = {
   people: Record<string, Record<string, Record<string, number | boolean | string | null>>>;
-  tax_units: Record<string, { members: string[]; [variable: string]: unknown }>;
-  spm_units: Record<string, { members: string[]; [variable: string]: unknown }>;
-  households: Record<string, { members: string[]; [variable: string]: unknown }>;
+  [groupEntities: string]: Record<string, unknown>;
 };
 
 /** The calculated household: the same shape, with the requested variables filled in */
@@ -156,7 +161,8 @@ import { createPolicyEngineApiClient } from '@policyengine/api-client';
 import type { CalculatedHousehold, Household } from './types';
 
 // The default base URL, https://www.policyengine.org, works from the dashboard's
-// www.policyengine.org path, its own *.vercel.app host, its team previews and localhost.
+// www.policyengine.org path, its team previews (*-policy-engine.vercel.app), localhost, and
+// its own *.vercel.app host once website/src/data/appZoneRoutes.ts names it.
 const policyengine = createPolicyEngineApiClient();
 
 export function calculate(
@@ -191,7 +197,7 @@ export function useCalculation(countryId: 'us' | 'uk') {
 
 ### Step 4: Write Tests
 
-Create `lib/api/__tests__/client.test.ts`. Build the client with `createPolicyEngineApiClient({ fetch: fakeFetch })` (or mock the module), so no test calls the network:
+Create `lib/api/__tests__/client.test.ts`. `client.ts` builds its client when it loads, so mock the package (`vi.mock('@policyengine/api-client', …)`) before importing it; no test calls the network:
 - Test that request bodies are correctly structured
 - Test that `PolicyEngineApiError` from a refused request reaches the UI's error state
 - Test type conformance of expected response shapes

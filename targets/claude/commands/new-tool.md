@@ -19,7 +19,7 @@ Ask the user for:
 3. **Data pattern** — how the tool gets model results:
    - **A) Precomputed** — Static JSON or CSV shipped with the app (best for finite parameter spaces)
    - **B) Dashboard API** — The page calls www.policyengine.org's dashboard API through `@policyengine/api-client` (best for household calculators). Never call `api.policyengine.org` from the page: the Public API is becoming callable only by PolicyEngine's servers (policyengine-api-access skill)
-   - **C) Custom Modal API** — Python serverless function with the top-level `policyengine[us]` / `policyengine[uk]` package (best when main API doesn't support needed variables/reforms)
+   - **C) Custom Modal API** — Python serverless function with the top-level `policyengine[us]` / `policyengine[uk]` package (best when the dashboard API doesn't cover it: structural reforms, microsimulation output beyond its economy comparison, or variables it doesn't return)
 4. **Brief description** of what the tool calculates
 
 ## Step 2: Create the project
@@ -156,9 +156,9 @@ export default function Home() {
 
 ## Step 4: Data pattern boilerplate
 
-> **Prefer Pattern B** (the dashboard API) unless the tool needs microsimulation,
-> custom reforms, or variables not in the API. Pattern C is significantly more complex
-> and should be the last resort.
+> **Prefer Pattern B** (the dashboard API) unless the tool needs structural reforms,
+> microsimulation output beyond the dashboard API's economy comparison, or variables it
+> doesn't return. Pattern C is significantly more complex and should be the last resort.
 
 Based on the user's choice, add the appropriate data fetching code.
 

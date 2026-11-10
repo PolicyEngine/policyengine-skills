@@ -27,22 +27,38 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCAN_DIRS = ("skills", "targets", "docs")
-TEXT_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".py", ".sh", ".ts", ".tsx", ".js", ".mjs"}
+TEXT_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".py", ".sh", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".html"}
+BROWSER_FILE_SUFFIXES = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".html", ".vue", ".svelte"}
 
-BROWSER_LANGUAGES = {"ts", "tsx", "js", "jsx", "javascript", "typescript", "mjs"}
+BROWSER_LANGUAGES = {
+    "ts", "tsx", "js", "jsx", "javascript", "typescript", "mjs", "cjs", "html", "htm", "vue", "svelte", "astro",
+}
+# A fenced example of server-side TypeScript or JavaScript may name the Public API
+# when the line before its fence is this marker.
+SERVER_CODE_MARKER = "<!-- server-code -->"
 # The Public API only: not household.api.policyengine.org (the household API) or
 # v2.api.policyengine.org (the v2 alpha), hence the left boundary.
 PUBLIC_API_HOST = re.compile(
     r"(?<![\w.-])api\.policyengine\.org"
     r"|policyengine-api(?:-staging)?-[a-z0-9]+(?:-[a-z]{2})?\.a\.run\.app"
+    r"|policyengine-api(?:-staging)?-[0-9]+\.[a-z0-9-]+\.run\.app"
 )
-FENCE = re.compile(r"^[ \t]*```([A-Za-z0-9_+-]*)[^\n]*\n(.*?)^[ \t]*```", re.DOTALL | re.MULTILINE)
+# ``` or ~~~ fences of three or more characters, closed by the same fence.
+FENCE = re.compile(
+    r"^[ \t]*(?P<fence>`{3,}|~{3,})(?P<language>[A-Za-z0-9_+-]*)[^\n]*\n(?P<body>.*?)^[ \t]*(?P=fence)[ \t]*$",
+    re.DOTALL | re.MULTILINE,
+)
 PUBLIC_PREFIX_SET_TO_PUBLIC_API = re.compile(
-    r"\b(?:NEXT_PUBLIC|VITE)_[A-Z0-9_]+\s*[=:]\s*[\"'`]?https?://"
+    r"\b(?:NEXT_PUBLIC|VITE|REACT_APP)_[A-Z0-9_]+[\"']?\s*(?:[=:]|\|\|)\s*[\"'`]?https?://"
     r"(?:api\.policyengine\.org|(?:[a-z0-9-]+---)?policyengine-api[a-z0-9-]*\.[a-z0-9.-]*run\.app)"
 )
+# A public-prefix name that holds a secret, or that is named for the Public API's
+# address or server client. A browser's own sign-in settings (VITE_AUTH0_DOMAIN,
+# VITE_AUTH0_CLIENT_ID, NEXT_PUBLIC_AUTH0_AUDIENCE) and other services' public
+# tokens are public by design.
 PUBLIC_PREFIX_CREDENTIAL = re.compile(
-    r"\b(?:NEXT_PUBLIC|VITE)_[A-Z0-9_]*(?:AUTH0|SECRET|TOKEN|CREDENTIAL)[A-Z0-9_]*"
+    r"\b(?:NEXT_PUBLIC|VITE|REACT_APP)_(?=[A-Z0-9_]*(?:SECRET|PASSWORD|PRIVATE_KEY|CREDENTIAL"
+    r"|(?<![A-Z])(?:POLICYENGINE_API|PE_API|PUBLIC_API|API_V1)|AUTH0[A-Z0-9_]*(?:TOKEN|M2M)))[A-Z0-9_]+"
 )
 
 ACCESS_SKILL = "policyengine-api-access"
@@ -74,11 +90,19 @@ def scanned_files() -> list[Path]:
 
 
 def browser_blocks_naming_the_public_api(text: str) -> list[str]:
-    return [
-        body
-        for language, body in FENCE.findall(text)
-        if language.lower() in BROWSER_LANGUAGES and PUBLIC_API_HOST.search(body)
-    ]
+    offenders: list[str] = []
+    for block in FENCE.finditer(text):
+        line_before = text[: block.start()].rstrip("\n").rsplit("\n", 1)[-1]
+        if SERVER_CODE_MARKER in line_before:
+            continue
+        body = block.group("body")
+        if block.group("language").lower() in BROWSER_LANGUAGES:
+            if PUBLIC_API_HOST.search(body):
+                offenders.append(body)
+        else:
+            # A Markdown or text block can hold a nested example.
+            offenders.extend(browser_blocks_naming_the_public_api(body))
+    return offenders
 
 
 def test_no_browser_language_example_names_the_public_api() -> None:
@@ -88,6 +112,16 @@ def test_no_browser_language_example_names_the_public_api() -> None:
         if path.suffix == ".md" and browser_blocks_naming_the_public_api(path.read_text())
     ]
     assert offenders == [], f"browser-language examples that call the Public API: {offenders}"
+
+
+def test_no_code_file_in_the_catalog_names_the_public_api() -> None:
+    # Templates and examples shipped as files (for example under skills/*/templates/).
+    offenders = [
+        path.relative_to(REPO_ROOT).as_posix()
+        for path in scanned_files()
+        if path.suffix in BROWSER_FILE_SUFFIXES and PUBLIC_API_HOST.search(path.read_text())
+    ]
+    assert offenders == []
 
 
 def test_no_public_prefix_variable_holds_the_public_api_or_a_credential() -> None:

@@ -106,6 +106,8 @@ function buildHouseholdDict(values: FormValues): Record<string, unknown> {
 }
 ```
 
+For `data_pattern: policyengine-api`, pass `buildHouseholdDict(values)` to the backend-builder's `useCalculation(countryId)` mutation: `@policyengine/api-client` takes the country and the household, not `buildHouseholdRequest`'s shape. Its result is the calculated household itself, keyed by entity, not `HouseholdSimulationResult`.
+
 ### Step 3: Build Response Transformers
 
 Create functions that extract chart-ready data from API responses:
