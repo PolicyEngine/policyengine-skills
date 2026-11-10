@@ -429,3 +429,14 @@ def test_skill_describes_the_dashboard_api_firewall_refusal() -> None:
         assert fact in text, fact
     error_rows = [row for row in text.split("## Errors", 1)[1].splitlines() if row.startswith("| 429 ")]
     assert len(error_rows) == 2, "the errors table needs a 429 row for the firewall and one for the load balancer"
+
+
+def test_dashboard_manifest_lists_the_skill() -> None:
+    # tests/pipeline/test_when_to_use_guide.py reads skill IDs from this committed
+    # file, so a guide that names the skill fails until the manifest is rebuilt.
+    manifest = json.loads((REPO_ROOT / "dashboard" / "src" / "data" / "manifest.json").read_text())
+    matches = [entry for entry in manifest["artifacts"] if entry["kind"] == "skill" and entry["id"] == SKILL_NAME]
+    assert len(matches) == 1, f"dashboard/src/data/manifest.json lists {SKILL_NAME} {len(matches)} times"
+    artifact = matches[0]
+    assert artifact["path"] == f"skills/{SKILL_NAME}/SKILL.md"
+    assert sorted(artifact["bundles"]) == sorted(BUNDLES_WITH_SKILL)
