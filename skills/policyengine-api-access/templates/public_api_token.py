@@ -40,6 +40,11 @@ Any object with ``get(key)`` and item assignment works as the shared store; a
 plain ``dict`` keeps the token for one process only. Only the token and when to
 replace it are stored, never the client secret.
 
+A 401 is raised, never answered with a new token: it means the client is not on
+the Public API's allow list in this environment, or its tenant or audience is
+wrong, so a new token would be refused too and would only use up the tenant's
+monthly allowance.
+
 Requests never follow redirects: a followed redirect would send the client
 secret, or the token, to wherever it points.
 """
@@ -53,9 +58,9 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from collections.abc import Callable, Mapping, MutableMapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 LOGGER = logging.getLogger(__name__)
 
@@ -71,6 +76,14 @@ SETTING_VARIABLES = {
     "client_id": "POLICYENGINE_API_AUTH0_CLIENT_ID",
     "client_secret": "POLICYENGINE_API_AUTH0_CLIENT_SECRET",
 }
+
+
+class SharedTokenStore(Protocol):
+    """What the provider needs from a shared store: a dict, a modal.Dict, or similar."""
+
+    def get(self, key: str, default: Any = None) -> Any: ...
+
+    def __setitem__(self, key: str, value: Any) -> None: ...
 
 
 class PublicApiSettingsError(ValueError):
@@ -118,7 +131,7 @@ class PublicApiTokenProvider:
     def __init__(
         self,
         settings: PublicApiSettings,
-        shared_store: MutableMapping[str, Any] | None = None,
+        shared_store: SharedTokenStore | None = None,
         clock: Callable[[], float] = time.time,
         opener: Any = NO_REDIRECT_OPENER,
     ) -> None:
@@ -144,15 +157,6 @@ class PublicApiTokenProvider:
             self._remembered = self._request_token()
             self._write_shared_token(self._remembered)
             return self._remembered["access_token"]
-
-    def forget(self, access_token: str) -> None:
-        """Drops a token the Public API refused, so the next call gets a new one."""
-        with self._lock:
-            if self._remembered is not None and self._remembered["access_token"] == access_token:
-                self._remembered = None
-            shared_token = self._read_shared_token()
-            if shared_token is not None and shared_token.get("access_token") == access_token:
-                self._write_shared_token({"access_token": "", "refresh_at": 0})
 
     def _is_usable(self, token: dict[str, Any] | None) -> bool:
         return (
@@ -234,28 +238,15 @@ def call_public_api(
 ) -> Any:
     """Sends one request with the server token and returns the parsed JSON answer.
 
-    A 401 means the token was refused: it is dropped and the request is sent once
-    more with a new token. A second 401 is raised, because the client is then not
-    on the Public API's allow list for this environment, or its tenant or
-    audience is wrong; asking Auth0 again would not help. Every other error is
-    raised as urllib's HTTPError, with the status and the answer's body.
+    Every error is raised as urllib's HTTPError, with the status and the answer's
+    body. A 401 is raised too, without asking Auth0 for another token (see the
+    module docstring).
     """
     opener = tokens.opener if opener is None else opener
     data = None if body is None else json.dumps(body).encode()
-    for attempt in (1, 2):
-        access_token = tokens.access_token()
-        headers = {"Accept": "application/json", "Authorization": f"Bearer {access_token}"}
-        if data is not None:
-            headers["Content-Type"] = "application/json"
-        request = urllib.request.Request(
-            f"{tokens.settings.api_url}{path}", data=data, headers=headers, method=method
-        )
-        try:
-            with opener.open(request, timeout=timeout_seconds) as response:
-                return json.loads(response.read())
-        except urllib.error.HTTPError as error:
-            if error.code == 401 and attempt == 1:
-                tokens.forget(access_token)
-                continue
-            raise
-    raise AssertionError("unreachable")
+    headers = {"Accept": "application/json", "Authorization": f"Bearer {tokens.access_token()}"}
+    if data is not None:
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(f"{tokens.settings.api_url}{path}", data=data, headers=headers, method=method)
+    with opener.open(request, timeout=timeout_seconds) as response:
+        return json.loads(response.read())

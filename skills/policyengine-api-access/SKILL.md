@@ -98,8 +98,9 @@ const metadata = await policyengine.getMetadata("uk");
 | `GET /api/economy/compare` | Query `country`, `policy`, `baseline`, `region`, `year`, each exactly once | `{status: "computing" \| "ok" \| "error", result, …}`, never cached |
 | `GET /api/metadata/{country}` | — | `{status, message, result}`, cached by browsers for an hour (`max-age=3600`) |
 
-- `country` is `us` or `uk`. Any other field or query parameter is refused with 400, and a
-  body whose `Content-Type` is not JSON with 415.
+- `country` is `us` or `uk`. An unknown body field (household calculation, policies) or query
+  parameter (economy comparison) is refused with 400, and a body whose `Content-Type` is not
+  JSON with 415.
 - `policy` and `baseline` are policy IDs (whole numbers). `baseline` is current law's ID:
   2 for `us`, 1 for `uk` (`result.current_law_id` in the metadata). `year` is four digits;
   `region` is `us`, `uk` or a sub-national region such as `state/ca`, at most 200 characters.
@@ -109,11 +110,12 @@ const metadata = await policyengine.getMetadata("uk");
   (`calculateHousehold<MyHousehold>(…)`), not checked at run time.
 
 **Polling.** `compareEconomy` reads the comparison every 5 seconds until `status` is `ok`, and
-gives up after 30 minutes with `EconomyComparisonTimeoutError`. It waits one interval after a
-502, 503 or 504, and stops after a fourth such answer in a row. After a 429 it waits for
-`Retry-After`; the firewall sends none, so versions that export
-`DEFAULT_RATE_LIMIT_WAIT_MILLISECONDS` wait 60 seconds instead, and earlier ones wait one
-interval and count the 429 towards those four. A comparison that failed (502 with
+gives up after 30 minutes with `EconomyComparisonTimeoutError`. After a 429 it waits for
+`Retry-After`, or 60 seconds (`RATE_LIMIT_WAIT_MILLISECONDS`, the firewall's window) when there
+is none, and keeps polling. A page on another origin cannot read the firewall's 429 (see rate
+limits below), so there polling stops with `status` `null`. After a 502, 503 or 504 it waits
+one interval, and the fourth such failure since the last answer ends polling. A comparison
+that failed (502 with
 `status: "error"` and `retry_after_seconds`) is thrown at once: the Public API keeps that
 failure for `retry_after_seconds`, so polling sooner returns it again. Keep
 `intervalMilliseconds` at a few seconds. Use `getEconomyComparison` for one read.
@@ -167,22 +169,32 @@ Other headers, when a server acts for a browser:
 - send at most one of each; two `Authorization` headers are refused.
 
 **Cache the token across instances.** Tokens last 24 hours, and Auth0 counts the
-machine-to-machine tokens it issues per tenant per month. Never request a token per request,
-per container start or per cold start:
+machine-to-machine tokens it issues per tenant per month. Never request a token per request.
+Without a shared store each instance requests one when it starts, which is fine for a few
+long-lived instances (a Cloud Run service with a low maximum) but not where instances start
+often, such as Modal containers:
 - **Python (Modal, Cloud Run, scripts):** copy `templates/public_api_token.py`. It keeps the
-  token in memory and in a store the instances share (a `modal.Dict` on Modal), replaces it five
-  minutes before it expires, retries a 401 once with a new token, and never follows a
-  redirect. Its docstring has the Modal wiring.
+  token in memory and, when given one, in a store the instances share (a `modal.Dict` on Modal;
+  any object with `get` and item assignment), replaces it five minutes before it expires,
+  raises a 401 without requesting another token, and never follows a redirect. Its docstring
+  has the Modal wiring.
 - **Vercel functions:** keep it in Vercel Runtime Cache, as app-v2's
   `packages/public-api-forwarding/src/accessToken.ts` does:
 
   ```ts
   import { getCache } from "@vercel/functions";
 
+  type CachedToken = { accessToken: string; refreshAtMilliseconds: number };
   const tokenCache = getCache({ namespace: "policyengine-public-api" });
-  const cached = (await tokenCache.get(cacheKey)) as { accessToken: string; refreshAt: number } | undefined;
-  // On a miss, or within five minutes of expiry: request a token, then
-  await tokenCache.set(cacheKey, { accessToken, refreshAt }, { ttl: expiresIn - 300 });
+
+  const cached = (await tokenCache.get(cacheKey)) as CachedToken | null | undefined;
+  if (!cached || Date.now() >= cached.refreshAtMilliseconds) {
+    // Request a token; accessToken and expiresIn (seconds) come from Auth0's answer. Keep it
+    // until five minutes before it expires, or halfway through a shorter life.
+    const keepSeconds = expiresIn - Math.min(300, expiresIn / 2);
+    const refreshAtMilliseconds = Date.now() + keepSeconds * 1000;
+    await tokenCache.set(cacheKey, { accessToken, refreshAtMilliseconds }, { ttl: Math.max(1, Math.floor(keepSeconds)) });
+  }
   ```
 
   The key is the tenant, audience and client ID, never the secret. Requests that arrive while a
@@ -247,20 +259,22 @@ data, or use a backend with its own client.
 ## Errors
 
 `@policyengine/api-client` throws `PolicyEngineApiError` with `status` (`null` when no answer
-could be read), `message`, `body` and `retryAfterSeconds`. Error bodies from the dashboard API
-and the Public API share one shape: `{"status": "error", "message": …, "result": null}`.
+could be read), `message`, `body` and `retryAfterSeconds`. The dashboard API's own errors are
+`{"status": "error", "message": …, "result": null}`; the Public API's 401 and 503 bodies have
+`status` and `message` only. Read `message`.
 
 | Status | From | Meaning | What to do |
 |---|---|---|---|
 | 400 | Dashboard API | A missing or unknown field, or a malformed value | Fix the request; `message` names the field |
-| 401 | Public API | `{"status":"error","message":"Authentication is required"}` with `WWW-Authenticate: Bearer`: an invalid or expired token, a client not on the allow list, a client token from another tenant, two `Authorization` headers, or, once the requirement is on, no server credential | Server: drop the cached token and retry once with a new one (the template does this); a second 401 means the client is not listed in that environment, or the tenant or audience is wrong, so stop and report it. Page: the website's own credential failed; show an error, do not retry in a loop |
+| 401 | Public API, the server's own token | `{"status":"error","message":"Authentication is required"}` with `WWW-Authenticate: Bearer`: an invalid or expired token, a client not on the allow list, a client token from another tenant, two `Authorization` headers, or, once the requirement is on, no server credential | Server: do not request another token, which would be refused too and counts against the tenant's monthly allowance; check that the client is listed in that environment and that its tenant and audience match, and report it. Page: the website's own credential failed; show an error, do not retry in a loop |
+| 401 | Public API user routes | `WWW-Authenticate: Bearer error="invalid_token"` and "The bearer access token is invalid": the forwarded `PolicyEngine-User-Authorization` token is invalid or expired | Keep the server token; the user signs in again |
 | 403 | Dashboard API | "Pages on this origin may not call the dashboard API." The page's origin is not allowed | Serve the page from an allowed origin. A cross-origin page cannot read this answer: the browser reports a CORS error and the client throws with `status` `null` |
 | 403 | Public API user routes | A forwarded `PolicyEngine-User-Authorization` token is a machine-to-machine token, not a user's | Forward only a signed-in user's own token there |
 | 404 | Dashboard API | An unknown country in `/api/metadata/{country}` | Use `us` or `uk` |
 | 415 | Dashboard API | The body's `Content-Type` is not JSON | Send `Content-Type: application/json`; the client does |
 | 429 | Dashboard API firewall | "Too Many Requests" as text/plain, with no `Retry-After` and no CORS headers: one IP address passed a per-minute limit | Wait for the 60-second window to end before sending again; never retry at once. On another origin (localhost) the page sees a network failure with `status` `null` instead, so treat repeated `null` statuses during heavy use the same way |
 | 429 | The Public API's load balancer | Too many requests from one IP address, not JSON | Server: wait `Retry-After` when present, otherwise back off (5 s, then doubling). Requests with a bearer token skip its per-address limits on `/{country}/metadata`, `/{country}/calculate` and `/{country}/calculate-full` |
-| 502 | Dashboard API | Auth0 or the Public API could not be reached, or the Public API answered with a redirect | Retry later with back-off |
+| 502 | Dashboard API | Auth0 refused or did not answer the website's token request, the Public API could not be reached or answered with a redirect, or the Public API's answer to `POST /api/policies` named no policy ID | Retry later with back-off |
 | 502 | Public API, economy comparison | `status: "error"` with `retry_after_seconds`: the comparison failed | Show the failure; do not ask again before `retry_after_seconds` |
 | 503 | Public API | `{"status":"error","message":"Authentication is unavailable"}`: it could not check the token (Auth0's signing keys unreachable, or its own settings) | Keep the token; retry with back-off. It is not a refusal of the client |
 | 503 | Dashboard API | Its own settings are missing or incomplete, for example on a website preview | Not retryable; report it to the website's maintainers |
