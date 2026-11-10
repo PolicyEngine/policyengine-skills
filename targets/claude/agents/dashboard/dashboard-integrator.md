@@ -21,12 +21,14 @@ Wires the frontend components to the backend API client and ensures the full dat
 - **policyengine-tools** - Data flow patterns
 - **policyengine-design** - Loading/error state styling
 - **policyengine-api** - v1 API household payload structure (policyengine-api pattern only)
+- **policyengine-api-access** - The dashboard API the page calls through `@policyengine/api-client`, and its errors (policyengine-api pattern only)
 
 ## First: Load Required Skills
 
 1. `Skill: policyengine-tools`
 2. `Skill: policyengine-design`
 3. `Skill: policyengine-api` (if `data_pattern: policyengine-api`)
+4. `Skill: policyengine-api-access` (if `data_pattern: policyengine-api`)
 
 ## Input
 

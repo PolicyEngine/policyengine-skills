@@ -26,6 +26,7 @@ Produces a structured YAML implementation plan from a natural-language dashboard
 - **policyengine-us** - US tax/benefit variables and programs
 - **policyengine-uk** - UK tax/benefit variables and programs
 - **policyengine-api** - REST API endpoint catalog (v1 production, v2 alpha status)
+- **policyengine-api-access** - What the dashboard API offers pages, and when a backend needs its own server credential
 - **policyengine-cloud-costs** - Worker sizing, maximums and the cost plan (custom-modal only)
 
 ## First: Load Required Skills
@@ -37,7 +38,8 @@ Produces a structured YAML implementation plan from a natural-language dashboard
 3. `Skill: policyengine-us` (if US dashboard)
 4. `Skill: policyengine-uk` (if UK dashboard)
 5. `Skill: policyengine-api`
-6. `Skill: policyengine-cloud-costs` (if custom-modal pattern)
+6. `Skill: policyengine-api-access`
+7. `Skill: policyengine-cloud-costs` (if custom-modal pattern)
 
 ## Input
 
@@ -235,8 +237,8 @@ Choose from the data patterns defined in the `policyengine-tools` skill (loaded 
 **Decision hierarchy (most preferred first):**
 
 1. `precomputed` / `precomputed-csv` — if parameter space is finite
-2. `policyengine-api` — if household-level calculations suffice (always prefer this for standard household tools)
-3. `custom-modal` — ONLY if microsimulation or custom reforms are needed
+2. `policyengine-api` — if the dashboard API suffices: household calculations, a parameter reform compared with current law across the economy, or country metadata (always prefer this for standard household tools). The page calls it through `@policyengine/api-client`, never api.policyengine.org (policyengine-api-access)
+3. `custom-modal` — ONLY if other microsimulation output or structural reforms are needed
 
 Write the chosen pattern into `data_pattern` in plan.yaml using these identifiers:
 
@@ -244,7 +246,7 @@ Write the chosen pattern into `data_pattern` in plan.yaml using these identifier
 |---------------|----------------------|
 | Pattern A: Precomputed JSON | `precomputed` |
 | Pattern A: Precomputed CSV | `precomputed-csv` |
-| Pattern B: PolicyEngine API | `policyengine-api` |
+| Pattern B: the dashboard API (`@policyengine/api-client`) | `policyengine-api` |
 | Pattern C: Custom Modal backend (gateway + polling) | `custom-modal` |
 
 If the chosen pattern is `custom-modal`, the plan **must document why** the simpler patterns are insufficient. The plan must also specify which endpoints need long-running computation (microsimulation) vs. fast computation (household), as this determines worker timeout and memory allocation.
