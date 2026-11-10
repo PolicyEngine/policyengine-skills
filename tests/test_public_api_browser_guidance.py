@@ -100,21 +100,39 @@ def test_no_public_prefix_variable_holds_the_public_api_or_a_credential() -> Non
 
 
 def test_guards_catch_the_patterns_they_name() -> None:
-    browser_example = "```ts\nconst API_BASE = 'https://api.policyengine.org';\n```\n"
-    indented_example = "  ```js\n  fetch(`https://api.policyengine.org/us/calculate`)\n  ```\n"
-    cloud_run_example = "```tsx\nfetch('https://policyengine-api-staging-abc123defg-uc.a.run.app/us/metadata')\n```\n"
-    shell_example = "```bash\ncurl https://api.policyengine.org/us/metadata\n```\n"
-    household_api_example = "```ts\nfetch('https://household.api.policyengine.org/us/calculate')\n```\n"
-    assert browser_blocks_naming_the_public_api(browser_example)
-    assert browser_blocks_naming_the_public_api(indented_example)
-    assert browser_blocks_naming_the_public_api(cloud_run_example)
-    assert not browser_blocks_naming_the_public_api(shell_example)
-    assert not browser_blocks_naming_the_public_api(household_api_example)
+    browser_examples = [
+        "```ts\nconst API_BASE = 'https://api.policyengine.org';\n```\n",
+        "  ```js\n  fetch(`https://api.policyengine.org/us/calculate`)\n  ```\n",
+        "```tsx\nfetch('https://policyengine-api-staging-abc123defg-uc.a.run.app/us/metadata')\n```\n",
+        "```ts\nfetch('https://policyengine-api-123456789012.us-central1.run.app/us/metadata')\n```\n",
+        "~~~ts\nfetch('https://api.policyengine.org/us/metadata')\n~~~\n",
+        "````tsx\nfetch('https://api.policyengine.org/us/metadata')\n````\n",
+        "```html\n<script>fetch('https://api.policyengine.org/us/metadata')</script>\n```\n",
+        "```vue\n<script setup>fetch('https://api.policyengine.org/uk/metadata')</script>\n```\n",
+        "```svelte\n<script>fetch('https://api.policyengine.org/uk/metadata')</script>\n```\n",
+        "```cjs\nfetch('https://api.policyengine.org/uk/metadata')\n```\n",
+        "````markdown\nAn example:\n```ts\nfetch('https://api.policyengine.org/us/metadata')\n```\n````\n",
+    ]
+    for example in browser_examples:
+        assert browser_blocks_naming_the_public_api(example), example
+    not_browser_examples = [
+        "```bash\ncurl https://api.policyengine.org/us/metadata\n```\n",
+        "```ts\nfetch('https://household.api.policyengine.org/us/calculate')\n```\n",
+        # Server-side TypeScript, marked as such, may name the Public API.
+        "<!-- server-code -->\n```ts\nawait fetch('https://api.policyengine.org/us/calculate', { headers })\n```\n",
+    ]
+    for example in not_browser_examples:
+        assert not browser_blocks_naming_the_public_api(example), example
     for unsafe in (
         "NEXT_PUBLIC_API_URL=https://api.policyengine.org",
         "VITE_API_URL: 'https://api.policyengine.org'",
+        '"NEXT_PUBLIC_API_URL": "https://api.policyengine.org"',
+        "`process.env.NEXT_PUBLIC_API_URL || 'https://api.policyengine.org'`",
         "NEXT_PUBLIC_POLICYENGINE_API_AUTH0_CLIENT_SECRET",
-        "VITE_API_TOKEN",
+        "NEXT_PUBLIC_POLICYENGINE_API_AUTH0_CLIENT_ID",
+        "VITE_PE_API_KEY",
+        "VITE_AUTH0_CLIENT_SECRET",
+        "VITE_API_TOKEN_SECRET",
     ):
         assert PUBLIC_PREFIX_SET_TO_PUBLIC_API.search(unsafe) or PUBLIC_PREFIX_CREDENTIAL.search(unsafe), unsafe
     for safe in (
@@ -122,9 +140,34 @@ def test_guards_catch_the_patterns_they_name() -> None:
         "never a `NEXT_PUBLIC_*` or `VITE_*` name",
         "NEXT_PUBLIC_API_V2_URL || 'https://v2.api.policyengine.org'",
         "VITE_HOUSEHOLD_API_URL=https://household.api.policyengine.org",
+        # A browser's own sign-in settings, as app-v2 uses them, are public by design.
+        "VITE_AUTH0_DOMAIN=auth.policyengine.org",
+        "VITE_AUTH0_CLIENT_ID",
+        "NEXT_PUBLIC_AUTH0_AUDIENCE",
+        "NEXT_PUBLIC_MAPBOX_TOKEN",
     ):
         assert not PUBLIC_PREFIX_SET_TO_PUBLIC_API.search(safe), safe
         assert not PUBLIC_PREFIX_CREDENTIAL.search(safe), safe
+
+
+def test_dashboard_scaffold_loads_the_access_skill() -> None:
+    text = (REPO_ROOT / "targets/claude/agents/dashboard/dashboard-scaffold.md").read_text()
+    loading = text.split("## First: Load Required Skills", 1)
+    assert len(loading) == 2
+    assert "`Skill: policyengine-api-access`" in loading[1].split("\n## ", 1)[0]
+
+
+def test_custom_backend_guidance_agrees_with_what_the_dashboard_api_offers() -> None:
+    # The dashboard API compares a parameter reform with current law across the
+    # economy, so that alone is no reason for a custom Modal backend.
+    tools_text = TOOLS_SKILL.read_text()
+    pattern_c = re.search(r"^- \*\*C — .*?(?=^\S)", tools_text, re.DOTALL | re.MULTILINE)
+    assert pattern_c, "the tools skill has no Pattern C entry"
+    assert "society-wide microsim," not in pattern_c.group(0)
+    assert "structural" in pattern_c.group(0)
+    new_tool = (REPO_ROOT / "targets/claude/commands/new-tool.md").read_text()
+    assert "unless the tool needs microsimulation,\n> custom reforms" not in new_tool
+    assert "structural" in new_tool.split("**Prefer Pattern B**", 1)[1].split("\n\n", 1)[0]
 
 
 @pytest.mark.parametrize("relative_path", DASHBOARD_GUIDANCE)
