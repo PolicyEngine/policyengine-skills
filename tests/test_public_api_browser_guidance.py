@@ -181,6 +181,8 @@ def test_guards_catch_the_patterns_they_name() -> None:
         "NEXT_PUBLIC_BEARER_TOKEN",
         "VITE_ACCESS_TOKEN",
         "VITE_POLICYENGINE_TOKEN",
+        "VITE_API_ACCESS_TOKEN",
+        "NEXT_PUBLIC_API_BEARER_TOKEN",
     ):
         assert PUBLIC_PREFIX_SET_TO_PUBLIC_API.search(unsafe) or PUBLIC_PREFIX_CREDENTIAL.search(unsafe), unsafe
     for safe in (
@@ -197,6 +199,9 @@ def test_guards_catch_the_patterns_they_name() -> None:
         # The browser sign-in audience is API v1's identifier, not an address to call.
         "NEXT_PUBLIC_AUTH0_AUDIENCE=https://api.policyengine.org/",
         "VITE_AUTH0_AUDIENCE: 'https://api.policyengine.org/'",
+        # app-v2's v2 alpha address, and a token named for another service.
+        "NEXT_PUBLIC_POLICYENGINE_API_V2_URL",
+        "VITE_POLICYENGINE_MAPBOX_TOKEN",
     ):
         assert not PUBLIC_PREFIX_SET_TO_PUBLIC_API.search(safe), safe
         assert not PUBLIC_PREFIX_CREDENTIAL.search(safe), safe
@@ -273,3 +278,29 @@ def test_integrator_types_the_household_for_the_client() -> None:
 
 def test_contributing_documents_the_server_code_marker() -> None:
     assert SERVER_CODE_MARKER in (REPO_ROOT / "CONTRIBUTING.md").read_text()
+
+
+BACKEND_BUILDER = REPO_ROOT / "targets/claude/agents/dashboard/backend-builder.md"
+
+
+def test_calculated_household_is_read_through_a_typed_helper() -> None:
+    # With an `unknown` index signature, result.households.household... does not
+    # compile under strict mode, so transformers read through readVariable().
+    assert "export function readVariable(" in BACKEND_BUILDER.read_text()
+    integrator = INTEGRATOR.read_text()
+    assert "readVariable(" in integrator
+    assert "result.households.household.household_net_income[year]" not in integrator
+
+
+def test_integrator_debounces_calculations_and_runs_for_every_country() -> None:
+    integrator = INTEGRATOR.read_text()
+    assert "useDebouncedValue" in integrator.split("### Step 4", 1)[1].split("\n### ", 1)[0]
+    variation = integrator.split("### Step 6", 1)[1].split("\n### ", 1)[0]
+    assert "useDebouncedValue" in variation
+    assert "countryId === 'uk'" in variation
+
+
+def test_first_401_row_does_not_claim_a_malformed_anonymous_header_gets_the_same_answer() -> None:
+    skill = (REPO_ROOT / "skills/policyengine-api-access/SKILL.md").read_text()
+    rows_401 = [row for row in skill.split("## Errors", 1)[1].splitlines() if row.startswith("| 401 ")]
+    assert rows_401 and not any("malformed `PolicyEngine-Unauthenticated-User`" in row for row in rows_401)

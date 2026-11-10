@@ -490,3 +490,27 @@ def test_skill_says_the_calculation_returns_only_the_variables_asked_for() -> No
     text = skill_text()
     assert "/{country}/calculate" in text
     assert "with `null` for the year" in text
+
+
+# --- Review round 3 ------------------------------------------------------------
+
+
+def test_template_opener_protocol_takes_the_request_positionally_and_timeout_by_keyword() -> None:
+    # urllib's OpenerDirector.open(fullurl, data=None, timeout=...) has data second,
+    # so a Protocol with timeout second does not fit it under mypy.
+    import inspect
+
+    token_module = load_token_module()
+    parameters = inspect.signature(token_module.Opener.open).parameters
+    assert parameters["request"].kind is inspect.Parameter.POSITIONAL_ONLY
+    assert parameters["timeout"].kind is inspect.Parameter.KEYWORD_ONLY
+
+
+def test_template_says_how_to_drop_a_revoked_token() -> None:
+    assert "revoked" in load_token_module().__doc__
+
+
+def test_skill_household_example_asks_for_an_output() -> None:
+    # The calculation adds no omitted variables, so an example that names no
+    # output would get its inputs back unchanged.
+    assert "household_net_income: { 2026: null }" in skill_text()
