@@ -339,32 +339,42 @@ def test_template_replaces_the_token_five_minutes_before_it_expires() -> None:
     assert tokens.access_token() == "token-2"
 
 
-def test_template_retries_a_refused_request_once_with_a_new_token() -> None:
+def test_template_raises_a_refused_request_without_requesting_another_token() -> None:
+    # A 401 means the client is not on the allow list, or its tenant or audience is
+    # wrong; a new token would be refused too, and each one counts against the
+    # tenant's monthly machine-to-machine allowance (app-v2's forwarder never retries).
     token_module = load_token_module()
     opener = RecordingOpener()
-    opener.refuse_next_api_requests = 1
+    opener.refuse_next_api_requests = 3
+    shared_store: dict = {}
     tokens = token_module.PublicApiTokenProvider(
-        make_settings(token_module), shared_store={}, clock=Clock(), opener=opener
+        make_settings(token_module), shared_store=shared_store, clock=Clock(), opener=opener
     )
-    answer = token_module.call_public_api(tokens, "POST", "/us/calculate", {"household": {}})
-    assert answer == {"status": "ok", "message": None, "result": {}}
-    assert [header for _, _, header in opener.api_requests] == [
-        "Bearer token-1",
-        "Bearer token-2",
-    ]
+    for _ in range(3):
+        with pytest.raises(urllib.error.HTTPError) as refusal:
+            token_module.call_public_api(tokens, "POST", "/us/calculate", {"household": {}})
+        assert refusal.value.code == 401
+    assert len(opener.token_requests) == 1
+    assert [header for _, _, header in opener.api_requests] == ["Bearer token-1"] * 3
+    assert tokens.access_token() == "token-1"
 
 
-def test_template_stops_after_a_second_refusal() -> None:
+def test_template_turns_a_redirected_token_request_into_an_error() -> None:
     token_module = load_token_module()
-    opener = RecordingOpener()
-    opener.refuse_next_api_requests = 2
+
+    class RedirectingTokenEndpoint(RecordingOpener):
+        def open(self, request, timeout=None):  # noqa: ANN001 - urllib's opener signature
+            raise urllib.error.HTTPError(request.full_url, 307, "Temporary Redirect", {"Location": "https://elsewhere.test/"}, None)
+
+    shared_store: dict = {}
     tokens = token_module.PublicApiTokenProvider(
-        make_settings(token_module), shared_store={}, clock=Clock(), opener=opener
+        make_settings(token_module), shared_store=shared_store, clock=Clock(), opener=RedirectingTokenEndpoint()
     )
-    with pytest.raises(urllib.error.HTTPError) as refusal:
-        token_module.call_public_api(tokens, "GET", "/us/metadata")
-    assert refusal.value.code == 401
-    assert len(opener.api_requests) == 2
+    with pytest.raises(token_module.PublicApiTokenError, match="307"):
+        tokens.access_token()
+    assert shared_store == {}
+    # By default the provider uses the opener that refuses every redirect.
+    assert token_module.PublicApiTokenProvider(make_settings(token_module)).opener is token_module.NO_REDIRECT_OPENER
 
 
 def test_template_refuses_partial_settings() -> None:
@@ -424,9 +434,13 @@ def test_skill_describes_the_dashboard_api_firewall_refusal() -> None:
         "Too Many Requests",
         "no `Retry-After`",
         "no CORS headers",
-        "DEFAULT_RATE_LIMIT_WAIT_MILLISECONDS",
+        "`RATE_LIMIT_WAIT_MILLISECONDS`",
     ):
         assert fact in text, fact
+    # The merged client (PolicyEngine/policyengine-app-v2#1543, in the first publish)
+    # exports RATE_LIMIT_WAIT_MILLISECONDS and does not count 429s as gateway failures.
+    assert "DEFAULT_RATE_LIMIT_WAIT_MILLISECONDS" not in text
+    assert "count the 429" not in text
     error_rows = [row for row in text.split("## Errors", 1)[1].splitlines() if row.startswith("| 429 ")]
     assert len(error_rows) == 2, "the errors table needs a 429 row for the firewall and one for the load balancer"
 
@@ -440,3 +454,15 @@ def test_dashboard_manifest_lists_the_skill() -> None:
     artifact = matches[0]
     assert artifact["path"] == f"skills/{SKILL_NAME}/SKILL.md"
     assert sorted(artifact["bundles"]) == sorted(BUNDLES_WITH_SKILL)
+
+
+def test_errors_table_tells_a_refused_server_token_from_a_refused_user_token() -> None:
+    # API v1's user routes answer an invalid or expired forwarded
+    # PolicyEngine-User-Authorization token with their own 401 and
+    # WWW-Authenticate: Bearer error="invalid_token"; the server's own token is
+    # refused with a plain "WWW-Authenticate: Bearer".
+    errors = skill_text().split("## Errors", 1)[1]
+    rows_401 = [row for row in errors.splitlines() if row.startswith("| 401 ")]
+    assert len(rows_401) == 2, "the errors table needs a 401 row for each credential"
+    assert any('error="invalid_token"' in row and "PolicyEngine-User-Authorization" in row for row in rows_401)
+    assert not any("retry once with a new" in row for row in rows_401)
