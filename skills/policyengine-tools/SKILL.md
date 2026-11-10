@@ -9,8 +9,9 @@ description: |
   Triggers: new tool, standalone calculator, dashboard, embed in policyengine.org, multizone,
   basePath, assetPrefix, appZoneRoutes, Modal backend, scale to zero, vercel --scope
   policy-engine, ui-kit theme.css, recharts colors.
-  NOT for: developing policyengine.org itself (use policyengine-app) or token values
-  (policyengine-design).
+  NOT for: developing policyengine.org itself (use policyengine-app), token values
+  (policyengine-design), or how a page or backend reaches api.policyengine.org
+  (policyengine-api-access).
 metadata:
   category: apps
 ---
@@ -132,11 +133,19 @@ Never paste ad-hoc computed numbers into source. Always: Python script → data 
 - **A — Precomputed JSON/CSV**: finite scenarios (legislative trackers, static analyses). A
   `scripts/*.py` microsimulation writes to `public/data/`; the frontend imports it. Zero
   latency, works offline.
-- **B — v1 PolicyEngine API** (`https://api.policyengine.org`): household-level calc across
-  user-entered income/family/state. `POST /{country}/calculate` with a household payload, or
-  the stateful household/economy flow. Always up to date; network latency. See policyengine-api.
-- **C — Custom Modal backend**: only when the v1 API can't do it (society-wide microsim,
-  custom reform params, non-standard entities). Pattern below.
+- **B — the dashboard API** (`@policyengine/api-client`): household-level calc across
+  user-entered income/family/state, plus storing a reform and comparing it across the economy,
+  and country metadata. The page calls www.policyengine.org's dashboard API
+  (`POST /api/household/calculate`, `POST /api/policies`, `GET /api/economy/compare`,
+  `GET /api/metadata/{country}`), whose server adds PolicyEngine's credential and forwards to
+  the Public API. Always up to date; network latency. Never call the Public API
+  (api.policyengine.org) from the page. See policyengine-api-access for the operations,
+  polling, allowed origins and errors, and policyengine-api for the household shapes.
+- **C — Custom Modal backend**: only when the dashboard API can't do it (society-wide microsim,
+  custom reform params, non-standard entities). Pattern below. A backend that itself calls the
+  Public API needs its own Auth0 client and a cached server token (policyengine-api-access,
+  `templates/public_api_token.py`); one that runs `policyengine` in its own process needs
+  neither.
 
 ### Pattern C: Modal gateway + worker + polling
 
@@ -274,5 +283,6 @@ test, `bun run build`) before launch.
 
 - policyengine-app — the host site (policyengine.org) and its multizone registry
 - policyengine-design — ui-kit 0.4.0 components, tokens, chart colors, Plotly style
-- policyengine-api — v1/v2 API surfaces for Pattern B
+- policyengine-api-access — Pattern B's dashboard API, and server credentials for backends that call the Public API
+- policyengine-api — the Public API's endpoints and household shapes
 - policyengine (Python) — microsimulation for Pattern A/C data scripts

@@ -20,6 +20,7 @@ Builds the data layer for a dashboard based on the approved `plan.yaml`.
 ## Skills Used
 
 - **policyengine-tools** - Data patterns, API integration, and Modal backend architecture
+- **policyengine-api-access** - The dashboard API for pages, and server credentials for a backend that calls the Public API (policyengine-api and custom-modal)
 - **policyengine-us** or **policyengine-uk** - PolicyEngine variables
 - **policyengine** - Python simulation mechanics, reform dictionaries, and parameter path syntax (custom-modal only)
 - **policyengine-cloud-costs** - Modal defaults (scale to zero, `max_containers`, measured sizes) and how to declare an exception (custom-modal only)
@@ -28,8 +29,8 @@ Builds the data layer for a dashboard based on the approved `plan.yaml`.
 
 **Always prefer simpler patterns.** Before building a custom backend:
 
-1. **Can `api.policyengine.org/calculate` handle it?** → Use Pattern B (`policyengine-api`)
-2. **Does it need microsimulation or custom reforms?** → Use Pattern C (`custom-modal`) with gateway + polling
+1. **Can the dashboard API handle it?** It calculates households, stores a parameter reform and compares it with current law across the economy, and reads country metadata. → Use Pattern B (`policyengine-api`)
+2. **Does it need other microsimulation output or structural reforms?** → Use Pattern C (`custom-modal`) with gateway + polling
 3. **Is the parameter space finite?** → Use Pattern A/D (`precomputed` / `precomputed-csv`)
 
 Pattern C is the most complex and should be the last resort. If the plan specifies `custom-modal`, the plan MUST include a `reason` explaining why Pattern B is insufficient.
@@ -39,10 +40,11 @@ Pattern C is the most complex and should be the last resort. If the plan specifi
 **Before starting ANY work, use the Skill tool to load each required skill:**
 
 1. `Skill: policyengine-tools`
-2. `Skill: policyengine-us` (if US dashboard)
-3. `Skill: policyengine-uk` (if UK dashboard)
-4. `Skill: policyengine` (if custom-modal pattern — **required** for simulation mechanics and correct reform parameter paths)
-5. `Skill: policyengine-cloud-costs` (if custom-modal pattern)
+2. `Skill: policyengine-api-access` (if policyengine-api pattern, or a custom-modal backend that calls the Public API)
+3. `Skill: policyengine-us` (if US dashboard)
+4. `Skill: policyengine-uk` (if UK dashboard)
+5. `Skill: policyengine` (if custom-modal pattern — **required** for simulation mechanics and correct reform parameter paths)
+6. `Skill: policyengine-cloud-costs` (if custom-modal pattern)
 
 ## Input
 
@@ -115,58 +117,61 @@ Create `lib/api/__tests__/client.test.ts`:
 - Test that data matches expected TypeScript types
 - Test that all expected keys/dimensions are present
 
-## Pattern B: PolicyEngine API (`policyengine-api`)
+## Pattern B: the dashboard API (`policyengine-api`)
 
-When `data_pattern: policyengine-api`, the dashboard calls `api.policyengine.org` directly for household calculations. No custom backend needed.
+When `data_pattern: policyengine-api`, the page calls www.policyengine.org's dashboard API through `@policyengine/api-client`. The website's server adds PolicyEngine's credential and forwards each operation to the Public API, so no custom backend is needed. **The page never calls `api.policyengine.org`**: the Public API is becoming callable only by PolicyEngine's servers. The `policyengine-api-access` skill has the four operations, polling, the origins the dashboard API accepts, and its errors.
 
-### Step 1: Define Types
+### Step 1: Install the client and define types
 
-Read the plan's endpoints and generate TypeScript interfaces for the household request and response:
+```bash
+bun add @policyengine/api-client
+```
+
+Read the plan's endpoints and write the household and result types. Use `type` aliases: the client takes `Record<string, unknown>`, which an `interface` is not assignable to.
 
 ```typescript
 // types.ts
 
-/** Household structure for the PolicyEngine API */
-export interface HouseholdRequest {
-  household: {
-    people: Record<string, Record<string, Record<string, number | boolean | string>>>;
-    tax_units: Record<string, { members: string[]; [key: string]: unknown }>;
-    spm_units: Record<string, { members: string[] }>;
-    households: Record<string, { members: string[]; [key: string]: unknown }>;
-  };
-}
+/** A household in PolicyEngine's situation format: values keyed by year */
+export type Household = {
+  people: Record<string, Record<string, Record<string, number | boolean | string | null>>>;
+  tax_units: Record<string, { members: string[]; [variable: string]: unknown }>;
+  spm_units: Record<string, { members: string[]; [variable: string]: unknown }>;
+  households: Record<string, { members: string[]; [variable: string]: unknown }>;
+};
 
-/** API response from /calculate */
-export interface CalculateResponse {
-  status: 'ok' | 'error';
-  message: string | null;
-  result: Record<string, unknown>;
-}
+/** The calculated household: the same shape, with the requested variables filled in */
+export type CalculatedHousehold = Household;
 
 // Add dashboard-specific types for the variables in the plan
 ```
 
-### Step 2: Build the API Client
+### Step 2: Build the API client
 
 Create `lib/api/client.ts`:
 
 ```typescript
 // client.ts
-const API_BASE = 'https://api.policyengine.org';
+import { createPolicyEngineApiClient } from '@policyengine/api-client';
+import type { CalculatedHousehold, Household } from './types';
 
-export async function calculate(
-  countryId: string,
-  household: HouseholdRequest['household'],
-): Promise<CalculateResponse> {
-  const res = await fetch(`${API_BASE}/${countryId}/calculate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ household }),
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+// The default base URL, https://www.policyengine.org, works from the dashboard's
+// www.policyengine.org path, its own *.vercel.app host, its team previews and localhost.
+const policyengine = createPolicyEngineApiClient();
+
+export function calculate(
+  countryId: 'us' | 'uk',
+  household: Household,
+  signal?: AbortSignal,
+): Promise<CalculatedHousehold> {
+  return policyengine.calculateHousehold<CalculatedHousehold>(
+    { country: countryId, household },
+    { signal },
+  );
 }
 ```
+
+For a reform, pass its parameter changes as `policy` to `calculateHousehold`. For an economy-wide comparison, store the reform with `createPolicy` and poll with `compareEconomy` (current law's policy ID is 2 for `us`, 1 for `uk`).
 
 ### Step 3: Build React Query Hooks
 
@@ -175,21 +180,20 @@ Create `lib/hooks/useCalculation.ts`:
 ```typescript
 import { useMutation } from '@tanstack/react-query';
 import { calculate } from '../api/client';
-import type { HouseholdRequest } from '../api/types';
+import type { Household } from '../api/types';
 
-export function useCalculation(countryId: string) {
+export function useCalculation(countryId: 'us' | 'uk') {
   return useMutation({
-    mutationFn: (household: HouseholdRequest['household']) =>
-      calculate(countryId, household),
+    mutationFn: (household: Household) => calculate(countryId, household),
   });
 }
 ```
 
 ### Step 4: Write Tests
 
-Create `lib/api/__tests__/client.test.ts`:
+Create `lib/api/__tests__/client.test.ts`. Build the client with `createPolicyEngineApiClient({ fetch: fakeFetch })` (or mock the module), so no test calls the network:
 - Test that request bodies are correctly structured
-- Test that the client handles error responses
+- Test that `PolicyEngineApiError` from a refused request reaches the UI's error state
 - Test type conformance of expected response shapes
 
 ## Pattern C: Custom API on Modal (`custom-modal`) — Gateway + Polling
