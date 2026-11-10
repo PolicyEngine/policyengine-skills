@@ -374,6 +374,13 @@ jobs:
         run: |
           curl -fsSL "https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/${CHECKER_COMMIT}/skills/policyengine-cloud-costs/scripts/check_deploy_config.py" -o /tmp/check_deploy_config.py
           python3 /tmp/check_deploy_config.py .
+      - name: Check that browser code does not call the Public API
+        env:
+          # A policyengine-skills commit; move it forward on purpose (policyengine-api-access skill)
+          CHECKER_COMMIT: CHECKER_COMMIT_SHA
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/${CHECKER_COMMIT}/skills/policyengine-api-access/scripts/check_public_api_access.py" -o /tmp/check_public_api_access.py
+          python3 /tmp/check_public_api_access.py .
       - run: bun install --frozen-lockfile
       - name: Run lint
         run: |
@@ -392,7 +399,7 @@ jobs:
       - run: bun run build
 ```
 
-Every embeddable tool should have migration guardrails and the cost check, plus at least install + build on pull requests. If the repo has `lint` or `test` scripts, wire them into CI immediately rather than leaving the repo deploy-only.
+Every embeddable tool should have migration guardrails, the cost check and the Public API check, plus at least install + build on pull requests. If the repo has `lint` or `test` scripts, wire them into CI immediately rather than leaving the repo deploy-only.
 
 ## Step 7: Register in apps.json
 
@@ -417,6 +424,9 @@ curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/ma
 
 # Check deploy settings for cost
 curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-cloud-costs/scripts/check_deploy_config.py | python3 - .
+
+# Check that browser code does not call the Public API
+curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-api-access/scripts/check_public_api_access.py | python3 - .
 
 # Run lint/tests when the repo defines them
 if jq -e '.scripts.lint' package.json >/dev/null; then bun run lint; fi

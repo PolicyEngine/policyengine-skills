@@ -447,6 +447,18 @@ jobs:
       - run: bun run build
 ```
 
+For every pattern, add this step after checkout (policyengine-api-access skill, "Check it in CI"). It fails the pull request when browser code calls the Public API (api.policyengine.org) directly. Replace `CHECKER_COMMIT_SHA` with the output of `gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha`:
+
+```yaml
+      - name: Check that browser code does not call the Public API
+        env:
+          # A policyengine-skills commit; move it forward on purpose (policyengine-api-access skill)
+          CHECKER_COMMIT: CHECKER_COMMIT_SHA
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/${CHECKER_COMMIT}/skills/policyengine-api-access/scripts/check_public_api_access.py" -o /tmp/check_public_api_access.py
+          python3 /tmp/check_public_api_access.py .
+```
+
 For the custom backend pattern, add this step after checkout (policyengine-cloud-costs skill). Replace `CHECKER_COMMIT_SHA` with the output of `gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha`:
 
 ```yaml

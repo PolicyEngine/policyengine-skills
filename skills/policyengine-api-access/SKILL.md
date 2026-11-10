@@ -235,6 +235,48 @@ answer shapes the dashboard needs, how often a page calls it, and whether its an
 cached. Until it ships, do not call the Public API from the page as a stopgap; precompute the
 data, or use a backend with its own client.
 
+## Check it in CI
+
+`scripts/check_public_api_access.py` fails a dashboard's pull request when browser code calls
+the Public API. It reads the repository's files only, so it needs no credentials, and it uses
+only Python's standard library. Copy `templates/public-api-checks.yml` to
+`.github/workflows/public-api-checks.yml`, or add its step to the dashboard's existing CI. The
+step downloads the script from a pinned commit of this repository: set `CHECKER_COMMIT` to the
+output of `gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha`, and move it
+forward on purpose, so a rule added later does not fail the dashboard's pull requests before
+anyone has looked at what it reports. To run the latest version locally:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-api-access/scripts/check_public_api_access.py | python3 - .
+```
+
+| Rule | Severity | Reports |
+|---|---|---|
+| PA1 | error | Browser code that names `api.policyengine.org` or one of the Public API's Cloud Run addresses, also when the host is built from string parts |
+| PA2 | error | A `NEXT_PUBLIC_*`, `VITE_*`, `REACT_APP_*`, `GATSBY_*` or `EXPO_PUBLIC_*` variable named for, or set to, a Public API address, the Public API's Auth0 tenant, a token or a client secret; or `next.config` or Vite config that reads a client secret |
+| PA3 | warning | `vercel.json`, `netlify.toml` or build config that names the Public API: a rewrite forwards pages' requests without a credential, and `env` or `define` copies the address into the page |
+| PA4 | warning | Browser code that builds a path only the Public API serves: `/{country}/economy/{policy}/over/{baseline}` or `/{country}/calculate-full` |
+
+`--strict` also fails on warnings; `--explain` prints how each file was classified.
+
+**What counts as browser code.** Every JavaScript, TypeScript, Vue, Svelte, Astro and HTML
+file, except server code: top-level `backend/`, `server/`, `scripts/` and `functions/`; `api/`
+at the root of a project that is not Next.js (Vercel functions); Next.js route handlers,
+`pages/api/`, middleware and instrumentation; `*.server.*` files; modules that start with
+`"use server"` or import `server-only`; and, in a Next.js project, modules that only server
+components reach. A Next.js module that a `"use client"` module or a Pages Router page imports,
+directly or through other modules, is browser code, and so is one nothing imports. Python is
+never browser code. Tests, stories, build output and comment-only lines are skipped.
+
+**Declaring an exception.** Put `public-api-ok:` with the rule and a reason on the line, the
+line above or the comment block directly above, for example
+`// public-api-ok: PA1 the methodology note names the address the figures came from`. A
+declaration without a reason does not count, and the check prints every accepted one.
+
+It cannot see values set only in Vercel's or GitHub's settings, so a `NEXT_PUBLIC_API_URL` whose
+value is the Public API's address only in Vercel passes unless PA4 matches the paths built on
+it. It does not decode encoded strings or follow values passed between modules at run time.
+
 ## Errors
 
 `@policyengine/api-client` throws `PolicyEngineApiError` with `status` (`null` when no answer

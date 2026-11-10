@@ -398,3 +398,38 @@ def test_skill_tells_dashboards_how_to_add_the_check() -> None:
 def test_new_dashboards_get_the_check_in_their_ci(relative_path: str) -> None:
     text = (REPO_ROOT / relative_path).read_text()
     assert "skills/policyengine-api-access/scripts/check_public_api_access.py" in text
+
+
+# --- Inputs found while running the check on PolicyEngine's dashboards ---------------
+
+
+def test_config_files_with_urls_in_strings_still_parse(tmp_path: Path) -> None:
+    package = json.dumps({"homepage": "https://example.org/tool", "dependencies": {"next": "15.0.0"}})
+    tsconfig = (
+        '{\n  "$schema": "https://json.schemastore.org/tsconfig", // the schema\n'
+        '  "compilerOptions": {"baseUrl": ".", "paths": {"#lib/*": ["./src/lib/*"]},},\n}\n'
+    )
+    write_tree(
+        tmp_path,
+        {
+            "package.json": package,
+            "tsconfig.json": tsconfig,
+            "src/app/page.tsx": "import { load } from '#lib/load';\nexport default function Page() { return null; }\n",
+            "src/lib/load.ts": "export const load = () => fetch('https://api.policyengine.org/us/metadata');\n",
+        },
+    )
+    # A Next.js project whose server component alone reaches the module: server code.
+    assert findings_in(tmp_path) == []
+
+
+def test_large_files_with_many_comments_scan_quickly(tmp_path: Path) -> None:
+    leading_comments = "".join(f"/* block {number} */\n// line {number}\n" for number in range(300))
+    prose = " ".join(f"import word{number} and more words" for number in range(3000))
+    write_tree(
+        tmp_path,
+        next_app(**{"lib/data.ts": f"{leading_comments}export const text = `{prose}`;\n"}),
+    )
+    script_run = subprocess.run(
+        [sys.executable, str(SCRIPT), str(tmp_path)], capture_output=True, text=True, timeout=20, check=False
+    )
+    assert script_run.returncode == 0, script_run.stdout

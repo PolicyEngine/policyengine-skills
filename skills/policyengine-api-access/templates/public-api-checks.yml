@@ -1,0 +1,26 @@
+# Copy to .github/workflows/public-api-checks.yml, or add the step to the dashboard's existing CI.
+# The check reads the repository's files only: no secrets, no access to the Public API.
+#
+# CHECKER_COMMIT pins the check to one policyengine-skills commit, so a rule added later
+# reaches this repository only when its maintainers move the pin. Set it to the output of
+#   gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha
+# and move it forward on purpose.
+name: Public API checks
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-public-api-access:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check that browser code does not call the Public API
+        env:
+          CHECKER_COMMIT: CHECKER_COMMIT_SHA
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/${CHECKER_COMMIT}/skills/policyengine-api-access/scripts/check_public_api_access.py" -o /tmp/check_public_api_access.py
+          python3 /tmp/check_public_api_access.py .
