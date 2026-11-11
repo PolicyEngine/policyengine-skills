@@ -19,7 +19,7 @@ Tests hit local fixtures + parsers — no live API calls. Fast.
 | `test_per_year_baseline.py` | Single-row reform-dict silently no-ops for years 2027+ when baseline has per-year rows (surfaced 2026-07-01 by std-ded +$1K). |
 | `test_dataset_naming.py` | Un-advertised dataset names (`enhanced_cps_2024`, `enhanced_cps_2024_2026`) silently fall back to raw `cps`. Runner must use advertised names + validate `data_version` returned. |
 | `test_verdict_enum.py` | Every verdict named in the pipeline must appear in the comparator's Output enum. `PASS-WITH-CORROBORATION` and `BLOCKED` were missing at one point. |
-| `test_country_routing.py` | Auto-routed GitHub issues must use the jurisdiction's live data repo (`us` → `microcosm`; other countries → `policyengine-{country}-data`). |
+| `test_country_routing.py` | Auto-routed data issues go to the repo that builds the run's dataset: `us` and `uk` → `microcosm`, a `uk` run on a named Enhanced FRS or FRS file → `policyengine-uk-data`, other countries → `policyengine-{country}-data`. It also runs report-logger's bash routing on the same inputs. |
 | `test_analyses_frontmatter.py` | Every archived analysis's frontmatter must have the required fields documented in `analyses/README.md`. Prevents drift as the schema evolves. |
 
 ## Adding a test

@@ -39,27 +39,38 @@ all of that legible in one place.
 - `targets/claude/agents/**/*.md`
 - `targets/claude/commands/*.md`
 - `bundles/*.json`
+- `analyses/*.md`
 
 It parses YAML frontmatter, extracts trigger phrases, infers references
 (commands → agents/skills, agents → skills) from body text, derives internal
 registry metadata (status, owner, recommended use, replacements), computes
 overlap pairs via TF-IDF cosine, and emits
 `dashboard/src/data/manifest.json` — the single file the React app reads.
+The manifest lists overlap pairs in artifact order, so an edit to one skill
+rewrites only the scores it moves; the Duplicates view and the artifact
+drawer sort pairs by score themselves.
 
 The script needs PyYAML, which the repo's `pyproject.toml` lists, so run it
-as `uv run python scripts/build_manifest.py`. Without PyYAML it falls back to
-a simpler parser that reads every frontmatter scalar as a string and drops
-nested fields. Each analysis's `jurisdiction` then loses its country, and the
-Analyses page throws an error when it formats the numbers. The `predev` /
-`prebuild` hooks in `package.json` rebuild the manifest with `python3`
-whenever you start or build the app, so that `python3` needs PyYAML too.
+through [uv](https://docs.astral.sh/uv/):
+`uv run python scripts/build_manifest.py`. Without PyYAML the script stops
+with an error and leaves the manifest as it was. Frontmatter that isn't a
+valid YAML mapping stops it the same way, and the error names the file.
+
+The `predev` and `prebuild` hooks in `package.json` run the same uv command
+whenever you start or build the app:
+
+- `npm run dev` needs uv. Without uv, or when the build fails, `predev`
+  stops with the error.
+- `npm run build` keeps the committed manifest when it can't run the build:
+  on a host that builds `dashboard/` without the rest of the repo, on a
+  machine without uv, or when the build fails.
 
 ## Running locally
 
 ```bash
 cd dashboard
 npm install
-npm run dev      # http://localhost:5180
+npm run dev      # http://localhost:5180; rebuilds the manifest through uv first
 ```
 
 Build for static hosting:
@@ -79,9 +90,22 @@ uv run python scripts/build_manifest.py
 Run that whenever you add or rename artifacts and you want to refresh the
 dashboard without restarting the dev server.
 
-A rebuild with no content change rewrites only `generated_at`, so a
-manifest diff shows real changes. Pass `--output PATH` to write the manifest
-somewhere else.
+A rebuild with no content change rewrites only `generated_at`, on macOS or
+Linux, in any locale and under any Python from 3.11 on, so a manifest diff
+shows real changes. Pass `--output PATH` to write the manifest somewhere else.
+
+CI rebuilds the manifest on Linux and fails when the committed copy differs
+anywhere but `generated_at`. So commit the rebuilt manifest with any change
+to what it reads: the files listed above, `scripts/functional_tags.json`,
+`scripts/policyengine_repos.json` and the script itself. To run CI's check
+locally:
+
+```bash
+uv run python scripts/build_manifest.py --check
+```
+
+The check writes nothing. When the manifest is stale, it prints the sections
+that differ and the start of a diff.
 
 ## Refreshing the GitHub org inventory
 

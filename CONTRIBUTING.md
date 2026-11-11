@@ -61,11 +61,16 @@ Run:
 
 ```bash
 uv run pytest --ignore=tests/test_skill_examples.py
+uv run python scripts/build_manifest.py --check
 python3 scripts/build_claude_wrapper.py --source-root . --output-root build/policyengine-claude
 
 # Example harness (needs policyengine installed):
 uv run pytest tests/test_skill_examples.py
 ```
+
+CI runs the manifest check on Linux. When it fails, rebuild the dashboard
+manifest with `uv run python scripts/build_manifest.py` and commit
+`dashboard/src/data/manifest.json`.
 
 ## Keeping the website in sync
 
