@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-11T18:28:06.389124Z",
+  "generated_at": "2026-11-11T19:22:03.053796Z",
   "counts": {
     "skill": 24,
     "agent": 36,
@@ -661,7 +661,7 @@
       ],
       "registry_notes": "A newer artifact explicitly supersedes this one. Prefer the replacement.",
       "references": {},
-      "body_length": 9958
+      "body_length": 9731
     },
     {
       "id": "policyengine-github-agent",
@@ -1230,7 +1230,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 37648
+      "body_length": 38811
     },
     {
       "id": "review-program",

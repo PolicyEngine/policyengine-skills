@@ -460,13 +460,13 @@ This is Montana's largest income tax cut in history
 
 **Charts.** Draw every chart in a policyengine.org post as a ```` ```chart ```` block: a
 JSON spec that the website renders with ui-kit's chart defaults, Inter and the PolicyEngine
-watermark. `bar` and `waterfall` draw with Recharts; `stateMap` draws a US tile grid. In
-policyengine-app-v2, the header comments of `BlogChart.tsx`, `BlogWaterfallChart.tsx` and
-`BlogStateMap.tsx` (under `website/src/components/blog/`) document each spec, and the
-engineering chart standards (`chart-standards.md` under `docs/engineering/`) cover the
-details. Do not put matplotlib PNGs or Plotly JSON in new posts; when a post needs a chart
-type the website lacks, add the type with tests first. Keep each chart's numbers identical
-to the table or text beside it.
+watermark. `bar`, `line` and `waterfall` draw with Recharts; `stateMap` draws a US tile
+grid. In policyengine-app-v2, the header comments of `BlogChart.tsx`, `BlogLineChart.tsx`,
+`BlogWaterfallChart.tsx` and `BlogStateMap.tsx` (under `website/src/components/blog/`)
+document each spec, and the engineering chart standards (`chart-standards.md` under
+`docs/engineering/skills/`) cover the details. Do not put matplotlib
+PNGs or Plotly JSON in new posts; when a post needs a chart type the website lacks, add the
+type with tests first. Keep each chart's numbers identical to the table or text beside it.
 
 **Charts elsewhere.** For a newsletter or social image, screenshot the chart as the live post
 renders it (headless Chromium at 2x). A re-plot drifts from the post's labels, source line
@@ -475,10 +475,10 @@ and styling.
 **Covers.** Give research posts a photographic cover: a still life of objects from the
 post's subject, with PolicyEngine teal (`#319795`, `#285E61`) only in the objects. Keep
 everything legible or recognizable out of it: no text, numbers, currency, logos, charts,
-portraits or faces. Generate it with an image model, crop the result to 2.14:1 around the
-objects, inspect every object for stray lettering, and save it as an 1800×840 WebP beside
-the post's other assets. Never use a chart or an infographic as a cover. A product or tool
-launch may use a 1200×630 typographic card with no data graphic instead.
+portraits or faces. Generate it with an image model, crop the result to 2.14:1 centered on
+the objects, inspect every object for stray lettering, and save it as an 1800×840 WebP
+beside the post's other assets. Never use a chart or an infographic as a cover. A product
+or tool launch may use a 1200×630 typographic card with no data graphic instead.
 
 **Scene.** Choose the setting, camera angle and light from the post's subject, so each post
 gets its own scene. Before you commit the cover, put it on a contact sheet with the covers
@@ -493,25 +493,35 @@ the research and home page cards show only part of it:
 
 - Research cards (`ResearchClient.tsx` under `website/src/app/[countryId]/research/`) give
   the cover a box 260 px tall. On a 375 px phone the box runs 341 px wide and shows the
-  central 61% of the cover's width (58% on a 360 px phone). On screens 1408 px and wider it
+  central 61% of the cover's width (59% on a 360 px phone). On screens 1408 px and wider it
   runs 543 px wide and shows nearly the whole cover.
 - The home page's "Expert policy analysis" block (`HomeBlogPreview.tsx` under
   `website/src/components/home/`) shows the country's five newest posts and research apps.
-  Its three smaller cards stand 180 px tall. On tablets and desktops they run wider than
-  2.14:1 and cut the top and bottom. A 1440 px desktop shows the middle 57% of the cover's
-  height, and tablets from 768 to 991 px wide show the middle 40% to 53%.
+  Its two large cards hold the two newest and size the cover's box from the layout, never
+  below 200 px tall. With a cover in each, they showed the central 76% to 80% of its width
+  on 360 to 375 px phones, the whole cover from 600 to 991 px, and 69% to 98% on desktops,
+  depending on the titles and descriptions beside them. Its three smaller cards stand
+  180 px tall. On tablets and desktops they run wider than 2.14:1 and cut the top and
+  bottom. A 1440 px desktop shows the middle 57% of the cover's height, and tablets from
+  768 to 991 px wide show the middle 40% to 53%.
 - The article page shows the whole cover, and the post's social cards use it as their
   image.
 
 Keep the main objects inside the central 60% of the width and the middle half of the
-height, and leave only surface, light and shadow near the edges. Set a launch card's words
-in the same zone.
+height, and leave only surface, light and shadow near the edges. Phones narrower than
+375 px and tablets from 768 to 991 px wide cut a little into that zone, so put what
+matters most nearest its center. Ask for the zone in the image prompt itself: the porch
+prompt below asks only for clear side edges, and the 1440 px home card trims the tops of
+its boots. A launch card's 1.9:1 shape loses more of its height in the small home cards
+(as little as 36% shows on tablets), so set its words inside the central 60% of its width
+and the middle third of its height.
 
 Borrow the constraints of the two prompts below, not their scenes.
 
-The first prompt, adapted from the graded 2025 SPM prediction post's cover, asks for an oak
-desk by a window with the objects on the right two-thirds. On a phone, the research card
-cuts off most of that cover's teal notebook and folder:
+The first prompt, adapted from the one behind the graded 2025 SPM prediction post's cover,
+asks for a light oak table by a window and groups the objects on the right two-thirds.
+Don't copy that grouping, which puts objects outside the crop zone: on a 375 px phone, the
+research card keeps about a third of that cover's teal notebook and none of its teal folder:
 
 > Photorealistic editorial still life, high three-quarter angle, on a light oak table beside
 > a window, soft diffuse morning light from the left, shallow depth of field. Objects grouped
@@ -554,19 +564,20 @@ day, the research list sorts dates as text, and a website test fails on it.
 
 When a post grades a registered prediction or explains why the model missed:
 
-- **Grade what was registered.** Compare the registered quantity with the published figure
-  at the precision the source publishes, and give the published margins of error. When the
-  registration builds a level from a modeled change, grade the change as well. When the
-  published change is not statistically significant, say so.
+- **Grade the registered quantity.** Compare it with the published figure at the precision
+  the source publishes, and give the published margins of error. When the registration
+  builds a level from a modeled change, grade the change as well. When the published change
+  falls short of statistical significance, say so.
 - **Reruns show which assumptions matter.** A rerun that matches the published figure does
   not identify the right inputs; say so beside the result.
-- **Every rerun is a full model run** with the changed assumption entered as a model input.
+- **Run the full model for every rerun**, and enter the changed assumption as a model input.
   Never estimate a rerun by scaling an earlier run's output or by adding effects from
   separate runs. Name the run or runs behind each figure.
 - **Lead with totals.** Splitting a change into parts (thresholds and resources, or one
   income source at a time) can give different answers depending on the order of the steps.
-  Decompose each rerun from its own runs, report each order or the average over all orders, and do not
-  assign a remaining gap to one part on the strength of the baseline decomposition.
+  Decompose each rerun from its own runs, report each order or the average over all
+  orders, and do not assign a remaining gap to one part on the strength of the baseline
+  decomposition.
 - **Compare survey years with care.** The CPS reweights to new population controls, so the
   weighted count of people in a group, or of benefit recipients, can jump for reasons that
   have nothing to do with the economy. Compare amounts per recipient, hold the age mix fixed
