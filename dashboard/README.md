@@ -91,8 +91,8 @@ Run that whenever you add or rename artifacts and you want to refresh the
 dashboard without restarting the dev server.
 
 A rebuild with no content change rewrites only `generated_at`, on macOS or
-Linux and under any Python from 3.11 on, so a manifest diff shows real
-changes. Pass `--output PATH` to write the manifest somewhere else.
+Linux, in any locale and under any Python from 3.11 on, so a manifest diff
+shows real changes. Pass `--output PATH` to write the manifest somewhere else.
 
 CI rebuilds the manifest on Linux and fails when the committed copy differs
 anywhere but `generated_at`. So commit the rebuilt manifest with any change

@@ -6,7 +6,8 @@ reordered ``edges`` and rewrote hundreds of manifest lines with no content
 change. These tests hold rebuilds byte-identical apart from ``generated_at``,
 keep the repo lists independent of the inventory file's order, keep overlap
 scores independent of how the Python version or the platform rounds floats,
-and check that the builder stops, without writing, when it lacks PyYAML.
+keep every read and write in UTF-8 whatever the locale, and check that the
+builder stops, without writing, when it lacks PyYAML or meets bad frontmatter.
 """
 
 from __future__ import annotations
@@ -236,6 +237,52 @@ def test_bad_frontmatter_stops_the_build_and_names_the_file(frontmatter, problem
     with pytest.raises(build_manifest.FrontmatterError, match=problem) as raised:
         build_manifest.parse_frontmatter(text, "skills/example/SKILL.md")
     assert str(raised.value).startswith("skills/example/SKILL.md: ")
+
+
+def test_bad_frontmatter_makes_the_script_exit_1_and_write_nothing(
+    tmp_path, monkeypatch, capsys
+):
+    # CI's --check and the dashboard's predev hook rely on this exit status.
+    def assemble_with_bad_frontmatter():
+        build_manifest.parse_frontmatter(
+            "---\nname: [unclosed\n---\nbody\n", "skills/example/SKILL.md"
+        )
+        raise AssertionError("parse_frontmatter should have raised")
+
+    monkeypatch.setattr(build_manifest, "assemble_manifest", assemble_with_bad_frontmatter)
+    output = tmp_path / "manifest.json"
+    output.write_text("the committed manifest", encoding="utf-8")
+    for args in (["--output", str(output)], ["--check", "--output", str(output)]):
+        assert build_manifest.main(args) == 1, args
+        err = capsys.readouterr().err
+        assert "skills/example/SKILL.md: frontmatter isn't valid YAML" in err
+        assert "The script wrote nothing." in err
+        assert output.read_text(encoding="utf-8") == "the committed manifest"
+
+
+def test_builder_never_uses_the_locale_encoding(tmp_path):
+    # read_text() and write_text() without an encoding use the locale's, so
+    # before Python 3.15 a build under a Latin-9 locale, or on Windows,
+    # misread the repo's UTF-8 text. With EncodingWarning as an error, any
+    # read or write in the build that leaves the encoding out raises.
+    output = tmp_path / "manifest.json"
+    for args in (["--output", str(output)], ["--check", "--output", str(output)]):
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-X",
+                "warn_default_encoding",
+                "-W",
+                "error::EncodingWarning",
+                str(BUILDER),
+                *args,
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
 
 
 NUMERIC_ANALYSIS_FIELDS = (

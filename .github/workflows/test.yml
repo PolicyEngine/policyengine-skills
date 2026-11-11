@@ -42,10 +42,13 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python }}
 
+      - name: Install the builder's dependencies
+        run: uv sync --python ${{ matrix.python }} --no-dev
+
       - name: Check the committed manifest matches a fresh build
         run: |
           uv run --python ${{ matrix.python }} --no-dev python scripts/build_manifest.py --check || {
-            echo "::error file=dashboard/src/data/manifest.json::The committed manifest differs from a fresh build. Run 'uv run python scripts/build_manifest.py' and commit the result."
+            echo "::error file=dashboard/src/data/manifest.json::The manifest check failed, and the log above says why. If it lists sections that differ, run 'uv run python scripts/build_manifest.py' and commit the result."
             exit 1
           }
 

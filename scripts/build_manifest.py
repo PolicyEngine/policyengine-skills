@@ -22,8 +22,9 @@ it writes anything. The dashboard needs what only a full YAML parser gives
 it: nested fields, such as each analysis's ``jurisdiction``, and numbers that
 arrive as numbers, which the Analyses page formats.
 
-A rebuild with no content change rewrites nothing but ``generated_at``,
-whatever the string-hash seed, the Python version (3.11 on) or the platform.
+A rebuild with no content change rewrites nothing but ``generated_at``, on
+macOS or Linux, whatever the string-hash seed, the Python version (3.11 on) or
+the locale.
 ``--check`` builds the manifest without writing it and exits 1 if the copy on
 disk differs anywhere but ``generated_at``; CI runs it on Linux.
 ``--output PATH`` writes or checks a manifest somewhere other than the
@@ -331,11 +332,22 @@ TOOLING_RELEVANT_KINDS = {
 }
 
 
+def read_utf8(path: Path) -> str:
+    """Read one of the builder's inputs as UTF-8, the encoding they're written in.
+
+    ``read_text()`` without an encoding decodes with the locale's encoding.
+    Under a locale that isn't UTF-8 (Windows, or a Latin-9 locale on Linux or
+    macOS), Python before 3.15 decodes UTF-8 text wrongly: the build can stop
+    on a file that is fine, or garble non-ASCII text in the manifest.
+    """
+    return path.read_text(encoding="utf-8")
+
+
 def load_org_repos() -> list[dict]:
     """Load the cached GitHub org inventory; empty list if missing."""
     if not ORG_REPOS_PATH.exists():
         return []
-    return json.loads(ORG_REPOS_PATH.read_text())
+    return json.loads(read_utf8(ORG_REPOS_PATH))
 
 
 def build_known_repos() -> list[tuple[str, str]]:
@@ -416,7 +428,7 @@ def extract_triggers(description: str) -> list[str]:
 def load_skills() -> list[Artifact]:
     artifacts: list[Artifact] = []
     for skill_md in sorted(SKILLS_DIR.glob("**/SKILL.md")):
-        meta, body = parse_frontmatter(skill_md.read_text(), relpath(skill_md))
+        meta, body = parse_frontmatter(read_utf8(skill_md), relpath(skill_md))
         # Flat layout: skills/<slug>/SKILL.md with the category declared in
         # frontmatter metadata. Fall back to the parent dir for any legacy
         # nested layout (skills/<category>/<slug>/SKILL.md).
@@ -452,7 +464,7 @@ def load_agents() -> list[Artifact]:
     for agent_md in sorted(AGENTS_DIR.glob("**/*.md")):
         if agent_md.name == "README.md":
             continue
-        meta, body = parse_frontmatter(agent_md.read_text(), relpath(agent_md))
+        meta, body = parse_frontmatter(read_utf8(agent_md), relpath(agent_md))
         rel_to_agents = agent_md.relative_to(AGENTS_DIR)
         category = rel_to_agents.parts[0] if len(rel_to_agents.parts) > 1 else "general"
         name = meta.get("name") or agent_md.stem
@@ -484,7 +496,7 @@ def load_agents() -> list[Artifact]:
 def load_commands() -> list[Artifact]:
     artifacts: list[Artifact] = []
     for cmd_md in sorted(COMMANDS_DIR.glob("*.md")):
-        meta, body = parse_frontmatter(cmd_md.read_text(), relpath(cmd_md))
+        meta, body = parse_frontmatter(read_utf8(cmd_md), relpath(cmd_md))
         name = cmd_md.stem
         description = meta.get("description") or ""
         if isinstance(description, list):
@@ -507,7 +519,7 @@ def load_commands() -> list[Artifact]:
 def load_bundles() -> list[Artifact]:
     artifacts: list[Artifact] = []
     for bundle_path in sorted(BUNDLES_DIR.glob("*.json")):
-        data = json.loads(bundle_path.read_text())
+        data = json.loads(read_utf8(bundle_path))
         name = data.get("name") or bundle_path.stem
         artifacts.append(
             Artifact(
@@ -623,11 +635,13 @@ def tokenize(text: str) -> list[str]:
 
 # math.log calls the C library's log, and the C standard leaves its accuracy
 # to each implementation, so the last bit can differ between platforms. On
-# macOS, math.log misses the correctly rounded value for 44 of the 79,799
-# ratios (n + 1) / (df + 1) with 2 <= n < 400 and 1 <= df <= n. One bit can
+# macOS, math.log misses the correctly rounded value of ln((n + 1) / (df + 1))
+# for 44 of the 79,799 pairs with 2 <= n < 400 and 1 <= df <= n. One bit can
 # reorder near-tied shared_terms, and a manifest built on macOS would then
-# fail CI's check on Linux. The decimal module computes ln in software and
-# rounds it correctly, so every platform gets the same float.
+# fail CI's check on Linux. The decimal module computes ln in software,
+# correctly rounded to 34 digits, and float() rounds that to a double, so
+# every platform gets the same float. For all 79,799 pairs that double is the
+# correctly rounded one.
 LN_CONTEXT = decimal.Context(prec=34)
 
 
@@ -1023,7 +1037,7 @@ def attach_functional_tags(artifacts_by_kind: dict[str, list[Artifact]]) -> None
     """Merge hand-curated functional tags from functional_tags.json."""
     if not FUNCTIONAL_TAGS_PATH.exists():
         return
-    data = json.loads(FUNCTIONAL_TAGS_PATH.read_text())
+    data = json.loads(read_utf8(FUNCTIONAL_TAGS_PATH))
     for kind_plural, kind_singular in (
         ("skills", "skill"),
         ("agents", "agent"),
@@ -1227,7 +1241,7 @@ def load_analyses() -> list[dict]:
     for path in sorted(ANALYSES_DIR.glob("*.md")):
         if path.name.lower() == "readme.md":
             continue
-        meta, _body = parse_frontmatter(path.read_text(), relpath(path))
+        meta, _body = parse_frontmatter(read_utf8(path), relpath(path))
         if not meta:
             continue
         jurisdiction = meta.get("jurisdiction") or {}
@@ -1270,7 +1284,7 @@ def assemble_manifest() -> dict:
     commands = load_commands()
     bundles = load_bundles()
     analyses = load_analyses()
-    raw_bundles = [json.loads(p.read_text()) for p in sorted(BUNDLES_DIR.glob("*.json"))]
+    raw_bundles = [json.loads(read_utf8(p)) for p in sorted(BUNDLES_DIR.glob("*.json"))]
 
     artifacts_by_kind = {
         "skill": skills,
@@ -1391,7 +1405,7 @@ def check_manifest(path: Path, fresh_text: str) -> int:
     if not path.exists():
         print(f"{shown} doesn't exist. {fix}", file=sys.stderr)
         return 1
-    on_disk = without_generated_at(path.read_text())
+    on_disk = without_generated_at(read_utf8(path))
     fresh = without_generated_at(fresh_text)
     if on_disk == fresh:
         print(f"{shown} matches a fresh build apart from generated_at.")
@@ -1481,7 +1495,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         return check_manifest(output_path, text)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(text)
+    output_path.write_text(text, encoding="utf-8", newline="\n")
     print(f"Wrote {display_path(output_path)}")
     print_summary(manifest)
     return 0
