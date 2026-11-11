@@ -201,8 +201,14 @@ def swap_ascii_case(text: str) -> str:
 # `gh label list` (or fails it, when FAKE_GH_LABEL_LIST_FAILS is set), and
 # accepts `gh issue create`, saving its standard input to FAKE_GH_BODY, where
 # `--body-file -` makes gh read the body. A function saves a process per call,
-# which keeps the property tests fast.
-FAKE_GH_FUNCTION = r"""gh() {
+# which keeps the property tests fast. A grep function stands in for the one
+# Claude Code defines (it runs ugrep): the block calls `command grep`, so the
+# function must never run.
+FAKE_GH_FUNCTION = r"""grep() {
+  printf '%s\n' "report-logger's block called a shell function named grep: grep $*" >&2
+  return 98
+}
+gh() {
   printf '%s\0' "$#" "$@" >> "$FAKE_GH_LOG"
   case "$1 $2" in
     "label list")

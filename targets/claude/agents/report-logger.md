@@ -276,7 +276,7 @@ See archived report.
 ```bash
 # Fill in the report's values. Quoted heredocs below hand the title and body
 # to gh as written, with their quotes, apostrophes, $ and backticks intact.
-# country: us, uk or ca, the reform's jurisdiction.
+# country: us, uk or ca, the jurisdiction of the reform.
 # dataset: dataset_at_run from the archive, or empty for the bundle default.
 country='{country}'
 dataset='{dataset_at_run}'
@@ -330,7 +330,7 @@ END_BODY
 fi
 ```
 
-gh looks up every `--label` name among the repo's labels before it creates the issue, and it stops without creating one when a name is missing (`could not add label: '<name>' not found`). So the block passes only the labels the repo has, and gh files the issue even in a repo with neither label. If `gh label list` fails, the block still files the issue, without the labels it could not confirm. For any issue you file outside this block, such as a structural one or an `issue:<repo>` destination, list the repo's labels first with `--limit 1000` and pass only labels it has. Give a structural issue no `calibration` label: in policyengine-us and policyengine-uk that label marks calibration work, and a structural issue asks for a change to the model.
+gh looks up every `--label` name among the repo's labels before it creates the issue, and it stops without creating one when a name is missing (`could not add label: '<name>' not found`). So the block passes only the labels the repo has, and gh files the issue even in a repo with neither label. If `gh label list` fails, the block still files the issue, without the labels it could not confirm. File a structural issue, or one for an `issue:<repo>` destination, with this block from `if [ -n "$DATA_REPO" ]` on, after setting `DATA_REPO` to that repo in place of the `case`. Its heredocs hand gh the title and body intact, and its label check passes only labels the repo has. For a structural issue, change the loop to `for label in auto-filed; do`: policyengine-us and policyengine-uk use `calibration` for calibration work, and a structural issue asks for a change to the model.
 
 Replace `{country}`, `{dataset_at_run}`, `{title}` and `{body}` with the report's values, and keep the quotes and heredoc lines around them. If the country or dataset holds an apostrophe, write it as `'\''`. gh reads the body from standard input (`--body-file -`), so the shell never parses the body's quotes or parentheses. A heredoc ends at the first line that matches its closing word, though, and the shell runs every line after it. So check that the title isn't `END_TITLE` and that no line of the body is `END_BODY`; if one is, rename that heredoc's closing word in both places. Run the block as written, without `set -e` or `set -u`: either can stop the block before gh files the issue.
 

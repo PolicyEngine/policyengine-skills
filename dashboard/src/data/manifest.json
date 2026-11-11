@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-11T19:09:52.607259Z",
+  "generated_at": "2026-11-11T19:41:18.652068Z",
   "counts": {
     "skill": 24,
     "agent": 36,
@@ -3118,7 +3118,7 @@
           "analyze-policy"
         ]
       },
-      "body_length": 17034
+      "body_length": 17168
     },
     {
       "id": "neutrality-reviewer",
