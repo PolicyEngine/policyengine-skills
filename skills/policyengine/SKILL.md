@@ -277,7 +277,7 @@ Certified defaults resolve automatically — **do not pass raw `hf://` URIs**:
 
 The pre-2026 datasets are gone:
 <!-- stale-ok -->
-`enhanced_cps_2024` is superseded by Microcosm and `enhanced_frs_2023_24` by `enhanced_frs_2024_25`, and the per-area
+`enhanced_cps_2024` and `enhanced_frs_2023_24` are superseded by Microcosm, and the per-area
 <!-- stale-ok -->
 files (`hf://policyengine/policyengine-us-data/states/*.h5`, `districts/*.h5`) no longer
 exist — policyengine-us-data is archived. **Local-area analysis = filter one national dataset

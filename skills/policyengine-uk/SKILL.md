@@ -217,11 +217,13 @@ Microcosm UK is built (FRS + WAS imputation) and calibrated, and the `policyengi
 ## Macro scenarios (a different CPI or earnings path)
 
 A macro path goes in through the growth series in `gov.economic_assumptions.yoy_growth.obr`
-(`consumer_price_index`, `average_earnings`; move `rpi` and `cpih` with CPI if prices move),
-passed as a `Scenario` applied **before the data load**. This needs
-`managed_microsimulation(scenario=...)`: the `pe.uk` `Simulation`, `Policy`/`Dynamic` and
-`economic_impact_analysis` interfaces apply parameter values after the data load, so growth
-edits made through them are silent no-ops too.
+(`consumer_price_index`, `average_earnings`; move `rpi` and `cpih` with CPI if prices move).
+Pass it to `managed_microsimulation` as a `Scenario` applied **before the data load**, as
+below, so the dataset is projected on the new path along with the parameters derived from
+it. Don't send a macro path through the `pe.uk` `Simulation`, `Policy`/`Dynamic` or
+`economic_impact_analysis` interfaces: they hand parameter values to policyengine-uk as a
+reform when it builds the simulation, on each year's data as the dataset was already
+projected.
 
 <!-- verify: slow -->
 ```python
@@ -245,45 +247,19 @@ for year in (2029, 2034):  # inside and beyond the dataset's own years
     assert macro.calculate("employment_income", year).sum() > base.calculate("employment_income", year).sum()
 ```
 
-Verified in policyengine 5.3.0 / policyengine-uk 2.90.2 (2026-09), by reading the code and
-running it with +1pp CPI and earnings in 2027-2033:
+This example last ran on policyengine 5.3.0 / policyengine-uk 2.90.2 (2026-09), on the
+then-default `enhanced_frs_2024_25`: +1pp CPI and earnings in 2027-2033 raised 2034 employment
+income from £1,662.6bn to £1,779.4bn. policyengine-uk has since changed how reforms and
+scenarios reach the parameters (`policyengine_uk.utils.dated_reforms`), so check any other
+route, period key or series horizon against the installed version before relying on it, and
+measure again on the current bundle before you quote a figure. `policyengine` downloads the
+dataset to `./data/` under the working directory, so run parallel processes from separate
+working directories.
 
-- Before the data load, `Simulation.apply_parameter_changes` reloads the parameters, applies
-  the edits and reruns `process_parameters()`, which rebuilds the triple lock, the uprating
-  indices and every index-uprated parameter; the dataset is then extended with those
-  parameters. Employment income, child benefit rates, the State Pension and income tax all
-  moved (2034 employment income £1,662.6bn → £1,779.4bn), including years past the
-  dataset's last year.
-- **The same changes as a `reform=` dict do nothing.** `Scenario.from_reform` turns the dict
-  into a plain `.update()` modifier that runs after the data load and never calls
-  `process_parameters()`, so the growth series change but nothing derived from them is
-  rebuilt: incomes, benefit rates, the State Pension and income tax were identical to
-  baseline. No error is raised. (An after-load `Scenario(parameter_changes=...)` rebuilds the
-  parameters but not the microdata, which was already uprated.)
-- Period keys: in `apply_parameter_changes` a bare year (`"2030"`) means the fiscal year from
-  6 April. The `yoy_growth` series are calendar-year values keyed 1 January, so use
-  `"year:2030-01-01:1"`. The `"2030-01-01.2030-12-31"` form used in `reform=` dicts raises
-  `ValueError` here.
-- The rebuilt series have fixed horizons in policyengine-uk 2.90.2: the triple lock covers
-  2022-2034 (`create_triple_lock.py`) and the uprating indices run to 2039. Growth edits after
-  those years do not move the State Pension or index-uprated parameters; check the parameter
-  you care about in the final year before relying on a long-horizon path.
-- One process can build several such simulations, but `policyengine` materialises the
-  dataset under `./data/`: run parallel processes from separate working directories or the
-  HDF5 file lock fails.
-
-To combine a macro path with a policy, build two simulations with the same macro `Scenario`: a
-macro baseline and a macro reform. Apply a policy that sets rates, thresholds or amounts to the
-reform simulation with `Scenario.from_reform(policy).simulation_modifier(sim)`, then
-`sim.tax_benefit_system.reset_parameter_caches()`, before calculating, and set its value for
-every year you report: don't rely on later years of an uprated parameter following a one-year
-change. Settings that `process_parameters()` reads (`gov.dwp.state_pension.triple_lock.*`,
-`gov.economic_assumptions.*`) go into the macro scenario instead:
-`Scenario(parameter_changes={**macro_changes, **policy_changes}, applied_before_data_load=True)`,
-with `apply_parameter_changes` period keys (a bare year is a fiscal year; the `"a.b"` range form
-raises `ValueError`). A policy path that repeats a macro path replaces it entirely. Do not
-combine scenarios with `+` (`Scenario.__add__` drops `applied_before_data_load`), and do not
-compare against `sim.baseline`, which is built on the default macro path.
+To combine a macro path with a policy, build a macro baseline and a macro reform on the same
+macro `Scenario`, check on the installed version that the policy reaches the reform's
+parameters for every year you report, and compare the two. Don't compare against
+`sim.baseline`, which policyengine-uk builds on the default macro path.
 
 ## Country-model development notes (policyengine_uk directly)
 
@@ -297,7 +273,7 @@ from policyengine_uk.model_api import Scenario   # -> policyengine_uk.utils.scen
 
 `Scenario` is a Pydantic model with two fields — `parameter_changes` (`{path: {period: value}}`)
 and `simulation_modifier` (a `Callable[[Simulation], None]`) — and scenarios compose with `+`
-(parameter dicts merge, modifiers chain; the sum drops `applied_before_data_load`). The country-package `Microsimulation(reform=...)`
+(parameter dicts merge, modifiers chain). The country-package `Microsimulation(reform=...)`
 accepts **either a plain dict or a `Reform` class** (its verified signature is
 `reform: Union[Dict, Type[Reform]]`) and internally calls `Scenario.from_reform(reform)`.
 `Reform.from_dict(dict, country_id="uk")` also works and applies correctly for both flat and
@@ -371,6 +347,6 @@ fixed value — cite the uprating order, not just the base Act, when a value cha
 
 - `policyengine` — the canonical `pe.*` interface, population flow, MicroSeries rules, and
   regional impacts. Read it first.
-- `policyengine-data` — the dataset stack (the Enhanced FRS default, Microcosm) and calibration.
+- `policyengine-data` — how Microcosm UK (FRS + WAS) is built and calibrated.
 - `policyengine-model-development` — implementing new UK variables and parameters.
 - `policyengine-us` — the US counterpart (and the source of the `tax_unit` habit to unlearn).
