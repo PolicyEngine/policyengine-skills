@@ -44,12 +44,13 @@ credential. Pages go through a server that does.
 | Where the code runs | How it reaches the Public API |
 |---|---|
 | A dashboard page (browser) | www.policyengine.org's dashboard API, through `@policyengine/api-client` |
-| A dashboard's own backend (Modal, Cloud Run, a Vercel function) | Its own Auth0 client, token in `Authorization: Bearer` |
+| A dashboard's own backend (Modal, Cloud Run, a Vercel function) | Runs `policyengine` in its own process and doesn't call the Public API (policyengine-tools, Pattern C). Only a backend that already has a client sends its token in `Authorization: Bearer` |
 | A CI job or script | Its own Auth0 client, one token per job run |
 | Python analysis or a notebook | The `policyengine` package (policyengine skill), not REST |
 
 If a backend exists only to relay one of the four dashboard operations, drop it and call the
-dashboard API from the page instead.
+dashboard API from the page instead. Whether a dashboard needs a backend at all is settled by
+the four options, checked in order, in policyengine-tools' "Data and backend patterns".
 
 ## From pages: the dashboard API
 
@@ -152,10 +153,29 @@ such as `http://localhost` in development, gets a network failure (`status` `nul
 are accepted again when the window ends. Calculate on a user's action or after a debounce, not
 on every keystroke.
 
+**Stay at half of each limit.** Design a page so one person's normal use takes at most 15
+household calculations, 60 economy-comparison reads, and 150 policy creations and metadata
+reads in any minute. Everyone behind one address shares the limits, so the rest is theirs.
+
+- Make one household calculation per user action where you can: put every charted input in
+  `axes` in that one call (separate inner lists give a grid over two inputs), and ask for each
+  year's outputs in the same household.
+- Keep answers in the page, and don't calculate again for inputs that haven't changed.
+- Precompute fixed households, such as presets, and comparisons of fixed policies.
+- `compareEconomy` reads every 5 seconds, which is 12 reads a minute for each comparison in
+  progress, so run at most five comparisons at once, and one where you can.
+- Read the metadata once per page load.
+
+A feature that can't fit this budget, even with `axes`, is precomputed; only one that can't be
+precomputed goes to the dashboard's own backend (policyengine-tools, "Data and backend
+patterns").
+
 ## From servers: your own Auth0 client
 
-A server (a Modal backend, a Vercel function, a Cloud Run service, a CI job) calls the Public
-API directly with an Auth0 client-credentials token from the Public API's own tenant:
+A server (a PolicyEngine service, a CI job, or a dashboard backend that already has a client)
+calls the Public API directly with an Auth0 client-credentials token. A new dashboard's backend
+doesn't: it runs `policyengine` in its own process (policyengine-tools, Pattern C) and needs no
+client. The token comes from the Public API's own tenant:
 
 | | Production | Staging |
 |---|---|---|
@@ -254,14 +274,23 @@ Also:
 
 ## Asking for a new dashboard operation
 
-The dashboard API has exactly the four operations above. Adding one is a change to
+The dashboard API has exactly the four operations above. Ask for a new one only when a page
+needs a Public API route outside them, used unchanged, that other dashboards would plausibly
+use too, such as the budget-window comparison. "Used unchanged" means the page sends inputs
+the route already accepts and uses its answer as it comes back, with nothing computed on top.
+Anything else the four can't give is precomputed, fixed in the country package or the Public
+API, or, last, the dashboard's own backend (policyengine-tools, "Data and backend patterns").
+The Public API's model being older than the one you need is not a reason for any of these:
+build on the dashboard API.
+
+Adding one is a change to
 `PolicyEngine/policyengine-app-v2`: a route under `website/src/app/api/` and its check in
 `website/src/lib/dashboardApi/operations.ts`, a method in `packages/api-client`, and a new
 release of `@policyengine/api-client`. Ask for it in an issue in
 `PolicyEngine/policyengine-app-v2` that names the Public API call it maps to, the request and
 answer shapes the dashboard needs, how often a page calls it, and whether its answers can be
 cached. Until it ships, do not call the Public API from the page as a stopgap; precompute the
-data, or use a backend with its own client.
+data.
 
 ## Errors
 

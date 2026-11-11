@@ -156,9 +156,11 @@ export default function Home() {
 
 ## Step 4: Data pattern boilerplate
 
-> **Prefer Pattern B** (the dashboard API) unless the tool needs structural reforms,
-> microsimulation output beyond the dashboard API's economy comparison, or variables it
-> doesn't return. Pattern C is significantly more complex and should be the last resort.
+> **Prefer Pattern B** (the dashboard API) unless the tool needs outputs the dashboard API
+> can't give and precomputing can't cover. A structural reform goes into the country package
+> as a contributed reform rather than into a Pattern C backend, and the Public API's model
+> version and rate limits are not reasons for Pattern C (policyengine-tools, "Data and
+> backend patterns"). Pattern C is significantly more complex and should be the last resort.
 
 Based on the user's choice, add the appropriate data fetching code.
 

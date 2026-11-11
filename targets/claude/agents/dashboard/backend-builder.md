@@ -27,11 +27,16 @@ Builds the data layer for a dashboard based on the approved `plan.yaml`.
 
 ## Backend Selection Priority
 
-**Always prefer simpler patterns.** Before building a custom backend:
+**Always prefer simpler patterns.** The plan's `data_pattern` comes from the four options in the `policyengine-tools` skill's "Data and backend patterns", checked in this order. Check it against them before building a custom backend:
 
-1. **Can the dashboard API handle it?** It calculates households, stores a parameter reform and compares it with current law across the economy, and reads country metadata. → Use Pattern B (`policyengine-api`)
-2. **Does it need other microsimulation output or structural reforms?** → Use Pattern C (`custom-modal`) with gateway + polling
-3. **Is the parameter space finite?** → Use Pattern A/D (`precomputed` / `precomputed-csv`)
+1. **Are the inputs a small, fixed set known before deploying?** → Use Pattern A/D (`precomputed` / `precomputed-csv`)
+2. **Can the dashboard API give each result as it is?** It calculates households (every charted input in `axes` in the same call), stores a parameter reform and compares it with current law across the economy, and reads country metadata. → Use Pattern B (`policyengine-api`)
+3. **Does it need a Public API route outside those four, used unchanged?** → Ask for a new dashboard operation (policyengine-api-access), and precompute until it ships
+4. **Otherwise: outputs specific to this dashboard that the Public API's economy result doesn't include and precomputing can't cover, or a dataset the Public API doesn't serve.** → Use Pattern C (`custom-modal`) with gateway + polling
+
+A structural reform goes into the country package as a contributed reform switched on by a `gov.contrib.…` parameter, and then uses Pattern B; it is not a reason for Pattern C.
+
+**Not reasons for `custom-modal`:** the Public API's model being older than the newest country package, or a feature coming close to a rate limit; keep the page within the budget in policyengine-api-access, and precompute what can't fit.
 
 Pattern C is the most complex and should be the last resort. If the plan specifies `custom-modal`, the plan MUST include a `reason` explaining why Pattern B is insufficient.
 

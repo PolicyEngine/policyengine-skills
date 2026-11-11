@@ -128,7 +128,49 @@ multizone. Register in `policyengine-app-v2/website/src/data/apps.json` (`type`,
 ## Data and backend patterns
 
 Never paste ad-hoc computed numbers into source. Always: Python script → data file
-(JSON/CSV) → frontend imports it. Pick by need:
+(JSON/CSV) → frontend imports it.
+
+**Choosing a pattern.** Check these in order for each feature the page computes at run time,
+and take the first that fits. The dashboard uses the highest-numbered one any feature needs,
+so precomputed presets next to a free-input household calculator make it B.
+
+1. **A, precomputed files (`precomputed`, `precomputed-csv`)**, when the inputs are a small,
+   fixed set known before deploying: three named bills, five preset households, a few slider
+   steps.
+2. **B, the dashboard API (`policyengine-api`)**, when its four operations give each result as
+   they are: a household under current law or a parameter reform, with every charted input
+   varied by `axes` in the same call; a stored parameter reform compared with current law
+   across the economy, for one year and region, with the Public API's standard economy
+   result; storing a reform; country metadata.
+3. **A new dashboard operation** (policyengine-api-access), when the page needs a Public API
+   route outside those four, used unchanged, that other dashboards would want too, such as the
+   budget-window comparison. "Used unchanged" means the page sends inputs the route already
+   accepts and uses its answer as it comes back, with nothing computed on top. Precompute
+   until it ships.
+4. **C, the dashboard's own backend (`custom-modal`)**, for what is left: outputs specific to
+   this dashboard that the Public API's economy result doesn't include and precomputing can't
+   cover, such as custom income brackets for a reform the user designs, or a dataset the
+   Public API doesn't serve. It runs `policyengine` in its own process and doesn't call the
+   Public API, so it needs no Auth0 client.
+
+**Fix gaps where they are, not in a dashboard backend:**
+- A structural reform (new variables or formulas) goes into `policyengine-us` or
+  `policyengine-uk` as a contributed reform switched on by a `gov.contrib.…` parameter, as
+  many dashboards' reforms already are. The dashboard then uses B once the Public API's model
+  includes it.
+- Something general the Public API can't do yet, such as an output many dashboards would use
+  or a kind of parameter change it refuses, is a change to the Public API.
+- A server a page needs for something other than PolicyEngine results, such as an LLM call or
+  sending email, doesn't move its PolicyEngine calculations off the dashboard API.
+
+**Not reasons for C:**
+- The Public API's model is older than the newest `policyengine-us` or `policyengine-uk`
+  release. If a parameter the reform needs isn't in its metadata yet, still build on B and say
+  which model release the dashboard waits for.
+- A feature could come close to a rate limit. Keep it within the budget in
+  policyengine-api-access, and precompute what can't fit.
+
+The patterns:
 
 - **A — Precomputed JSON/CSV**: finite scenarios (legislative trackers, static analyses). A
   `scripts/*.py` microsimulation writes to `public/data/`; the frontend imports it. Zero
@@ -141,13 +183,10 @@ Never paste ad-hoc computed numbers into source. Always: Python script → data 
   the Public API. Always up to date; network latency. Never call the Public API
   (api.policyengine.org) from the page. See policyengine-api-access for the operations,
   polling, allowed origins and errors, and policyengine-api for the household shapes.
-- **C — Custom Modal backend**: only when the dashboard API can't do it: microsimulation output
-  its economy comparison doesn't give (custom breakdowns, datasets or years), structural
-  reforms that parameter changes can't express, or non-standard entities. A parameter reform's
-  economy-wide comparison with current law is Pattern B. Pattern below. A backend that itself calls the
-  Public API needs its own Auth0 client and a cached server token (policyengine-api-access,
-  `templates/public_api_token.py`); one that runs `policyengine` in its own process needs
-  neither.
+- **C — Custom Modal backend**: number 4 above only, not structural reforms, which go into the
+  country package instead; the dashboard API's economy comparison already covers a parameter
+  reform's economy-wide effect. It runs `policyengine` in its own process and doesn't call the
+  Public API, so it needs no Auth0 client. Pattern below.
 
 ### Pattern C: Modal gateway + worker + polling
 
