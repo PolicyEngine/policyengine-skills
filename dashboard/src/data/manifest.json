@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-11T13:45:24.002773Z",
+  "generated_at": "2026-11-11T13:58:34.580772Z",
   "counts": {
     "skill": 24,
     "agent": 36,
@@ -3067,7 +3067,7 @@
       "id": "report-logger",
       "kind": "agent",
       "name": "report-logger",
-      "description": "Routes a completed /analyze-policy report to the right destination \u2014 local archive, GitHub issue, tracker DB, or research draft PR \u2014 based on verdict + flags. Country-aware routing (INVESTIGATE \u2192 an issue in the repo that builds the run's dataset, PolicyEngine/microcosm for us and uk, or policyengine-uk-data when a uk run named an Enhanced FRS or FRS file; structural \u2192 policyengine-{country} issue; everything \u2192 archive).",
+      "description": "Routes a completed /analyze-policy report to the right destination \u2014 local archive, GitHub issue, tracker DB, or research draft PR \u2014 based on verdict + flags. Country-aware routing (INVESTIGATE \u2192 an issue in the repo that builds the run's dataset, PolicyEngine/microcosm for us and uk, or policyengine-uk-data when a uk run named an Enhanced FRS or FRS file, and no issue for ca, which has no microdata; structural \u2192 an issue in the country's model repo, policyengine-us, -uk or -canada; everything \u2192 archive).",
       "category": "general",
       "path": "targets/claude/agents/report-logger.md",
       "tools": [
@@ -3118,7 +3118,7 @@
           "analyze-policy"
         ]
       },
-      "body_length": 13790
+      "body_length": 15432
     },
     {
       "id": "neutrality-reviewer",
@@ -3984,7 +3984,7 @@
           "reform-pipeline"
         ]
       },
-      "body_length": 9939
+      "body_length": 9938
     },
     {
       "id": "setup-verbs",
@@ -7413,7 +7413,7 @@
         "kind": "agent",
         "id": "implementation-validator"
       },
-      "score": 0.2541,
+      "score": 0.254,
       "shared_terms": [
         "review",
         "fix",
@@ -7770,7 +7770,7 @@
         "kind": "skill",
         "id": "policyengine-canada"
       },
-      "score": 0.1695,
+      "score": 0.1709,
       "shared_terms": [
         "household",
         "microsimulation",
@@ -7791,7 +7791,7 @@
         "kind": "skill",
         "id": "policyengine-model-development"
       },
-      "score": 0.1749,
+      "score": 0.175,
       "shared_terms": [
         "model",
         "household",
@@ -7812,7 +7812,7 @@
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.4084,
+      "score": 0.4085,
       "shared_terms": [
         "household",
         "poverty",
@@ -7854,7 +7854,7 @@
         "kind": "skill",
         "id": "policyengine-user-guide"
       },
-      "score": 0.2863,
+      "score": 0.2864,
       "shared_terms": [
         "household",
         "impact",
@@ -7938,7 +7938,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.192,
+      "score": 0.1921,
       "shared_terms": [
         "tax",
         "income",
@@ -8064,7 +8064,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.1759,
+      "score": 0.176,
       "shared_terms": [
         "household",
         "api",
@@ -8295,7 +8295,7 @@
         "kind": "skill",
         "id": "policyengine-data"
       },
-      "score": 0.3169,
+      "score": 0.3166,
       "shared_terms": [
         "microcosm",
         "calibration",
@@ -8316,7 +8316,7 @@
         "kind": "agent",
         "id": "calibration-diagnostics"
       },
-      "score": 0.513,
+      "score": 0.5131,
       "shared_terms": [
         "calibration",
         "microcosm",
@@ -8358,7 +8358,7 @@
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.2776,
+      "score": 0.2777,
       "shared_terms": [
         "household",
         "canada",
@@ -8379,7 +8379,7 @@
         "kind": "skill",
         "id": "policyengine-us"
       },
-      "score": 0.178,
+      "score": 0.1794,
       "shared_terms": [
         "tax",
         "household",
@@ -8400,7 +8400,7 @@
         "kind": "skill",
         "id": "policyengine-user-guide"
       },
-      "score": 0.1624,
+      "score": 0.1629,
       "shared_terms": [
         "household",
         "income",
@@ -8421,7 +8421,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.2302,
+      "score": 0.2307,
       "shared_terms": [
         "household",
         "canada",
@@ -8463,7 +8463,7 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.2371,
+      "score": 0.2372,
       "shared_terms": [
         "modal",
         "deploy",
@@ -8610,7 +8610,7 @@
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.1514,
+      "score": 0.1515,
       "shared_terms": [
         "microcosm",
         "data",
@@ -8631,7 +8631,7 @@
         "kind": "agent",
         "id": "calibration-diagnostics"
       },
-      "score": 0.2778,
+      "score": 0.2779,
       "shared_terms": [
         "microcosm",
         "calibration",
@@ -8652,16 +8652,16 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1553,
+      "score": 0.1582,
       "shared_terms": [
         "microcosm",
         "data",
         "local",
         "dataset",
+        "microdata",
         "calibration",
         "frs",
-        "aware",
-        "builds"
+        "aware"
       ]
     },
     {
@@ -8799,7 +8799,7 @@
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.2205,
+      "score": 0.2206,
       "shared_terms": [
         "household",
         "income",
@@ -8841,7 +8841,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.1715,
+      "score": 0.1716,
       "shared_terms": [
         "household",
         "net",
@@ -8862,7 +8862,7 @@
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.1576,
+      "score": 0.1574,
       "shared_terms": [
         "household",
         "entity",
@@ -8946,7 +8946,7 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.3047,
+      "score": 0.3048,
       "shared_terms": [
         "tests",
         "variable",
@@ -8967,7 +8967,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.2031,
+      "score": 0.2028,
       "shared_terms": [
         "gov",
         "parameter",
@@ -9009,7 +9009,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.1713,
+      "score": 0.1714,
       "shared_terms": [
         "tests",
         "test",
@@ -9219,7 +9219,7 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1947,
+      "score": 0.1962,
       "shared_terms": [
         "posts",
         "articles",
@@ -9227,8 +9227,8 @@
         "post",
         "research",
         "src",
-        "data",
-        "json"
+        "has",
+        "data"
       ]
     },
     {
@@ -9261,7 +9261,7 @@
         "kind": "agent",
         "id": "pr-pusher"
       },
-      "score": 0.2863,
+      "score": 0.2864,
       "shared_terms": [
         "changelog",
         "repo",
@@ -9513,7 +9513,7 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.3067,
+      "score": 0.3068,
       "shared_terms": [
         "kit",
         "css",
@@ -9576,7 +9576,7 @@
         "kind": "agent",
         "id": "calibration-diagnostics"
       },
-      "score": 0.1536,
+      "score": 0.1537,
       "shared_terms": [
         "microcosm",
         "unit",
@@ -9618,7 +9618,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1889,
+      "score": 0.1885,
       "shared_terms": [
         "income",
         "tax",
@@ -9639,7 +9639,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.2974,
+      "score": 0.2973,
       "shared_terms": [
         "household",
         "income",
@@ -9660,7 +9660,7 @@
         "kind": "skill",
         "id": "policyengine-user-guide"
       },
-      "score": 0.2246,
+      "score": 0.2247,
       "shared_terms": [
         "household",
         "tax",
@@ -10290,7 +10290,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.3736,
+      "score": 0.3737,
       "shared_terms": [
         "test",
         "tests",
@@ -10689,7 +10689,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.2576,
+      "score": 0.2577,
       "shared_terms": [
         "test",
         "files",
@@ -11109,16 +11109,16 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1699,
+      "score": 0.1928,
       "shared_terms": [
         "issue",
         "repo",
         "open",
         "draft",
+        "has",
         "github",
         "url",
-        "run",
-        "git"
+        "run"
       ]
     },
     {
@@ -11298,7 +11298,7 @@
         "kind": "command",
         "id": "create-pr"
       },
-      "score": 0.245,
+      "score": 0.2449,
       "shared_terms": [
         "branch",
         "git",
@@ -11382,7 +11382,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1737,
+      "score": 0.1738,
       "shared_terms": [
         "income",
         "state",
@@ -11550,7 +11550,7 @@
         "kind": "agent",
         "id": "policy-text-researcher"
       },
-      "score": 0.1658,
+      "score": 0.1659,
       "shared_terms": [
         "enacted",
         "effective",
@@ -11592,13 +11592,13 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1929,
+      "score": 0.2037,
       "shared_terms": [
         "issue",
         "draft",
         "structural",
-        "country",
         "repo",
+        "country",
         "verdict",
         "report",
         "body"
@@ -11613,7 +11613,7 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.6537,
+      "score": 0.6538,
       "shared_terms": [
         "structural",
         "backlog",
@@ -11634,7 +11634,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.3835,
+      "score": 0.3836,
       "shared_terms": [
         "test",
         "tests",
@@ -12222,7 +12222,7 @@
         "kind": "agent",
         "id": "dashboard-planner"
       },
-      "score": 0.2061,
+      "score": 0.2062,
       "shared_terms": [
         "plan",
         "dashboard",
@@ -12411,7 +12411,7 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.1873,
+      "score": 0.1872,
       "shared_terms": [
         "dashboard",
         "modal",
@@ -12453,7 +12453,7 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.2554,
+      "score": 0.2555,
       "shared_terms": [
         "plan",
         "kit",
@@ -12537,7 +12537,7 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.3094,
+      "score": 0.3093,
       "shared_terms": [
         "dashboard",
         "modal",
@@ -12621,7 +12621,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1644,
+      "score": 0.1645,
       "shared_terms": [
         "reform",
         "api",
@@ -12663,7 +12663,7 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1898,
+      "score": 0.1823,
       "shared_terms": [
         "dataset",
         "enhanced",
@@ -12936,7 +12936,7 @@
         "kind": "agent",
         "id": "policy-text-researcher"
       },
-      "score": 0.2608,
+      "score": 0.2605,
       "shared_terms": [
         "gov",
         "state",
@@ -12957,7 +12957,7 @@
         "kind": "agent",
         "id": "reform-classifier"
       },
-      "score": 0.4507,
+      "score": 0.4509,
       "shared_terms": [
         "gov",
         "parameter",
@@ -12978,7 +12978,7 @@
         "kind": "agent",
         "id": "reform-describer"
       },
-      "score": 0.3488,
+      "score": 0.3489,
       "shared_terms": [
         "parameter",
         "reform",
@@ -12999,7 +12999,7 @@
         "kind": "command",
         "id": "audit-state-tax"
       },
-      "score": 0.2956,
+      "score": 0.2957,
       "shared_terms": [
         "state",
         "tax",
@@ -13041,7 +13041,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.2194,
+      "score": 0.2192,
       "shared_terms": [
         "reform",
         "income",
@@ -13062,7 +13062,7 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.2041,
+      "score": 0.2042,
       "shared_terms": [
         "gov",
         "reform",
@@ -13083,7 +13083,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.2913,
+      "score": 0.2914,
       "shared_terms": [
         "reform",
         "dict",
@@ -13230,7 +13230,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.3524,
+      "score": 0.3525,
       "shared_terms": [
         "bill",
         "reform",
@@ -13272,13 +13272,13 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1551,
+      "score": 0.1528,
       "shared_terms": [
         "analyses",
         "archive",
         "verdict",
-        "country",
         "local",
+        "country",
         "jurisdiction",
         "run",
         "tracker"
@@ -13314,7 +13314,7 @@
         "kind": "command",
         "id": "prior-analysis"
       },
-      "score": 0.3989,
+      "score": 0.3988,
       "shared_terms": [
         "analyses",
         "prior",
@@ -13608,13 +13608,13 @@
         "kind": "command",
         "id": "analyze-policy"
       },
-      "score": 0.2892,
+      "score": 0.2787,
       "shared_terms": [
         "log",
         "archive",
         "frs",
-        "auto",
         "analyst",
+        "auto",
         "default",
         "dataset",
         "report"
@@ -13627,9 +13627,30 @@
       },
       "b": {
         "kind": "command",
+        "id": "audit-seo"
+      },
+      "score": 0.1507,
+      "shared_terms": [
+        "issue",
+        "repo",
+        "github",
+        "local",
+        "open",
+        "report",
+        "app",
+        "step"
+      ]
+    },
+    {
+      "a": {
+        "kind": "agent",
+        "id": "report-logger"
+      },
+      "b": {
+        "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.1962,
+      "score": 0.2045,
       "shared_terms": [
         "issue",
         "structural",
@@ -13650,7 +13671,7 @@
         "kind": "command",
         "id": "prior-analysis"
       },
-      "score": 0.2492,
+      "score": 0.2481,
       "shared_terms": [
         "archive",
         "analyses",
@@ -13658,8 +13679,8 @@
         "analyze",
         "local",
         "frontmatter",
-        "country",
-        "analysis"
+        "repo",
+        "country"
       ]
     },
     {
@@ -13713,7 +13734,7 @@
         "kind": "command",
         "id": "reform-pipeline"
       },
-      "score": 0.2176,
+      "score": 0.2177,
       "shared_terms": [
         "bill",
         "auto",
@@ -14133,7 +14154,7 @@
         "kind": "command",
         "id": "reform-pipeline"
       },
-      "score": 0.3155,
+      "score": 0.3156,
       "shared_terms": [
         "bill",
         "reform",
@@ -14280,7 +14301,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.2778,
+      "score": 0.2779,
       "shared_terms": [
         "bill",
         "reform",
