@@ -46,17 +46,24 @@ Invariants, checked for any dataset string and any set of repo labels:
   reference's labels, on any string and on the strings `edge_dataset` builds
   around those prefixes, reads the labels of that same repo, and calls gh not
   at all for ca;
-- when `gh label list` fails, the block still files the issue, without labels.
+- when `gh label list` fails, the block still files the issue, without labels;
+- gh gets the title and the body exactly as the agent wrote them, under bash
+  and zsh, whatever quotes, apostrophes, `$`, backticks or parentheses they
+  hold;
+- for any country but us, uk and ca the block files nothing and says why on
+  stderr.
 """
 from __future__ import annotations
 
 import csv
 import os
+import re
 import shutil
 import string
 import subprocess
 import tempfile
 from functools import lru_cache
+from typing import NamedTuple
 from pathlib import Path
 
 import pytest
@@ -189,8 +196,9 @@ def swap_ascii_case(text: str) -> str:
 # Stand-in for gh, defined as a shell function ahead of the block: it records
 # the call (its argument count, then each argument, NUL-terminated), answers
 # `gh label list` (or fails it, when FAKE_GH_LABEL_LIST_FAILS is set), and
-# accepts `gh issue create`. A function saves a process per call, which keeps
-# the property tests fast.
+# accepts `gh issue create`, saving its standard input to FAKE_GH_BODY, where
+# `--body-file -` makes gh read the body. A function saves a process per call,
+# which keeps the property tests fast.
 FAKE_GH_FUNCTION = r"""gh() {
   printf '%s\0' "$#" "$@" >> "$FAKE_GH_LOG"
   case "$1 $2" in
@@ -200,7 +208,9 @@ FAKE_GH_FUNCTION = r"""gh() {
         return 1
       fi
       printf '%s' "$FAKE_GH_LABEL_LIST" ;;
-    "issue create") printf '%s\n' "https://github.com/PolicyEngine/stand-in/issues/1" ;;
+    "issue create")
+      cat > "$FAKE_GH_BODY"
+      printf '%s\n' "https://github.com/PolicyEngine/stand-in/issues/1" ;;
     *) printf 'stand-in gh: unexpected call: %s\n' "$*" >&2; return 2 ;;
   esac
 }
@@ -236,6 +246,21 @@ def fake_gh_dir(tmp_path_factory) -> Path:
     return directory
 
 
+# The block's placeholders. The agent writes the report's values in their
+# place; the tests write the country and dataset as references to the
+# environment, so any string reaches the block's own assignments.
+PLACEHOLDERS = ("'{country}'", "'{dataset_at_run}'", "{title}", "{body}")
+PLACEHOLDER_PATTERN = re.compile("|".join(re.escape(p) for p in PLACEHOLDERS))
+# A title and body that hold what reports hold: apostrophes, dollar amounts,
+# backticks, quotes and parentheses, balanced or not. bash 3.2 cannot parse a
+# quoted heredoc inside "$(...)" whose body holds an odd number of apostrophes.
+TITLE = """INVESTIGATE: CBO's $28B vs our $40B for `ctc_expansion` ("refundability")"""
+BODY = """We estimate $40B; CBO's score doesn't (it shows $28B.
+`$(touch /tmp/report-logger-ran-the-body)` and ${HOME} stay as text.
+EOF
+'single' "double" \\backslash\\ and a trailing backslash \\"""
+
+
 @lru_cache(maxsize=1)
 def issue_block() -> str:
     """Return report-logger's issue-filing bash block."""
@@ -243,7 +268,20 @@ def issue_block() -> str:
     section = text.split("### Open issue mechanics", 1)[1]
     block = section.split("```bash\n", 1)[1].split("```", 1)[0]
     assert "gh issue create" in block, "report-logger's issue-filing block no longer runs gh issue create"
+    for placeholder in PLACEHOLDERS:
+        assert block.count(placeholder) == 1, f"the block should hold {placeholder} once"
     return block
+
+
+def filled_block(title: str, body: str) -> str:
+    """Return the block with its placeholders filled in one pass."""
+    values = {
+        "'{country}'": '"$TEST_COUNTRY"',
+        "'{dataset_at_run}'": '"$TEST_DATASET"',
+        "{title}": title,
+        "{body}": body,
+    }
+    return PLACEHOLDER_PATTERN.sub(lambda match: values[match.group(0)], issue_block())
 
 
 def label_list_call(repo: str) -> list[str]:
@@ -255,42 +293,59 @@ def label_list_call(repo: str) -> list[str]:
     return ["label", "list", "--repo", repo, "--limit", "1000", "--json", "name", "--jq", ".[].name | ascii_downcase"]
 
 
-def run_issue_block(
+class BlockRun(NamedTuple):
+    calls: list[list[str]]  # the gh calls, in order
+    body: str | None  # what gh issue create read on standard input
+    stderr: str
+
+
+def run_block(
     shell: str,
     fake_gh_dir: Path,
     country: str,
     dataset: str,
     repo_labels,
     label_lookup_fails: bool = False,
-) -> list[list[str]]:
-    """Run report-logger's issue-filing block; return the gh calls it made, in order."""
+    title: str = TITLE,
+    body: str = BODY,
+) -> BlockRun:
+    """Run report-logger's issue-filing block with its placeholders filled."""
     lowered = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
     with tempfile.TemporaryDirectory() as tmp:
         log = Path(tmp) / "gh-calls"
+        body_file = Path(tmp) / "gh-body"
         env = {
             "PATH": f"{fake_gh_dir}{os.pathsep}{os.environ.get('PATH', '/usr/bin:/bin')}",
             "LC_ALL": "C",
-            "country": country,
-            "dataset": dataset,
+            "TEST_COUNTRY": country,
+            "TEST_DATASET": dataset,
             "FAKE_GH_LOG": str(log),
+            "FAKE_GH_BODY": str(body_file),
             "FAKE_GH_LABEL_LIST": "\n".join(name.translate(lowered) for name in repo_labels),
         }
         if label_lookup_fails:
             env["FAKE_GH_LABEL_LIST_FAILS"] = "1"
         result = subprocess.run(
-            [*SHELLS[shell], FAKE_GH_FUNCTION + issue_block()],
+            [*SHELLS[shell], FAKE_GH_FUNCTION + filled_block(title, body)],
             env=env,
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
         )
         assert result.returncode == 0, result.stderr
         fields = log.read_bytes().split(b"\0")[:-1] if log.exists() else []
+        read_body = body_file.read_bytes().decode("utf-8", "surrogateescape") if body_file.exists() else None
     calls = []
     while fields:
         argc = int(fields[0])
         calls.append([field.decode("utf-8", "surrogateescape") for field in fields[1 : 1 + argc]])
         fields = fields[1 + argc :]
-    return calls
+    return BlockRun(calls, read_body, result.stderr)
+
+
+def run_issue_block(shell, fake_gh_dir, country, dataset, repo_labels, label_lookup_fails=False):
+    """Run report-logger's issue-filing block; return the gh calls it made, in order."""
+    return run_block(shell, fake_gh_dir, country, dataset, repo_labels, label_lookup_fails).calls
 
 
 def gh_label_names(value: str) -> list[str]:
@@ -314,11 +369,12 @@ def filed_issue(calls: list[list[str]]) -> tuple[str, list[str]] | None:
     assert create[:2] == ["issue", "create"], f"the block's last gh call is not issue create: {calls}"
     args = create[2:]
     assert len(args) % 2 == 0, f"gh issue create got a flag without a value: {args}"
-    values = {"--repo": [], "--title": [], "--body": [], "--label": []}
+    values = {"--repo": [], "--title": [], "--body-file": [], "--label": []}
     for flag, value in zip(args[::2], args[1::2]):
         assert flag in values, f"gh issue create got an unexpected argument {flag!r}"
         values[flag].append(value)
-    assert all(len(values[flag]) == 1 for flag in ("--repo", "--title", "--body")), values
+    assert all(len(values[flag]) == 1 for flag in ("--repo", "--title", "--body-file")), values
+    assert values["--body-file"] == ["-"], "gh should read the body from standard input"
     repo = values["--repo"][0]
     assert before == [label_list_call(repo)], f"the block should read {repo}'s labels once first: {before}"
     return repo, [name for value in values["--label"] for name in gh_label_names(value)]
@@ -378,6 +434,16 @@ NEAR_MISSES = (
     "microcosm_uk_frs_x",
 )
 AT_IN_PATH_URI = "a@b/enhanced_frs_2024_25.h5@1.58.1"
+# Titles and bodies: any text but NUL, which no shell argument can hold, and a
+# line that ends the block's heredoc. A title is one line.
+report_text = st.characters(blacklist_categories=("Cs",), blacklist_characters="\x00")
+issue_title = st.text(
+    alphabet=st.characters(blacklist_categories=("Cs",), blacklist_characters="\x00\n"),
+    max_size=80,
+).filter(lambda title: title != "END_TITLE")
+issue_body = st.text(alphabet=report_text, max_size=300).filter(
+    lambda body: "END_BODY" not in body.split("\n")
+)
 
 
 def ascii_case_variants(name: str):
@@ -578,7 +644,54 @@ def test_report_logger_bash_matches_reference(shell, fake_gh_dir, country, datas
 @pytest.mark.parametrize("dataset", ["", "microcosm_uk_2024_25", ENHANCED_FRS_URI])
 def test_report_logger_bash_files_no_issue_for_ca(shell, fake_gh_dir, dataset):
     """For ca the block calls gh not at all, not even to list labels."""
-    assert run_issue_block(shell, fake_gh_dir, "ca", dataset, list(ISSUE_LABELS)) == []
+    run = run_block(shell, fake_gh_dir, "ca", dataset, list(ISSUE_LABELS))
+    assert run.calls == []
+    assert run.stderr == ""
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize("country", ["", "US", "UK", "CA", "fr", "us ", "canada"])
+def test_report_logger_bash_names_a_country_it_cannot_route(shell, fake_gh_dir, country):
+    """A country the block doesn't know files nothing, and stderr says so."""
+    run = run_block(shell, fake_gh_dir, country, "", list(ISSUE_LABELS))
+    assert run.calls == []
+    assert f"report-logger: no data repo for country '{country}'" in run.stderr
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize("country", ["us", "uk"])
+def test_report_logger_bash_hands_gh_a_reports_title_and_body_unchanged(shell, fake_gh_dir, country):
+    run = run_block(shell, fake_gh_dir, country, ENHANCED_FRS_URI, list(ISSUE_LABELS))
+    create = run.calls[-1]
+    assert create[create.index("--title") + 1] == TITLE
+    assert run.body == BODY + "\n"
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize(
+    "title",
+    [
+        pytest.param("  spaces at both ends  ", id="spaces"),
+        pytest.param("\ttabs at both ends\t", id="tabs"),
+        pytest.param("a backslash \\n and a trailing one \\", id="backslashes"),
+        pytest.param("", id="empty"),
+    ],
+)
+def test_report_logger_bash_keeps_a_titles_whitespace_and_backslashes(shell, fake_gh_dir, title):
+    run = run_block(shell, fake_gh_dir, "us", "", [], title=title)
+    create = run.calls[-1]
+    assert create[create.index("--title") + 1] == title
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@settings(max_examples=100, deadline=None)
+@given(title=issue_title, body=issue_body)
+def test_report_logger_bash_hands_gh_any_title_and_body_unchanged(shell, fake_gh_dir, title, body):
+    """The heredocs pass any title and body through, apart from their closing lines."""
+    run = run_block(shell, fake_gh_dir, "us", "", [], title=title, body=body)
+    create = run.calls[-1]
+    assert create[create.index("--title") + 1] == title
+    assert run.body == body + "\n"
 
 
 @pytest.mark.parametrize("shell", SHELL_PARAMS)

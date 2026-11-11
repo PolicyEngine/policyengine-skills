@@ -274,11 +274,16 @@ See archived report.
 ### Open issue mechanics
 
 ```bash
+# Fill in the report's values. Quoted heredocs below hand the title and body
+# to gh as written, with their quotes, apostrophes, $ and backticks intact.
+country='{country}'          # us, uk or ca: the reform's jurisdiction
+dataset='{dataset_at_run}'   # the archive's dataset_at_run; empty for the bundle default
+
 # Send the data issue to the repo that builds the dataset the run used.
-# `dataset` holds dataset_at_run: a dataset name or an hf:// URI. An empty
-# value routes as the bundle default. Cut at the last @ and keep the last path
-# segment, as policyengine.py's dataset_logical_name does before it drops the
-# file extension, which a prefix match never reads.
+# `dataset` holds a dataset name or an hf:// URI. An empty value routes as the
+# bundle default. Cut at the last @ and keep the last path segment, as
+# policyengine.py's dataset_logical_name does before it drops the file
+# extension, which a prefix match never reads.
 dataset_name=${dataset%@*}
 dataset_name=${dataset_name##*/}
 case "$country" in
@@ -292,8 +297,12 @@ case "$country" in
     esac
     ;;
   # policyengine.py's bundle holds data for us and uk only, so no repo takes
-  # a data issue for ca (or any other country); the archive keeps the report.
-  *) DATA_REPO="" ;;
+  # a data issue for ca; the archive keeps the report.
+  ca) DATA_REPO="" ;;
+  *)
+    printf "report-logger: no data repo for country '%s'; expected us, uk or ca\n" "$country" >&2
+    DATA_REPO=""
+    ;;
 esac
 
 if [ -n "$DATA_REPO" ]; then
@@ -309,20 +318,20 @@ if [ -n "$DATA_REPO" ]; then
     fi
   done
 
-  gh issue create \
-    --repo "$DATA_REPO" \
-    --title "{title}" \
-    --body "$(cat <<'EOF'
+  IFS= read -r ISSUE_TITLE <<'END_TITLE'
+{title}
+END_TITLE
+  gh issue create --repo "$DATA_REPO" --title "$ISSUE_TITLE" "${LABEL_ARGS[@]}" --body-file - <<'END_BODY'
 {body}
-EOF
-)" \
-    "${LABEL_ARGS[@]}"
+END_BODY
 fi
 ```
 
 gh looks up every `--label` name among the repo's labels before it creates the issue, and it stops without creating one when a name is missing (`could not add label: '<name>' not found`). So the block passes only the labels the repo has, and gh files the issue even in a repo with neither label. If `gh label list` fails, the block still files the issue, without the labels it could not confirm. Follow the same rule for any other issue you file, such as a structural one or an `issue:<repo>` destination.
 
-Capture the returned issue URL/number and append to the archive's `issues_opened` frontmatter list. When `DATA_REPO` is empty (`ca`), the block files nothing: list the issue under `skipped` in the output, with the reason.
+Replace `{country}`, `{dataset_at_run}`, `{title}` and `{body}` with the report's values, and keep the quotes and heredoc lines around them. gh reads the body from standard input (`--body-file -`), so the shell never parses the body's quotes or parentheses.
+
+Capture the returned issue URL/number and append to the archive's `issues_opened` frontmatter list. When `DATA_REPO` is empty (`ca`), the block files nothing: list the issue under `skipped` in the output, with the reason. For any other country the block prints an error and files nothing: report it under `errors`.
 
 **Confirm before opening** unless `--auto-confirm` is set — the user may want to edit the body or pick a different repo.
 

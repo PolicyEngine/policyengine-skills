@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-11T13:58:34.580772Z",
+  "generated_at": "2026-11-11T14:11:57.732710Z",
   "counts": {
     "skill": 24,
     "agent": 36,
@@ -3118,7 +3118,7 @@
           "analyze-policy"
         ]
       },
-      "body_length": 15432
+      "body_length": 16235
     },
     {
       "id": "neutrality-reviewer",
@@ -3223,7 +3223,7 @@
           "prior-scores"
         ]
       },
-      "body_length": 25888
+      "body_length": 25936
     },
     {
       "id": "audit-multizone",
