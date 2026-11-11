@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-11T05:52:18.460053Z",
+  "generated_at": "2026-11-11T06:04:14.475034Z",
   "counts": {
     "skill": 24,
     "agent": 36,
@@ -200,7 +200,6 @@
         "country-models"
       ],
       "target_repos": [
-        "policyengine-model",
         "policyengine-us"
       ],
       "functional_role": "workflow:encode",
@@ -235,9 +234,7 @@
         "complete",
         "country-models"
       ],
-      "target_repos": [
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": "workflow:fix",
       "functional_summary": "Codex-portable workflow: apply review findings to a PR.",
       "functional_scope": [
@@ -270,11 +267,11 @@
         "data-science"
       ],
       "target_repos": [
-        "policyengine-model",
+        "policyengine-us-data",
         "policyengine-api",
         "policyengine-uk",
-        "policyengine.py",
-        "policyengine-us"
+        "policyengine-us",
+        "policyengine.py"
       ],
       "functional_role": "analysis:python",
       "functional_summary": "Canonical Python interface: household calculations, population microsimulation, reform scoring, regional breakdowns via the policyengine package and Microcosm datasets.",
@@ -319,7 +316,7 @@
         "policyengine-api-v2",
         "policyengine-api",
         "policyengine-app",
-        "policyengine-us"
+        "policyengine-app-v2"
       ],
       "functional_role": "apps:api",
       "functional_summary": "Consuming and developing the PolicyEngine APIs: v1 production endpoints, api-v2 alpha.",
@@ -358,12 +355,9 @@
       ],
       "target_repos": [
         "policyengine-api-v2-alpha",
-        "policyengine-api-v2",
         "policyengine-app-v2",
         "policyengine-api",
-        "policyengine-app",
-        "policyengine-us",
-        "policyengine-canada"
+        "policyengine-app"
       ],
       "functional_role": "apps:app-v2",
       "functional_summary": "Developing policyengine-app-v2 (policyengine.org): architecture, conventions, API integration.",
@@ -509,9 +503,10 @@
         "dashboard-builder"
       ],
       "target_repos": [
-        "uk-autumn-budget-dashboard",
-        "marriage",
-        "policyengine-us"
+        "policyengine-household-api",
+        "policyengine-skills",
+        "policyengine-api",
+        "marriage"
       ],
       "functional_role": null,
       "functional_summary": null,
@@ -585,15 +580,17 @@
       ],
       "target_repos": [
         "calibration-diagnostics",
+        "policyengine-uk-data",
         "policyengine-us-data",
         "policyengine-core",
+        "policyengine-uk",
         "policyengine-us",
+        "policyengine.py",
         "microcalibrate",
         "microimpute",
         "microunit",
         "microdf",
-        "L0",
-        "policyengine-canada"
+        "L0"
       ],
       "functional_role": "data:microcosm",
       "functional_summary": "The Microcosm data stack: certified releases, dataset names, local-area filtering, fit/calibrate/L0 concepts.",
@@ -638,7 +635,7 @@
       ],
       "target_repos": [
         "policyengine-app",
-        "policyengine-us"
+        "policyengine-app-v2"
       ],
       "functional_role": "apps:design",
       "functional_summary": "Design tokens, @policyengine/ui-kit consumption, Tailwind v4 theme, chart styling, design-system migration.",
@@ -684,9 +681,7 @@
       "bundles": [
         "complete"
       ],
-      "target_repos": [
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": "process:bot",
       "functional_summary": "PolicyEngine GitHub bot operating rules (doom-loop avoidance).",
       "functional_scope": [
@@ -720,7 +715,6 @@
         "data-science"
       ],
       "target_repos": [
-        "policyengine-model",
         "policyengine-us"
       ],
       "functional_role": "domain:us-health",
@@ -757,7 +751,6 @@
       ],
       "target_repos": [
         "policyengine-canada",
-        "policyengine-model",
         "policyengine-core",
         "policyengine-api",
         "policyengine-uk",
@@ -824,8 +817,7 @@
         "policyengine-skills",
         "policyengine.py",
         "policyengine-us",
-        "policyengine-uk",
-        "policyengine-app"
+        "policyengine-app-v2"
       ],
       "functional_role": "process:meta",
       "functional_summary": "Maintaining this skills repo: structure, bundles, wrapper build, tests.",
@@ -874,11 +866,9 @@
         "complete"
       ],
       "target_repos": [
-        "calibration-diagnostics",
         "policyengine-us",
         "policyengine-uk",
-        "policyengine-canada",
-        "policyengine-app"
+        "policyengine-app-v2"
       ],
       "functional_role": "analysis:anchors",
       "functional_summary": "Published reform-score anchors and the scorekeepers registry for corroboration.",
@@ -921,10 +911,8 @@
       ],
       "target_repos": [
         "policyengine-app-v2",
-        "policyengine-app",
         "policyengine-uk",
-        "policyengine-us",
-        "atlas"
+        "policyengine-us"
       ],
       "functional_role": "process:research",
       "functional_summary": "Finding existing PolicyEngine research, posts, and proof points.",
@@ -977,9 +965,12 @@
         "data-science"
       ],
       "target_repos": [
+        "policyengine-app-v2",
+        "policyengine-skills",
         "policyengine-core",
+        "policyengine-app",
         "policyengine-us",
-        "policyengine-uk"
+        "policyengine.py"
       ],
       "functional_role": "process:standards",
       "functional_summary": "Development standards: uv, bun, ruff, towncrier changelogs, CI gates, PR discipline.",
@@ -1014,11 +1005,11 @@
       ],
       "target_repos": [
         "policyengine-app-v2",
+        "policyengine-api",
         "policyengine-app",
+        "policyengine-us",
         "policyengine.py",
-        "marriage",
-        "strategy",
-        "policyengine-us"
+        "strategy"
       ],
       "functional_role": "apps:tools",
       "functional_summary": "Building standalone tools and dashboards: Next.js + Tailwind v4 + ui-kit spec, multizone, Modal backends, Vercel deploys, charts.",
@@ -1067,7 +1058,6 @@
       ],
       "target_repos": [
         "policyengine-canada",
-        "policyengine-model",
         "policyengine-core",
         "policyengine-uk",
         "policyengine-us"
@@ -1109,7 +1099,6 @@
         "essential"
       ],
       "target_repos": [
-        "policyengine-model",
         "policyengine-us"
       ],
       "functional_role": "domain:us",
@@ -1154,7 +1143,6 @@
       ],
       "target_repos": [
         "policyengine-app-v2",
-        "policyengine-model",
         "policyengine-app",
         "policyengine-us",
         "policyengine-uk"
@@ -1212,9 +1200,10 @@
         "essential"
       ],
       "target_repos": [
-        "newsletters",
+        "policyengine-app-v2",
+        "policyengine-claude",
         "policyengine-us",
-        "policyengine-canada"
+        "newsletters"
       ],
       "functional_role": "process:editorial",
       "functional_summary": "Editorial style for posts, reports, PR descriptions: neutrality, quantitative language, sentence case.",
@@ -1246,9 +1235,7 @@
         "complete",
         "country-models"
       ],
-      "target_repos": [
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": "workflow:review",
       "functional_summary": "Codex-portable workflow: review a PolicyEngine PR including PDF-cited values.",
       "functional_scope": [
@@ -1287,9 +1274,7 @@
         "complete"
       ],
       "target_repos": [
-        "policyengine-app-v2",
-        "policyengine-app",
-        "policyengine-us"
+        "policyengine-app-v2"
       ],
       "functional_role": "impl:component-test-writer",
       "functional_summary": "Writes Vitest + RTL unit tests for ui-kit components covering CVA variants, props, a11y, interaction.",
@@ -1330,8 +1315,7 @@
         "oregon-kicker-refund",
         "policyengine-app-v2",
         "household-api-docs",
-        "keep-your-pay-act",
-        "policyengine-app"
+        "keep-your-pay-act"
       ],
       "functional_role": "review:multizone",
       "functional_summary": "Audits Next.js zone repo's basePath, assetPrefix, rewrites, cross-zone links, icon scoping.",
@@ -1378,9 +1362,7 @@
       "target_repos": [
         "calibration-diagnostics",
         "policyengine-us-data",
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
+        "policyengine-us"
       ],
       "functional_role": "analysis:calibration-diagnostics",
       "functional_summary": "Stage-6 diagnostic \u2014 hypothesizes which calibration targets are driving a microsim mismatch.",
@@ -1434,9 +1416,7 @@
       "bundles": [
         "complete"
       ],
-      "target_repos": [
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": "orchestrate:content",
       "functional_summary": "Generates marketing assets from blog posts \u2014 localized social images and LinkedIn/X post copy.",
       "functional_scope": [
@@ -1480,7 +1460,6 @@
         "country-models"
       ],
       "target_repos": [
-        "policyengine-model",
         "policyengine-core",
         "policyengine-us"
       ],
@@ -1535,7 +1514,6 @@
         "country-models"
       ],
       "target_repos": [
-        "policyengine-model",
         "policyengine-us"
       ],
       "functional_role": "impl:document-collector",
@@ -1590,10 +1568,7 @@
         "complete",
         "country-models"
       ],
-      "target_repos": [
-        "policyengine-model",
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": "impl:edge-cases",
       "functional_summary": "Generates YAML edge-case tests (thresholds, cliffs, division-by-zero, household variations).",
       "functional_scope": [
@@ -1650,7 +1625,6 @@
         "country-models"
       ],
       "target_repos": [
-        "policyengine-model",
         "policyengine-core",
         "policyengine-us"
       ],
@@ -1703,9 +1677,7 @@
         "complete",
         "country-models"
       ],
-      "target_repos": [
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": "orchestrate:issue-manager",
       "functional_summary": "Searches GitHub for existing program issues/PRs, creates with template if absent, returns numbers.",
       "functional_scope": [
@@ -1753,10 +1725,7 @@
         "complete",
         "country-models"
       ],
-      "target_repos": [
-        "policyengine-model",
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": null,
       "functional_summary": null,
       "functional_scope": [],
@@ -1801,8 +1770,8 @@
       ],
       "target_repos": [
         "policyengine-core",
-        "linecheck",
-        "policyengine-us"
+        "policyengine-us",
+        "linecheck"
       ],
       "functional_role": "orchestrate:pr-pusher",
       "functional_summary": "Adds changelog, lints/formats, scope-stages, smoke-tests, pushes branch, opens/updates draft PR.",
@@ -1856,7 +1825,6 @@
         "country-models"
       ],
       "target_repos": [
-        "policyengine-model",
         "policyengine-us"
       ],
       "functional_role": "review:program",
@@ -1908,10 +1876,7 @@
         "complete",
         "country-models"
       ],
-      "target_repos": [
-        "policyengine-model",
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": null,
       "functional_summary": null,
       "functional_scope": [],
@@ -1958,7 +1923,7 @@
         "country-models"
       ],
       "target_repos": [
-        "policyengine-model",
+        "policyengine-core",
         "policyengine-us"
       ],
       "functional_role": "impl:rules-engineer",
@@ -2014,11 +1979,7 @@
         "complete",
         "country-models"
       ],
-      "target_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
+      "target_repos": [],
       "functional_role": "country-models:structural-implementer",
       "functional_summary": "Implements the model extension behind a STRUCTURAL verdict: verifies the backlog issue against the enrolled statute (statute wins), baseline change with inertness guarantee + hand-verified boundary tests, draft PR to policyengine-{country}. Invoked by /implement-structural.",
       "functional_scope": [
@@ -2068,7 +2029,6 @@
         "country-models"
       ],
       "target_repos": [
-        "policyengine-model",
         "policyengine-us"
       ],
       "functional_role": "impl:test-creator",
@@ -2120,10 +2080,13 @@
         "dashboard-builder"
       ],
       "target_repos": [
+        "uk-spring-statement-2026",
+        "policyengine-core",
         "policyengine-api",
+        "snap-bbce-repeal",
         "policyengine-uk",
         "policyengine-us",
-        "policyengine-app"
+        "policyengine.py"
       ],
       "functional_role": "dashboard:backend-builder",
       "functional_summary": "Builds dashboard data layer \u2014 precomputed JSON, policyengine-api client, or Modal gateway+worker.",
@@ -2174,10 +2137,8 @@
       ],
       "target_repos": [
         "policyengine-api-v2",
-        "policyengine-api",
         "policyengine-us",
-        "policyengine-uk",
-        "policyengine-app"
+        "policyengine-app-v2"
       ],
       "functional_role": "dashboard:architecture-validator",
       "functional_summary": "Verifies dashboard uses Tailwind v4, App Router, ui-kit, bun, multi-zone config, Modal backend.",
@@ -2223,7 +2184,7 @@
       "target_repos": [
         "south-carolina-2026-tax-changes",
         "policyengine-us",
-        "policyengine-app"
+        "policyengine-app-v2"
       ],
       "functional_role": "dashboard:design-validator",
       "functional_summary": "Scans dashboard for hardcoded design values, old pe-* classes, Inter font, sentence-case, ui-kit usage.",
@@ -2274,7 +2235,8 @@
       ],
       "target_repos": [
         "policyengine-api",
-        "policyengine-app"
+        "policyengine-uk",
+        "policyengine-us"
       ],
       "functional_role": "dashboard:integrator",
       "functional_summary": "Wires frontend components to backend \u2014 request builders, transforms, React Query hooks, states.",
@@ -2322,8 +2284,7 @@
         "dashboard-builder"
       ],
       "target_repos": [
-        "policyengine-us",
-        "policyengine-app"
+        "policyengine-app-v2"
       ],
       "functional_role": "dashboard:plan-validator",
       "functional_summary": "Verifies implementation matches plan.yaml \u2014 contract, components, embedding, states, charts, zone.",
@@ -2371,11 +2332,12 @@
         "dashboard-builder"
       ],
       "target_repos": [
+        "south-carolina-2026-tax-changes",
         "calibration-diagnostics",
+        "policyengine-app-v2",
         "policyengine-api",
         "policyengine-uk",
-        "policyengine-us",
-        "policyengine-canada"
+        "policyengine-us"
       ],
       "functional_role": "dashboard:planner",
       "functional_summary": "Turns natural-language brief into structured plan.yaml \u2014 data pattern, variables, charts, zone_path.",
@@ -2435,11 +2397,12 @@
         "dashboard-builder"
       ],
       "target_repos": [
+        "policyengine-app-v2",
+        "policyengine-claude",
+        "policyengine-skills",
         "policyengine-api",
         "ctc-calculator",
-        "givecalc",
-        "policyengine-us",
-        "policyengine-app"
+        "givecalc"
       ],
       "functional_role": "dashboard:scaffold",
       "functional_summary": "Generates complete Next.js dashboard project from plan.yaml \u2014 config, vercel.json, CI, stubs.",
@@ -2495,9 +2458,9 @@
         "dashboard-builder"
       ],
       "target_repos": [
+        "south-carolina-2026-tax-changes",
         "policyengine-app-v2",
-        "policyengine-app",
-        "policyengine-us"
+        "policyengine-app"
       ],
       "functional_role": "dashboard:frontend-builder",
       "functional_summary": "Implements dashboard React components using ui-kit primitives, design tokens, Recharts, embedding.",
@@ -2548,9 +2511,10 @@
         "complete"
       ],
       "target_repos": [
+        "state-legislative-tracker",
+        "policyengine-us-data",
         "policyengine-us",
-        "policyengine-canada",
-        "policyengine-app"
+        "policyengine-api"
       ],
       "functional_role": "analysis:microsim-runner",
       "functional_summary": "Runs a PolicyEngine microsim via API or local install and returns budget+poverty+distribution impacts.",
@@ -2604,7 +2568,7 @@
       "target_repos": [
         "calibration-diagnostics",
         "policyengine-us",
-        "policyengine-canada"
+        "policyengine-api"
       ],
       "functional_role": null,
       "functional_summary": null,
@@ -2647,9 +2611,7 @@
         "analysis-tools",
         "complete"
       ],
-      "target_repos": [
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": "analysis:outcome-predictor",
       "functional_summary": "Independent reviewer: blind-predicts reform outcomes from provisions alone, then interrogates the microsim results - confirmed expectations, counterintuitive-but-correct notable findings (publication assets), and unexplained challenges (INVESTIGATE leads).",
       "functional_scope": [
@@ -2696,7 +2658,7 @@
         "policyengine-canada",
         "policyengine-uk",
         "policyengine-us",
-        "policyengine-app"
+        "policyengine-api"
       ],
       "functional_role": "analysis:parameter-locator",
       "functional_summary": "Maps a reform provision to PolicyEngine parameter YAML path(s) and emits a reform-dict snippet.",
@@ -2807,12 +2769,10 @@
       ],
       "target_repos": [
         "vance-harris-ctc-comparison",
+        "calibration-diagnostics",
         "ri-ctc-calculator",
-        "ctc-calculator",
         "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada",
-        "policyengine-app"
+        "policyengine-app-v2"
       ],
       "functional_role": "analysis:prior-scores-finder",
       "functional_summary": "Finds prior scored reforms \u2014 PolicyEngine first, then official fiscal notes, then think-tank analyses.",
@@ -2868,9 +2828,7 @@
         "country-models"
       ],
       "target_repos": [
-        "policyengine-model",
-        "policyengine-us",
-        "policyengine-canada"
+        "newsletters"
       ],
       "functional_role": "review:references",
       "functional_summary": "Read-only audit flagging missing/vague/wrong parameter references and value mismatches.",
@@ -2918,8 +2876,7 @@
         "complete"
       ],
       "target_repos": [
-        "policyengine-us",
-        "policyengine-uk"
+        "policyengine-us"
       ],
       "functional_role": "analysis:reform-classifier",
       "functional_summary": "Stage-2 gate \u2014 classifies a reform as parametric, structural, or not-possible based on provision verdicts.",
@@ -2973,8 +2930,7 @@
       "target_repos": [
         "calibration-diagnostics",
         "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
+        "policyengine-app-v2"
       ],
       "functional_role": "analysis:reform-comparator",
       "functional_summary": "Stage-5 comparator \u2014 checks microsim output against the prior-score anchor and returns PASS or INVESTIGATE.",
@@ -3025,8 +2981,7 @@
         "complete"
       ],
       "target_repos": [
-        "policyengine-us",
-        "policyengine-canada"
+        "policyengine-us"
       ],
       "functional_role": "analysis:reform-describer",
       "functional_summary": "Generates a mechanical, neutral, non-advocacy description of a reform plus structured provisions array.",
@@ -3076,11 +3031,15 @@
         "complete"
       ],
       "target_repos": [
+        "state-legislative-tracker",
+        "policyengine-uk-data",
+        "policyengine-us-data",
         "policyengine-app-v2",
         "policyengine-skills",
         "policyengine-app",
-        "CRM",
-        "policyengine-us"
+        "policyengine-uk",
+        "policyengine-us",
+        "CRM"
       ],
       "functional_role": "analysis:report-logger",
       "functional_summary": "Routes analyze-policy reports to archive + GitHub issue + tracker DB + research draft based on verdict; handles path resolution for plugin installs.",
@@ -3162,10 +3121,13 @@
         "complete"
       ],
       "target_repos": [
+        "state-legislative-tracker",
+        "calibration-diagnostics",
         "policyengine-app-v2",
-        "policyengine-app",
+        "policyengine-canada",
+        "policyengine-uk",
         "policyengine-us",
-        "policyengine-uk"
+        "CRM"
       ],
       "functional_role": "workflow:analyze-policy",
       "functional_summary": "End-to-end reform analysis \u2014 text \u2192 classify \u2192 priors \u2192 microsim \u2192 compare \u2192 diagnose calibration mismatch \u2192 log to archive/issue/draft.",
@@ -3233,8 +3195,7 @@
       "target_repos": [
         "policyengine-app-v2",
         "household-api-docs",
-        "keep-your-pay-act",
-        "policyengine-app"
+        "keep-your-pay-act"
       ],
       "functional_role": "workflow:audit-multizone",
       "functional_summary": "Audits a Next.js zone app for multi-zone compliance and reports PASS/FAIL findings.",
@@ -3282,8 +3243,7 @@
       ],
       "target_repos": [
         "strategy",
-        "policyengine-us",
-        "policyengine-app"
+        "policyengine-app-v2"
       ],
       "functional_role": "workflow:audit-seo",
       "functional_summary": "Audits a web app's SEO via four specialist agents, posts scored report optionally as GitHub issue.",
@@ -3412,10 +3372,9 @@
       ],
       "target_repos": [
         "south-carolina-2026-tax-changes",
-        "poverty-dashboard",
         "policyengine-us",
-        "CRM",
-        "policyengine-app"
+        "ACA-Calc",
+        "CRM"
       ],
       "functional_role": "workflow:create-dashboard",
       "functional_summary": "Multi-agent workflow plan->scaffold->backend+frontend->integrate->validate to create a dashboard repo.",
@@ -3565,10 +3524,7 @@
       ],
       "target_repos": [
         "policyengine-app-v2",
-        "policyengine-api",
-        "policyengine-app",
-        "policyengine-us",
-        "policyengine-canada"
+        "policyengine-api"
       ],
       "functional_role": "workflow:deploy-dashboard",
       "functional_summary": "Deploys a completed dashboard to Vercel+Modal, opens PR in app-v2 to wire host rewrites.",
@@ -3615,8 +3571,8 @@
         "country-models"
       ],
       "target_repos": [
-        "policyengine-us",
-        "policyengine-canada"
+        "policyengine-core",
+        "policyengine-us"
       ],
       "functional_role": "workflow:encode-reform",
       "functional_summary": "Multi-agent workflow to implement a contributed policy reform under gov/contrib/ with factory-pattern code.",
@@ -3665,9 +3621,7 @@
         "complete"
       ],
       "target_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-app"
+        "policyengine-app-v2"
       ],
       "functional_role": "workflow:content-generation",
       "functional_summary": "Generates branded social images and platform-optimized copy from a blog post, UK/US localized.",
@@ -3755,9 +3709,7 @@
         "complete"
       ],
       "target_repos": [
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada"
+        "policyengine-us"
       ],
       "functional_role": "workflow:implement-structural",
       "functional_summary": "Implements the model extension behind a STRUCTURAL /analyze-policy verdict - baseline parameter/variable change for enacted law (via country-models agents) or delegation to /encode-reform for proposals - opens the policyengine-{country} PR and records the pending re-run.",
@@ -3810,11 +3762,14 @@
       ],
       "target_repos": [
         "policyengine-api-v2",
-        "policyengine-api",
-        "marriage",
-        "policyengine-us",
+        "policyengine-app-v2",
+        "policyengine-skills",
         "policyengine-uk",
-        "policyengine-app"
+        "policyengine-us",
+        "policyengine.py",
+        "ACA-Calc",
+        "marriage",
+        "policyengine-api"
       ],
       "functional_role": "workflow:new-tool",
       "functional_summary": "Scaffolds a new standalone PolicyEngine interactive tool (Next.js + Tailwind + ui-kit + embedding).",
@@ -3858,16 +3813,13 @@
         "analysis-tools",
         "complete"
       ],
-      "target_repos": [
-        "policyengine-us",
-        "policyengine-uk"
-      ],
+      "target_repos": [],
       "functional_role": null,
       "functional_summary": null,
       "functional_scope": [],
       "functional_supersedes": [],
       "registry_status": "recommended",
-      "registry_owner": "Country model engineering",
+      "registry_owner": "PolicyEngine",
       "recommended_for": [
         "Use this command when you need to search the local analyses archive for prior /analyze-policy runs \u2014 did we already score this? What did we conclude?"
       ],
@@ -3894,16 +3846,13 @@
         "analysis-tools",
         "complete"
       ],
-      "target_repos": [
-        "policyengine-uk",
-        "policyengine-canada"
-      ],
+      "target_repos": [],
       "functional_role": null,
       "functional_summary": null,
       "functional_scope": [],
       "functional_supersedes": [],
       "registry_status": "recommended",
-      "registry_owner": "Country model engineering",
+      "registry_owner": "PolicyEngine",
       "recommended_for": [
         "Use this command when you need to consult external scorekeepers (JCT, CBO, OBR, IFS, PBO, CRFB, TPC, etc.) for a reform without running the microsim"
       ],
@@ -3939,11 +3888,9 @@
       ],
       "target_repos": [
         "state-legislative-tracker",
+        "policyengine-skills",
         "CRM",
-        "policyengine-us",
-        "policyengine-uk",
-        "policyengine-canada",
-        "policyengine-app"
+        "policyengine-app-v2"
       ],
       "functional_role": "workflow:reform-pipeline",
       "functional_summary": "Single-command reform pipeline: discover a modelable reform in a topic (news/newsroom/bill trackers), score+verify it via /analyze-policy incl. the data-calibration check, then route to the bill tracker or a dashboard build - confirmation-gated, never publishes unverified numbers.",
@@ -3983,9 +3930,7 @@
       "bundles": [
         "complete"
       ],
-      "target_repos": [
-        "policyengine-us"
-      ],
+      "target_repos": [],
       "functional_role": "config:claude-settings",
       "functional_summary": "Installs PolicyEngine-themed spinnerVerbs into ~/.claude/settings.json, preserving other settings.",
       "functional_scope": [
@@ -4018,8 +3963,7 @@
       ],
       "target_repos": [
         "policyengine-us",
-        "policyengine-uk",
-        "policyengine-app"
+        "policyengine-api"
       ],
       "functional_role": null,
       "functional_summary": null,
@@ -4062,8 +4006,6 @@
       ],
       "target_repos": [
         "policyengine-app-v2",
-        "policyengine-model",
-        "policyengine-app",
         "policyengine-uk",
         "policyengine-us"
       ],
@@ -15985,12 +15927,14 @@
       "pushed_at": "2026-05-26T15:02:25Z",
       "skills": [],
       "agents": [
-        "dashboard-design-validator"
+        "dashboard-design-validator",
+        "dashboard-planner",
+        "frontend-builder"
       ],
       "commands": [
         "create-dashboard"
       ],
-      "total": 2
+      "total": 4
     },
     {
       "name": "taxsim-emulator-demo-day-slides",
@@ -16290,10 +16234,12 @@
       "description": "",
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-27T22:37:59Z",
-      "skills": [],
+      "skills": [
+        "policyengine-cloud-costs"
+      ],
       "agents": [],
       "commands": [],
-      "total": 0
+      "total": 1
     },
     {
       "name": "policyengine-uk-event-2025",
@@ -16342,12 +16288,10 @@
       "description": "",
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-15T00:07:18Z",
-      "skills": [
-        "policyengine-cloud-costs"
-      ],
+      "skills": [],
       "agents": [],
       "commands": [],
-      "total": 1
+      "total": 0
     },
     {
       "name": "uk-autumn-budget-lifecycle",
@@ -16478,11 +16422,15 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-09T22:18:06Z",
       "skills": [],
-      "agents": [],
+      "agents": [
+        "microsim-runner",
+        "report-logger"
+      ],
       "commands": [
+        "analyze-policy",
         "reform-pipeline"
       ],
-      "total": 1
+      "total": 4
     },
     {
       "name": "Autumn-budget-local-area",
@@ -16610,9 +16558,11 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-15T00:04:03Z",
       "skills": [],
-      "agents": [],
+      "agents": [
+        "backend-builder"
+      ],
       "commands": [],
-      "total": 0
+      "total": 1
     },
     {
       "name": "2024-election-dashboard",
@@ -16637,17 +16587,19 @@
       "pushed_at": "2026-05-26T15:48:10Z",
       "skills": [
         "policyengine-calibration-diagnostics",
-        "policyengine-data",
-        "policyengine-prior-scores"
+        "policyengine-data"
       ],
       "agents": [
         "calibration-diagnostics",
         "dashboard-planner",
         "model-corroborator",
+        "prior-scores-finder",
         "reform-comparator"
       ],
-      "commands": [],
-      "total": 7
+      "commands": [
+        "analyze-policy"
+      ],
+      "total": 8
     },
     {
       "name": "gov-canada-presentation",
@@ -16919,10 +16871,14 @@
       "description": "Repository creating UK microdata.",
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-26T12:41:33Z",
-      "skills": [],
-      "agents": [],
+      "skills": [
+        "policyengine-data"
+      ],
+      "agents": [
+        "report-logger"
+      ],
       "commands": [],
-      "total": 0
+      "total": 2
     },
     {
       "name": "policyengine-uk-rust",
@@ -16946,13 +16902,16 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-28T01:09:25Z",
       "skills": [
+        "policyengine",
         "policyengine-data"
       ],
       "agents": [
-        "calibration-diagnostics"
+        "calibration-diagnostics",
+        "microsim-runner",
+        "report-logger"
       ],
       "commands": [],
-      "total": 2
+      "total": 5
     },
     {
       "name": "scotland-mansion-tax",
@@ -17028,8 +16987,7 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-28T13:59:39Z",
       "skills": [
-        "policyengine-api",
-        "policyengine-app"
+        "policyengine-api"
       ],
       "agents": [
         "dashboard-architecture-validator"
@@ -17037,7 +16995,7 @@
       "commands": [
         "new-tool"
       ],
-      "total": 4
+      "total": 3
     },
     {
       "name": "policyengine-app-v2",
@@ -17048,25 +17006,42 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-28T13:10:20Z",
       "skills": [
+        "policyengine-api",
         "policyengine-app",
+        "policyengine-design",
+        "policyengine-plugin-maintenance",
+        "policyengine-prior-scores",
         "policyengine-research-lookup",
+        "policyengine-standards",
         "policyengine-tools",
-        "policyengine-user-guide"
+        "policyengine-user-guide",
+        "policyengine-writing"
       ],
       "agents": [
         "component-test-writer",
         "multizone-validator",
+        "dashboard-architecture-validator",
+        "dashboard-design-validator",
+        "dashboard-plan-validator",
+        "dashboard-planner",
+        "dashboard-scaffold",
         "frontend-builder",
+        "prior-scores-finder",
+        "reform-comparator",
         "report-logger"
       ],
       "commands": [
         "analyze-policy",
         "audit-multizone",
+        "audit-seo",
         "create-new-component",
         "deploy-dashboard",
+        "generate-content",
+        "new-tool",
+        "reform-pipeline",
         "write-tests"
       ],
-      "total": 13
+      "total": 30
     },
     {
       "name": "policyengine-canada",
@@ -17077,37 +17052,20 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-04-28T00:35:24Z",
       "skills": [
-        "policyengine-app",
         "policyengine-calibration-diagnostics",
         "policyengine-canada",
-        "policyengine-data",
         "policyengine-model-development",
-        "policyengine-prior-scores",
-        "policyengine-uk",
-        "policyengine-writing"
+        "policyengine-uk"
       ],
       "agents": [
-        "calibration-diagnostics",
-        "structural-implementer",
-        "dashboard-planner",
-        "microsim-runner",
-        "model-corroborator",
         "parameter-locator",
-        "policy-text-researcher",
-        "prior-scores-finder",
-        "reference-validator",
-        "reform-comparator",
-        "reform-describer"
+        "policy-text-researcher"
       ],
       "commands": [
-        "deploy-dashboard",
-        "encode-reform",
-        "household-calc",
-        "implement-structural",
-        "prior-scores",
-        "reform-pipeline"
+        "analyze-policy",
+        "household-calc"
       ],
-      "total": 25
+      "total": 8
     },
     {
       "name": "policyengine-claude",
@@ -17118,11 +17076,14 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-23T14:49:42Z",
       "skills": [
-        "policyengine-plugin-maintenance"
+        "policyengine-plugin-maintenance",
+        "policyengine-writing"
       ],
-      "agents": [],
+      "agents": [
+        "dashboard-scaffold"
+      ],
       "commands": [],
-      "total": 1
+      "total": 3
     },
     {
       "name": "policyengine-skills",
@@ -17133,13 +17094,19 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-23T14:49:32Z",
       "skills": [
-        "policyengine-plugin-maintenance"
+        "policyengine-cloud-costs",
+        "policyengine-plugin-maintenance",
+        "policyengine-standards"
       ],
       "agents": [
+        "dashboard-scaffold",
         "report-logger"
       ],
-      "commands": [],
-      "total": 2
+      "commands": [
+        "new-tool",
+        "reform-pipeline"
+      ],
+      "total": 7
     },
     {
       "name": "policyengine-slides",
@@ -17363,31 +17330,10 @@
       "description": "",
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-26T14:16:28Z",
-      "skills": [
-        "encode-policy-v2",
-        "policyengine",
-        "policyengine-healthcare",
-        "policyengine-model-development",
-        "policyengine-uk",
-        "policyengine-us",
-        "policyengine-user-guide"
-      ],
-      "agents": [
-        "ci-fixer",
-        "document-collector",
-        "edge-case-generator",
-        "implementation-validator",
-        "model-worker",
-        "program-reviewer",
-        "review-worker",
-        "rules-engineer",
-        "test-creator",
-        "reference-validator"
-      ],
-      "commands": [
-        "write-tests"
-      ],
-      "total": 18
+      "skills": [],
+      "agents": [],
+      "commands": [],
+      "total": 0
     },
     {
       "name": "sc-h3492-eitc-calc",
@@ -17475,10 +17421,14 @@
       "agents": [
         "ci-fixer",
         "implementation-validator",
-        "pr-pusher"
+        "pr-pusher",
+        "rules-engineer",
+        "backend-builder"
       ],
-      "commands": [],
-      "total": 7
+      "commands": [
+        "encode-reform"
+      ],
+      "total": 10
     },
     {
       "name": "policyengine-demo",
@@ -17503,10 +17453,8 @@
       "pushed_at": "2026-05-17T12:38:05Z",
       "skills": [],
       "agents": [],
-      "commands": [
-        "create-dashboard"
-      ],
-      "total": 1
+      "commands": [],
+      "total": 0
     },
     {
       "name": "ri-ctc-calculator",
@@ -17639,21 +17587,26 @@
         "policyengine",
         "policyengine-api",
         "policyengine-app",
-        "policyengine-model-development"
+        "policyengine-cloud-costs",
+        "policyengine-model-development",
+        "policyengine-tools"
       ],
       "agents": [
         "backend-builder",
-        "dashboard-architecture-validator",
         "dashboard-integrator",
         "dashboard-planner",
-        "dashboard-scaffold"
+        "dashboard-scaffold",
+        "microsim-runner",
+        "model-corroborator",
+        "parameter-locator"
       ],
       "commands": [
         "create-pr",
         "deploy-dashboard",
-        "new-tool"
+        "new-tool",
+        "text-to-reform"
       ],
-      "total": 12
+      "total": 17
     },
     {
       "name": "policyengine-app",
@@ -17667,42 +17620,19 @@
         "policyengine-api",
         "policyengine-app",
         "policyengine-design",
-        "policyengine-plugin-maintenance",
-        "policyengine-prior-scores",
-        "policyengine-research-lookup",
+        "policyengine-standards",
         "policyengine-tools",
         "policyengine-user-guide"
       ],
       "agents": [
-        "component-test-writer",
-        "multizone-validator",
-        "backend-builder",
-        "dashboard-architecture-validator",
-        "dashboard-design-validator",
-        "dashboard-integrator",
-        "dashboard-plan-validator",
-        "dashboard-scaffold",
         "frontend-builder",
-        "microsim-runner",
-        "parameter-locator",
-        "prior-scores-finder",
         "report-logger"
       ],
       "commands": [
-        "analyze-policy",
-        "audit-multizone",
-        "audit-seo",
-        "create-dashboard",
         "create-new-component",
-        "create-pr",
-        "deploy-dashboard",
-        "generate-content",
-        "new-tool",
-        "reform-pipeline",
-        "text-to-reform",
-        "write-tests"
+        "create-pr"
       ],
-      "total": 33
+      "total": 10
     },
     {
       "name": "policyengine.dev",
@@ -17726,9 +17656,11 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-09T16:08:51Z",
       "skills": [],
-      "agents": [],
+      "agents": [
+        "backend-builder"
+      ],
       "commands": [],
-      "total": 0
+      "total": 1
     },
     {
       "name": "ssi-asset-limits",
@@ -17872,40 +17804,29 @@
         "policyengine",
         "policyengine-calibration-diagnostics",
         "policyengine-canada",
+        "policyengine-data",
         "policyengine-model-development",
-        "policyengine-plugin-maintenance",
         "policyengine-prior-scores",
         "policyengine-research-lookup",
-        "policyengine-standards",
         "policyengine-uk",
         "policyengine-user-guide"
       ],
       "agents": [
-        "calibration-diagnostics",
-        "structural-implementer",
         "backend-builder",
-        "dashboard-architecture-validator",
+        "dashboard-integrator",
         "dashboard-planner",
         "parameter-locator",
         "policy-text-researcher",
-        "prior-scores-finder",
-        "reform-classifier",
-        "reform-comparator"
+        "report-logger"
       ],
       "commands": [
         "analyze-policy",
         "create-pr",
-        "generate-content",
         "household-calc",
-        "implement-structural",
         "new-tool",
-        "prior-analysis",
-        "prior-scores",
-        "reform-pipeline",
-        "text-to-reform",
         "write-tests"
       ],
-      "total": 31
+      "total": 20
     },
     {
       "name": "policyengine-us",
@@ -17917,16 +17838,10 @@
       "pushed_at": "2026-05-28T13:26:48Z",
       "skills": [
         "encode-policy-v2",
-        "fix-pr",
         "policyengine",
-        "policyengine-api",
-        "policyengine-app",
         "policyengine-calibration-diagnostics",
         "policyengine-canada",
-        "policyengine-cloud-costs",
         "policyengine-data",
-        "policyengine-design",
-        "policyengine-github-agent",
         "policyengine-healthcare",
         "policyengine-model-development",
         "policyengine-plugin-maintenance",
@@ -17937,39 +17852,27 @@
         "policyengine-uk",
         "policyengine-us",
         "policyengine-user-guide",
-        "policyengine-writing",
-        "review-program"
+        "policyengine-writing"
       ],
       "agents": [
-        "component-test-writer",
         "calibration-diagnostics",
-        "content-orchestrator",
         "ci-fixer",
         "document-collector",
-        "edge-case-generator",
         "implementation-validator",
-        "issue-manager",
-        "model-worker",
         "pr-pusher",
         "program-reviewer",
-        "review-worker",
         "rules-engineer",
-        "structural-implementer",
         "test-creator",
         "backend-builder",
         "dashboard-architecture-validator",
         "dashboard-design-validator",
-        "dashboard-plan-validator",
+        "dashboard-integrator",
         "dashboard-planner",
-        "dashboard-scaffold",
-        "frontend-builder",
         "microsim-runner",
         "model-corroborator",
-        "outcome-predictor",
         "parameter-locator",
         "policy-text-researcher",
         "prior-scores-finder",
-        "reference-validator",
         "reform-classifier",
         "reform-comparator",
         "reform-describer",
@@ -17977,24 +17880,18 @@
       ],
       "commands": [
         "analyze-policy",
-        "audit-seo",
         "audit-state-tax",
         "backdate-program",
         "create-dashboard",
         "create-pr",
-        "deploy-dashboard",
         "encode-reform",
-        "generate-content",
         "household-calc",
         "implement-structural",
         "new-tool",
-        "prior-analysis",
-        "reform-pipeline",
-        "setup-verbs",
         "text-to-reform",
         "write-tests"
       ],
-      "total": 73
+      "total": 49
     },
     {
       "name": "policyengine-ve",
@@ -18019,12 +17916,18 @@
       "pushed_at": "2026-05-28T12:37:26Z",
       "skills": [
         "policyengine",
+        "policyengine-data",
         "policyengine-plugin-maintenance",
+        "policyengine-standards",
         "policyengine-tools"
       ],
-      "agents": [],
-      "commands": [],
-      "total": 3
+      "agents": [
+        "backend-builder"
+      ],
+      "commands": [
+        "new-tool"
+      ],
+      "total": 7
     },
     {
       "name": "tanf-calculator",
@@ -18088,11 +17991,10 @@
       "pushed_at": "2026-05-15T00:02:55Z",
       "skills": [],
       "agents": [
-        "dashboard-scaffold",
-        "prior-scores-finder"
+        "dashboard-scaffold"
       ],
       "commands": [],
-      "total": 2
+      "total": 1
     },
     {
       "name": "github-wrapped",
@@ -18369,9 +18271,11 @@
       "skills": [
         "policyengine-writing"
       ],
-      "agents": [],
+      "agents": [
+        "reference-validator"
+      ],
       "commands": [],
-      "total": 1
+      "total": 2
     },
     {
       "name": "plugin-blog",
@@ -18504,8 +18408,11 @@
       "pushed_at": "2026-05-20T16:11:04Z",
       "skills": [],
       "agents": [],
-      "commands": [],
-      "total": 0
+      "commands": [
+        "create-dashboard",
+        "new-tool"
+      ],
+      "total": 2
     },
     {
       "name": "givecalc",
@@ -18531,14 +18438,13 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-22T19:38:41Z",
       "skills": [
-        "policyengine-cloud-costs",
-        "policyengine-tools"
+        "policyengine-cloud-costs"
       ],
       "agents": [],
       "commands": [
         "new-tool"
       ],
-      "total": 3
+      "total": 2
     },
     {
       "name": "pritzker",
@@ -18606,12 +18512,10 @@
       "description": "",
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-10T08:31:38Z",
-      "skills": [
-        "policyengine-research-lookup"
-      ],
+      "skills": [],
       "agents": [],
       "commands": [],
-      "total": 1
+      "total": 0
     },
     {
       "name": "pulse",
@@ -18652,10 +18556,11 @@
         "report-logger"
       ],
       "commands": [
+        "analyze-policy",
         "create-dashboard",
         "reform-pipeline"
       ],
-      "total": 3
+      "total": 4
     },
     {
       "name": "L0",

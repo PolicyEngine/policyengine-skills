@@ -39,6 +39,7 @@ import difflib
 import json
 import math
 import re
+import string
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -363,10 +364,9 @@ def build_known_repos() -> list[tuple[str, str]]:
         for r in inventory:
             kind = classify_repo(r["name"], r.get("description", ""))
             out.append((r["name"], kind))
-        # Sort longest-name first so substring matching doesn't shadow
-        # longer names (e.g. "policyengine-us" vs "policyengine-us-data").
-        # Break ties by name, so the inventory file's order never reaches
-        # target_repos, known_repos or repo_coverage.
+        # Longest name first, ties broken by name: target_repos, known_repos
+        # and repo_coverage list repos in this order, so the inventory file's
+        # order never reaches them.
         out.sort(key=lambda x: (-len(x[0]), x[0]))
         return out
     return [(r, k) for r, k in REPO_KIND_OVERRIDES.items()]
@@ -378,36 +378,155 @@ REPO_KIND_BY_NAME = {r: k for r, k in KNOWN_REPO_KINDS}
 
 
 # Routing slugs (in skill descriptions / categories) that don't literally
-# spell out the repo name but still imply it.
+# spell out the repo name but still imply it. An alias in capitals counts
+# only in capitals, and any other alias in any case (RepoTerm.ignores_case).
+# The web app at policyengine.org is policyengine-app-v2 (see the
+# policyengine-app skill), and api.policyengine.org serves policyengine-api.
 REPO_ALIASES: dict[str, list[str]] = {
     "policyengine-us": ["TANF", "SNAP", "EITC", "CTC", "SSI", "WIC", "Section 8", "Medicaid"],
     "policyengine-uk": ["Universal Credit", "PIP", "DLA", "JSA", "ESA"],
     "policyengine-canada": ["CCB", "GIS", "OAS", "CPP", "CWB", "Canada Child Benefit"],
-    "policyengine-app": ["policyengine.org", "app-v2", "frontend"],
-    "policyengine-api": ["REST API", "Flask"],
+    "policyengine-app-v2": ["policyengine.org", "app-v2"],
+    "policyengine-api": ["api.policyengine.org", "REST API", "Flask"],
 }
+
+# Lowercases A-Z and nothing else, so a folded text keeps every index.
+ASCII_LOWER = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
+
+
+def continues_word(char: str) -> bool:
+    """Whether ``char`` is a letter, a digit or an underscore (regex ``\\w``)."""
+    return char.isalnum() or char == "_"
+
+
+@dataclass(frozen=True)
+class RepoTerm:
+    """A string that names a repo outright, or implies it as an alias."""
+
+    text: str
+    repo: str
+    alias: bool
+
+    @property
+    def ignores_case(self) -> bool:
+        """Whether this term counts whatever the case of its ASCII letters.
+
+        A term in capitals is an acronym and counts only in capitals: in
+        lowercase, "PIP" is the Python installer ("uv pip install"), "CPP" a
+        C++ file extension and "SNAP" the start of "snap-back". Any other term
+        counts in any case: GitHub resolves repo names in any case ("aca-calc"
+        is ACA-Calc), prose capitalizes them ("PolicyEngine-US"), and trigger
+        lists write phrases in lowercase ("universal credit").
+        """
+        return not self.text.isupper()
+
+    @property
+    def is_word(self) -> bool:
+        """Whether a hyphen or a dot next to this term leaves it whole.
+
+        Repo names are slugs, and so are aliases with a hyphen or a dot in
+        them ("app-v2", "api.policyengine.org"): a hyphen next to one makes a
+        longer slug, and a dot before one makes a hostname or a module path.
+        Any other alias is a word or a phrase, which a hyphen joins into a
+        compound ("SNAP-eligible", "non-SSI") that still names it.
+        """
+        return self.alias and not any(char in self.text for char in "-.")
+
+    def stands_alone(self, text: str, start: int, end: int) -> bool:
+        """Whether ``text[start:end]`` is a whole token, not part of a longer one."""
+        before = text[start - 1] if start else ""
+        after = text[end] if end < len(text) else ""
+        if continues_word(before) or continues_word(after):
+            return False
+        # A dot may follow a slug (the end of a sentence, "policyengine-us.git").
+        return self.is_word or (before not in ("-", ".") and after != "-")
+
+    def spans(self, text: str, folded: str):
+        """Yield ``(start, end)`` for each place this term stands alone in ``text``.
+
+        ``folded`` is ``text.translate(ASCII_LOWER)``.
+        """
+        if self.ignores_case:
+            haystack, needle = folded, self.text.translate(ASCII_LOWER)
+        else:
+            haystack, needle = text, self.text
+        start = haystack.find(needle)
+        while start != -1:
+            end = start + len(needle)
+            if self.stands_alone(text, start, end):
+                yield start, end
+            start = haystack.find(needle, start + 1)
+
+
+class RepoMatcher:
+    """Find the repos a text names outright, or implies through an alias.
+
+    Reading left to right, the matcher takes, at each position, the longest
+    repo name or alias that stands there as a whole token
+    (``RepoTerm.stands_alone``), then carries on after it. So
+    "policyengine-us-data" counts as that repo and never as policyengine-us,
+    and "SSI" in "missing", "PIP" in "pipeline" and the policyengine-model
+    repo in the skill name "policyengine-model-development" don't count at
+    all. A repo's import name, its name with underscores for hyphens
+    ("policyengine_us"), names it too. ``RepoTerm.ignores_case`` sets which
+    terms count in any case.
+
+    The result lists each repo once: the repos named outright, in ``repos``
+    order, then the repos that only an alias implies, in ``aliases`` order.
+    """
+
+    def __init__(self, repos: list[str], aliases: dict[str, list[str]]):
+        self.repos = list(dict.fromkeys(repos))
+        self.alias_repos = list(aliases)
+        terms = {repo: RepoTerm(repo, repo, alias=False) for repo in self.repos}
+        for repo in self.repos:
+            import_name = repo.replace("-", "_")
+            terms.setdefault(import_name, RepoTerm(import_name, repo, alias=False))
+        taken = {text.casefold() for text in terms}
+        for repo, texts in aliases.items():
+            for text in texts:
+                if not text or text.casefold() in taken:
+                    raise ValueError(
+                        f"alias {text!r} for {repo} is empty, or already a repo "
+                        "name or an alias (ignoring case)"
+                    )
+                taken.add(text.casefold())
+                terms[text] = RepoTerm(text, repo, alias=True)
+        if "" in terms:
+            raise ValueError("a repo name is empty")
+        self.terms = sorted(terms.values(), key=lambda term: (-len(term.text), term.text))
+
+    def __call__(self, text: str) -> list[str]:
+        folded = text.translate(ASCII_LOWER)
+        found = sorted(
+            (start, start - end, index)
+            for index, term in enumerate(self.terms)
+            for start, end in term.spans(text, folded)
+        )
+        named: set[str] = set()
+        implied: set[str] = set()
+        reached = 0
+        for start, minus_length, index in found:
+            if start < reached:
+                continue  # inside a longer term that starts earlier
+            term = self.terms[index]
+            (implied if term.alias else named).add(term.repo)
+            reached = start - minus_length
+        return [repo for repo in self.repos if repo in named] + [
+            repo for repo in self.alias_repos if repo in implied and repo not in named
+        ]
+
+
+REPO_MATCHER = RepoMatcher(KNOWN_REPOS, REPO_ALIASES)
 
 
 def infer_target_repos(name: str, description: str, body: str, category: str) -> list[str]:
-    """Return the PolicyEngine GitHub repos this artifact targets."""
-    haystack = f"{name}\n{description}\n{body[:6000]}\n{category}"
-    found: list[str] = []
-    seen: set[str] = set()
-    for repo in KNOWN_REPOS:
-        if repo in seen:
-            continue
-        if re.search(rf"\b{re.escape(repo)}\b", haystack):
-            found.append(repo)
-            seen.add(repo)
-    for repo, aliases in REPO_ALIASES.items():
-        if repo in seen:
-            continue
-        for alias in aliases:
-            if alias.lower() in haystack.lower():
-                found.append(repo)
-                seen.add(repo)
-                break
-    return found
+    """Return the PolicyEngine GitHub repos this artifact targets.
+
+    Reads the whole body. A cut-off would let text added near the top of a
+    long skill push a later mention past it, and drop that repo.
+    """
+    return REPO_MATCHER(f"{name}\n{description}\n{body}\n{category}")
 
 
 def relpath(path: Path) -> str:
@@ -902,6 +1021,7 @@ def owner_for_artifact(art: Artifact) -> str:
         "technical-patterns",
         "model-development",
         "workflows",
+        "country-models",
     } or scope & {
         "policyengine-us",
         "policyengine-uk",
