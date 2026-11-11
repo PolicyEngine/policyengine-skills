@@ -27,7 +27,7 @@ Invariants, checked for any dataset string:
 - only a name that starts with the exact, lower-case `enhanced_frs_` or
   `frs_` goes to policyengine-uk-data;
 - report-logger's bash and `resolve_issue_repo` agree for `us` and `uk`, on
-  any string and on strings built around those prefixes.
+  any string and on the strings `edge_dataset` builds around those prefixes.
 """
 from __future__ import annotations
 
@@ -162,8 +162,9 @@ repo_path = st.text(
     alphabet=st.characters(min_codepoint=33, max_codepoint=126),
     max_size=60,
 )
-# Strings built around the rule's boundary: the two prefixes, their near misses
-# in case and spelling, URI heads, revisions and stray "@" and "/".
+# `edge_dataset` builds strings around the rule's boundary from the two
+# prefixes, their near misses in case and spelling, URI heads, revisions and
+# stray "@" and "/".
 edge_name = st.builds(
     lambda prefix, rest: prefix + rest,
     st.sampled_from(
@@ -178,8 +179,9 @@ edge_dataset = st.builds(
     edge_name,
     st.sampled_from(["", ".h5", "@1.58.1", ".h5@refs/pr/3", "@a@b", "/"]),
 )
-# Names that start like an Enhanced FRS or FRS file but don't match the exact,
-# lower-case prefix, plus a path whose "@" sits before the revision's.
+# Names that resemble an Enhanced FRS or FRS file name in case or spelling, or
+# hold "frs_" past the start, so they miss the exact, lower-case prefix; then a
+# path whose "@" sits before the revision's.
 NEAR_MISSES = (
     "frs",
     "frs2024_25",

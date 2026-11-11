@@ -17,7 +17,7 @@ Loads the `policyengine-calibration-diagnostics` skill for the full sensitivity 
 - `reform` (provisions + reform-dict)
 - `jurisdiction`
 - `anchor` (the prior-scores anchor for context)
-- `dataset` (the microsim result's `dataset`: the certified default's name, or the Enhanced FRS or FRS file a UK local run named)
+- `dataset` (the microsim result's `dataset`: the name of the dataset the run loaded, the certified default unless a local run named another)
 
 ## Process
 
