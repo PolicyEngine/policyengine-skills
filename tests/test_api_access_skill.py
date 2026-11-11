@@ -611,3 +611,30 @@ def test_planner_household_page_calculates_custom_inputs_through_the_dashboard_a
     assert "spawn-and-poll" not in household_page
     assert "@policyengine/api-client" in household_page
     assert "`axes`" in household_page
+
+
+def test_data_pattern_rule_fixes_gaps_in_the_model_or_the_public_api_first() -> None:
+    # A structural reform becomes a contributed reform in the country package,
+    # switched on by a parameter, so the dashboard API can run it once the
+    # Public API's model includes it; a general gap is a change to the Public API.
+    patterns = single_spaced(section_text(TOOLS_SKILL_FILE, "## Data and backend patterns"))
+    assert "contributed reform" in patterns
+    assert "`gov.contrib" in patterns
+    assert "a change to the Public API" in patterns
+
+
+def test_a_server_for_other_work_keeps_calculations_on_the_dashboard_api() -> None:
+    # ACA-Calc's LLM explanation or an emailed CSV needs a server, but not one
+    # that runs PolicyEngine.
+    patterns = single_spaced(section_text(TOOLS_SKILL_FILE, "## Data and backend patterns"))
+    assert "other than PolicyEngine results" in patterns
+    assert "doesn't move its PolicyEngine calculations off the dashboard API" in patterns
+
+
+def test_a_feature_over_the_budget_is_precomputed_before_it_gets_a_backend() -> None:
+    text = single_spaced(skill_text())
+    over_budget = text.split("can't fit this budget", 1)
+    assert len(over_budget) == 2, "the skill must say what to do with a feature over the budget"
+    advice = over_budget[1].split(". ", 1)[0]
+    assert "precompute" in advice and "own backend" in advice, advice
+    assert advice.index("precompute") < advice.index("own backend"), advice
