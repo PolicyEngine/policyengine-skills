@@ -2,7 +2,7 @@
   "name": "api-development",
   "description": "API development - Flask endpoints, caching, services, and integration patterns",
   "category": "development",
-  "version": "4.0.3",
+  "version": "4.1.1",
   "keywords": [
     "api",
     "flask",
@@ -23,6 +23,7 @@
     "./skills/policyengine-uk",
     "./skills/policyengine-design",
     "./skills/policyengine-standards",
+    "./skills/policyengine-cloud-costs",
     "./skills/policyengine-writing",
     "./skills/fix-pr"
   ],

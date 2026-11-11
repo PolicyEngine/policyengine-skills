@@ -4,11 +4,11 @@ description: |
   Load before writing PolicyEngine-UK code — UK household calculations, income tax (incl.
   Scottish and Welsh variations), National Insurance, Universal Credit and other benefits,
   poverty and reform analysis. Covers the person/benunit/household entity model (UK has NO
-  tax_unit), pe.uk.calculate_household, BHC vs AHC poverty, ITL1 regions, enhanced_frs_2024_25
+  tax_unit), pe.uk.calculate_household, BHC vs AHC poverty, ITL1 regions, microcosm_uk_2024_25
   data, and the policyengine_uk Scenario surface for country-model development.
-  Triggers: Microcosm (formerly Populace), policyengine uk, pe.uk, Universal Credit, child benefit, pension credit, housing
+  Triggers: Microcosm, policyengine uk, pe.uk, Universal Credit, child benefit, pension credit, housing
   benefit, council tax, income tax, national insurance, personal allowance, Scottish income
-  tax, Welsh rate, benunit, hbai, in_poverty_bhc, in_poverty_ahc, ITL1 region, populace_uk,
+  tax, Welsh rate, benunit, hbai, in_poverty_bhc, in_poverty_ahc, ITL1 region, microcosm_uk,
   HUGGING_FACE_TOKEN, UK reform, Scenario.
   NOT for: US or Canada models (see policyengine-us / policyengine-canada), general
   microsimulation mechanics (see policyengine), or implementing new UK variables/parameters
@@ -200,18 +200,18 @@ dataset's `constituency_code_oa` column via `compute_uk_constituency_impacts` /
 
 ## Population data
 
-The UK default dataset in the certified bundle (policyengine 5.3.0 through 6.1.2) is
-**`enhanced_frs_2024_25`** (policyengine-uk-data 1.56.16; it replaced the Microcosm `populace_uk_2023` default in August
-2026). It lives in a **private** Hugging Face repo, so population runs
-require a `HUGGING_FACE_TOKEN` with access:
+The UK default dataset is **`microcosm_uk_2024_25`**, pinned by the certified bundle in
+policyengine 6.16.0 (checked 2026-11-06); constituency and local-authority runs use
+`microcosm_uk_2024_25_dense` (the manifest's `region_datasets`). Both live in a **private**
+Hugging Face repo, so population runs require a `HUGGING_FACE_TOKEN` with access:
 
 ```bash
 export HUGGING_FACE_TOKEN=hf_...   # required for UK population data; household calcs do NOT need it
 ```
 
 Do not hardcode a raw `hf://` dataset URI — the certified default resolves by name through the
-bundle. See the `policyengine-data` skill for the dataset stack and calibration, and the
-`policyengine` skill for the
+bundle. The pre-Microcosm UK datasets are superseded. See the `policyengine-data` skill for how
+Microcosm UK is built (FRS + WAS imputation) and calibrated, and the `policyengine` skill for the
 `ensure_datasets` / `Simulation` population flow, which is identical across countries.
 
 ## Macro scenarios (a different CPI or earnings path)

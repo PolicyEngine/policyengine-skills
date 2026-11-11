@@ -55,7 +55,7 @@ def test_known_bad_names_rejected():
         assert not request_is_valid(name), f"{name} should be rejected"
 
 
-def test_populace_backing_recognized():
+def test_microcosm_backing_recognized():
     result = validate_returned_data_version(
         "enhanced_cps",
         "populace-us-2024-cd-concept-budget-dbbdcec-...20260627T022640Z",

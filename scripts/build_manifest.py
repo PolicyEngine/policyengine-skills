@@ -15,17 +15,28 @@ emits a single JSON manifest consumed by the React dashboard under
 - Coverage gaps (skills with no bundle, agents nobody calls, commands that
   reference missing artifacts, etc.).
 
-The script has no third-party dependencies; it ships with the rest of the
-repo so contributors only need ``python3``.
+With PyYAML installed, a rebuild with no content change rewrites nothing but
+``generated_at``, whatever the string-hash seed or Python version;
+``tests/test_build_manifest.py`` checks the hash seed. ``--output PATH``
+writes the manifest somewhere other than the dashboard's data directory.
+
+The script needs PyYAML, which ``pyproject.toml`` lists, so run it as
+``uv run python scripts/build_manifest.py``. Without PyYAML,
+``parse_frontmatter`` falls back to a subset parser that reads every scalar
+as a string and drops nested fields, such as each analysis's
+``jurisdiction``. The dashboard's Analyses page then throws an error when it
+formats numbers that arrive as strings.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -196,7 +207,6 @@ REPO_KIND_OVERRIDES: dict[str, str] = {
     "policyengine-skills": "platform",
     "policyengine-bundles": "platform",
     "policyengine.dev": "platform",
-    "policyengine-data": "platform",
     "policyengine-developer-portal": "platform",
 
     # Data pipelines
@@ -217,7 +227,6 @@ REPO_KIND_OVERRIDES: dict[str, str] = {
     "microunit": "library",
     "mortality": "library",
     "rdbl": "library",
-    "reweight": "library",
     "l0": "library",
     "L0": "library",
     "linecheck": "library",
@@ -377,7 +386,9 @@ def build_known_repos() -> list[tuple[str, str]]:
             out.append((r["name"], kind))
         # Sort longest-name first so substring matching doesn't shadow
         # longer names (e.g. "policyengine-us" vs "policyengine-us-data").
-        out.sort(key=lambda x: -len(x[0]))
+        # Break ties by name, so the inventory file's order never reaches
+        # target_repos, known_repos or repo_coverage.
+        out.sort(key=lambda x: (-len(x[0]), x[0]))
         return out
     return [(r, k) for r, k in REPO_KIND_OVERRIDES.items()]
 
@@ -620,7 +631,10 @@ def extract_references(text: str, known_ids: dict[str, set[str]]) -> dict[str, l
     # picking up "use the rules-engineer agent" prose. Restrict to slugs >= 6
     # chars to avoid matching common words.
     for kind in ("agent", "skill", "command"):
-        for slug in known_ids[kind]:
+        # Sorted, because set order follows the per-process string-hash seed
+        # (PYTHONHASHSEED), and this loop sets the order of each artifact's
+        # references and of the edges built from them.
+        for slug in sorted(known_ids[kind]):
             if len(slug) < 6 or "-" not in slug:
                 continue
             if re.search(rf"\b{re.escape(slug)}\b", text) and slug not in refs[kind]:
@@ -682,7 +696,9 @@ def compute_overlaps(artifacts: list[Artifact]) -> list[dict]:
             vectors.append({})
             continue
         vec = {term: count * idf.get(term, 0.0) for term, count in tf.items()}
-        norm = math.sqrt(sum(v * v for v in vec.values())) or 1.0
+        # math.fsum rounds exactly. The built-in sum() rounds floats
+        # differently from Python 3.12 on, which changed shared_terms order.
+        norm = math.sqrt(math.fsum(v * v for v in vec.values())) or 1.0
         vectors.append({k: v / norm for k, v in vec.items()})
 
     pairs: list[dict] = []
@@ -699,7 +715,7 @@ def compute_overlaps(artifacts: list[Artifact]) -> list[dict]:
                 a, b = vj, vi
             else:
                 a, b = vi, vj
-            score = sum(a[t] * b[t] for t in a if t in b)
+            score = math.fsum(a[t] * b[t] for t in a if t in b)
             if score >= 0.15:
                 pairs.append(
                     {
@@ -795,6 +811,30 @@ def compute_gaps(
 # ---------------------------------------------------------------------------
 # Build.
 # ---------------------------------------------------------------------------
+
+
+# Written edge order. Edges group by source kind in the order build_edges
+# emits them: commands, then agents, then bundles. The dashboard drawer lists
+# only the first 20 incoming edges of an artifact ("Called by"), so this order
+# decides which callers it shows, and user-facing commands should lead. Within
+# a group, edges sort by source id, then target kind, then target id.
+SOURCE_KIND_ORDER = ("command", "agent", "bundle")
+TARGET_KIND_ORDER = ("agent", "skill", "command")
+
+
+def _kind_rank(kind: str, order: tuple[str, ...]) -> tuple[int, str]:
+    """Rank ``kind`` by its place in ``order``; unlisted kinds go last, by name."""
+    return (order.index(kind) if kind in order else len(order), kind)
+
+
+def edge_sort_key(edge: dict) -> tuple:
+    """Key that puts ``edges`` in one canonical order (see SOURCE_KIND_ORDER)."""
+    return (
+        *_kind_rank(edge["source_kind"], SOURCE_KIND_ORDER),
+        edge["source"],
+        *_kind_rank(edge["target_kind"], TARGET_KIND_ORDER),
+        edge["target"],
+    )
 
 
 def build_edges(
@@ -1243,7 +1283,21 @@ def load_analyses() -> list[dict]:
     return out
 
 
-def main() -> None:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build the ecosystem dashboard manifest from this repo."
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=OUTPUT_PATH,
+        help=f"Where to write the manifest (default: {relpath(OUTPUT_PATH)}).",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    output_path = parse_args(argv).output.resolve()
     skills = load_skills()
     agents = load_agents()
     commands = load_commands()
@@ -1306,14 +1360,16 @@ def main() -> None:
         )
 
     manifest = {
-        "generated_at": __import__("datetime").datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
         "counts": {
             **{kind: len(arts) for kind, arts in artifacts_by_kind.items()},
             "analysis": len(analyses),
         },
         "analyses": analyses,
         "artifacts": [artifact_to_dict(a) for a in flat],
-        "edges": edges,
+        # Sort here as well, so the written order never depends on how the
+        # code above happened to produce the edges.
+        "edges": sorted(edges, key=edge_sort_key),
         "overlaps": overlaps,
         "functional_overlaps": functional_overlaps,
         "gaps": gaps,
@@ -1332,9 +1388,10 @@ def main() -> None:
         "repo_coverage": repo_coverage,
     }
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(json.dumps(manifest, indent=2))
-    print(f"Wrote {OUTPUT_PATH.relative_to(ROOT)}")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(manifest, indent=2))
+    shown = relpath(output_path) if output_path.is_relative_to(ROOT) else output_path
+    print(f"Wrote {shown}")
     print(
         f"  skills={len(skills)} agents={len(agents)} commands={len(commands)} "
         f"bundles={len(bundles)} analyses={len(analyses)} edges={len(edges)} "
