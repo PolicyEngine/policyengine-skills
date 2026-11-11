@@ -410,6 +410,7 @@ calibration-diagnostics
   reform=<provisions+reform_dict>
   jurisdiction=<jurisdiction>
   anchor=<chosen anchor>
+  dataset=<microsim result's dataset>
 ```
 
 Returns ranked hypothesis list + recommended next test.

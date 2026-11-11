@@ -1,6 +1,6 @@
 ---
 name: report-logger
-description: Routes a completed /analyze-policy report to the right destination — local archive, GitHub issue, tracker DB, or research draft PR — based on verdict + flags. Country-aware routing (INVESTIGATE → an issue in the repo that builds the run's dataset, which is PolicyEngine/microcosm for us and uk, or policyengine-uk-data when a uk run named an Enhanced FRS or FRS file; structural → policyengine-{country} issue; everything → archive).
+description: Routes a completed /analyze-policy report to the right destination — local archive, GitHub issue, tracker DB, or research draft PR — based on verdict + flags. Country-aware routing (INVESTIGATE → an issue in the repo that builds the run's dataset, PolicyEngine/microcosm for us and uk, or policyengine-uk-data when a uk run named an Enhanced FRS or FRS file; structural → policyengine-{country} issue; everything → archive).
 tools: Read, Write, Bash
 model: sonnet
 ---
@@ -276,8 +276,9 @@ See archived report.
 ```bash
 # Send the data issue to the repo that builds the dataset the run used.
 # `dataset` holds dataset_at_run: a dataset name or an hf:// URI. An empty
-# value means the bundle default. Like policyengine.py's dataset_logical_name,
-# drop any @revision, then keep the last path segment.
+# value routes as the bundle default. Cut at the last @ and keep the last path
+# segment, as policyengine.py's dataset_logical_name does before it drops the
+# file extension, which a prefix match never reads.
 dataset_name=${dataset%@*}
 dataset_name=${dataset_name##*/}
 case "$country" in

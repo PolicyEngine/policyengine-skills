@@ -277,8 +277,7 @@ Certified defaults resolve automatically — **do not pass raw `hf://` URIs**:
 
 policyengine.py also serves the Enhanced FRS and FRS files that policyengine-uk-data builds:
 `enhanced_frs_2024_25`, `frs_2024_25`, and their 2023-24 and `_tiny` siblings. It lists them as
-`dataset_overlays` in its bundle manifest and loads one only when a caller names it, never as a
-default. It downloads them from the gated `policyengine/policyengine-uk-data-private` repo, so
+`dataset_overlays` in its bundle manifest and loads one only when a caller names it. It downloads them from the gated `policyengine/policyengine-uk-data-private` repo, so
 your token needs access there. Name one only when a task calls for it, and say in your results
 that the run left the certified default. The bundle serves no per-area file: the state and
 district H5s <!-- stale-ok -->

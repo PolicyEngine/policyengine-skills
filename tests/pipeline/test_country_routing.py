@@ -21,10 +21,13 @@ Invariants, checked for any dataset string:
 - only INVESTIGATE and structural verdicts route to an issue;
 - structural routing and US INVESTIGATE routing ignore the dataset;
 - UK INVESTIGATE routing lands in microcosm or policyengine-uk-data and reads
-  only the dataset's name, which it takes the way policyengine.py's
-  `dataset_logical_name` does (drop any @revision, keep the last path
-  segment), so a name and its hf:// URI agree;
-- report-logger's bash and `resolve_issue_repo` agree for `us` and `uk`.
+  only the dataset's name: it cuts at the last "@" and keeps the last path
+  segment, as policyengine.py's `dataset_logical_name` does before it drops
+  the file extension, so a name and its hf:// URI agree;
+- only a name that starts with the exact, lower-case `enhanced_frs_` or
+  `frs_` goes to policyengine-uk-data;
+- report-logger's bash and `resolve_issue_repo` agree for `us` and `uk`, on
+  any string and on strings built around those prefixes.
 """
 from __future__ import annotations
 
@@ -59,8 +62,8 @@ VERDICTS = (
     "deployed-model-lag",
 )
 
-# UK datasets in the policyengine.py 6.16.0 bundle manifest, grouped by the
-# repo that builds them: Microcosm's certified datasets and one older overlay,
+# UK datasets in the policyengine.py 6.16.0 bundle manifest, in two groups by
+# the repo that builds them: Microcosm's certified datasets and one older overlay,
 # then policyengine-uk-data's `dataset_overlays`, which policyengine.py serves
 # only by name.
 UK_MICROCOSM_DATASETS = (
@@ -88,10 +91,11 @@ ENHANCED_FRS_BRANCH_URI = (
 
 
 def dataset_name(dataset: str | None) -> str:
-    """Return the name report-logger routes by: drop any @revision, keep the last path segment.
+    """Return the name report-logger routes by: cut at the last "@", keep the last path segment.
 
     policyengine.py's `dataset_logical_name` also cuts at the last "@" before it
-    takes the file name, so a dataset name and its hf:// URI share a prefix.
+    takes the file name, so a dataset name and its hf:// URI share a prefix. It
+    then drops the file extension, which a prefix rule never reads.
     """
     return (dataset or "").rsplit("@", 1)[0].rsplit("/", 1)[-1]
 
@@ -158,6 +162,34 @@ repo_path = st.text(
     alphabet=st.characters(min_codepoint=33, max_codepoint=126),
     max_size=60,
 )
+# Strings built around the rule's boundary: the two prefixes, their near misses
+# in case and spelling, URI heads, revisions and stray "@" and "/".
+edge_name = st.builds(
+    lambda prefix, rest: prefix + rest,
+    st.sampled_from(
+        ["", "frs", "frs_", "FRS_", "enhanced_frs", "enhanced_frs_", "ENHANCED_FRS_",
+         "efrs_", "xfrs_", "microcosm_uk_frs_"]
+    ),
+    any_dataset,
+)
+edge_dataset = st.builds(
+    lambda head, name, tail: head + name + tail,
+    st.sampled_from(["", "hf://", "hf://policyengine/policyengine-uk-data-private/", "a@b/"]),
+    edge_name,
+    st.sampled_from(["", ".h5", "@1.58.1", ".h5@refs/pr/3", "@a@b", "/"]),
+)
+# Names that start like an Enhanced FRS or FRS file but don't match the exact,
+# lower-case prefix, plus a path whose "@" sits before the revision's.
+NEAR_MISSES = (
+    "frs",
+    "frs2024_25",
+    "FRS_2024_25",
+    "ENHANCED_FRS_2024_25",
+    "enhanced_frs2024_25",
+    "efrs_2024_25",
+    "microcosm_uk_frs_x",
+)
+AT_IN_PATH_URI = "a@b/enhanced_frs_2024_25.h5@1.58.1"
 
 
 # --- Examples --------------------------------------------------------------
@@ -182,6 +214,15 @@ def test_uk_investigate_on_microcosm_data_routes_to_microcosm(dataset):
 @pytest.mark.parametrize("dataset", [ENHANCED_FRS_URI, ENHANCED_FRS_BRANCH_URI, *UK_DATA_FILES])
 def test_uk_investigate_on_an_frs_file_routes_to_uk_data(dataset):
     assert resolve_issue_repo("INVESTIGATE", "uk", dataset) == UK_DATA
+
+
+@pytest.mark.parametrize("dataset", NEAR_MISSES)
+def test_uk_investigate_needs_an_exact_lowercase_prefix(dataset):
+    assert resolve_issue_repo("INVESTIGATE", "uk", dataset) == MICROCOSM
+
+
+def test_uk_investigate_cuts_the_revision_at_the_last_at():
+    assert resolve_issue_repo("INVESTIGATE", "uk", AT_IN_PATH_URI) == UK_DATA
 
 
 def test_uk_structural_does_not_route_to_us():
@@ -234,7 +275,7 @@ def test_us_investigate_routes_to_microcosm_for_any_dataset(dataset):
     assert resolve_issue_repo("INVESTIGATE", "us", dataset) == MICROCOSM
 
 
-@given(dataset=st.none() | any_dataset)
+@given(dataset=st.none() | any_dataset | edge_dataset)
 def test_uk_investigate_lands_in_microcosm_or_uk_data(dataset):
     assert resolve_issue_repo("INVESTIGATE", "uk", dataset) in {MICROCOSM, UK_DATA}
 
@@ -258,8 +299,10 @@ def test_uk_investigate_routes_a_uri_like_its_dataset_name(name, path, rev):
         UK_DEFAULT_URI,
         ENHANCED_FRS_URI,
         ENHANCED_FRS_BRANCH_URI,
+        AT_IN_PATH_URI,
         *UK_MICROCOSM_DATASETS,
         *UK_DATA_FILES,
+        *NEAR_MISSES,
     ],
 )
 def test_report_logger_bash_matches_reference(country, dataset):
@@ -269,7 +312,7 @@ def test_report_logger_bash_matches_reference(country, dataset):
 
 
 @settings(max_examples=150, deadline=None)
-@given(country=st.sampled_from(["us", "uk"]), dataset=any_dataset)
+@given(country=st.sampled_from(["us", "uk"]), dataset=any_dataset | edge_dataset)
 def test_report_logger_bash_matches_reference_for_any_dataset(country, dataset):
     assert run_routing_snippet(country, dataset) == resolve_issue_repo(
         "INVESTIGATE", country, dataset

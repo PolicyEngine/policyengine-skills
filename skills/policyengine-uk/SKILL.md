@@ -216,7 +216,7 @@ when you name one. It downloads them from the gated `policyengine/policyengine-u
 repo, so your token needs access there too. Say in your results when a run used one. See the
 `policyengine-data` skill for how Microcosm builds and calibrates its UK datasets (FRS + WAS
 imputation), and the `policyengine` skill for the `ensure_datasets` / `Simulation` population
-flow, which is identical across countries.
+flow, which works the same way in both countries.
 
 ## Macro scenarios (a different CPI or earnings path)
 

@@ -38,14 +38,14 @@ policy_id = response.json()["result"]["policy_id"]
 
 ### Step 2: Request economy-wide impacts
 
-**Critical:** the URL is `/economy/{reform_policy_id}/over/{baseline_policy_id}`, NOT `/over/1`. The `over/{N}` segment is the **baseline policy ID** to diff against, not a year count. Common baseline IDs:
+**Critical:** the URL is `/economy/{reform_policy_id}/over/{baseline_policy_id}`, and the baseline ID must be the country's current-law ID. The `over/{N}` segment is the **baseline policy ID** to diff against, not a year count. Common baseline IDs:
 
 | Country | Current-law baseline policy_id |
 |---|---|
 | US | `2` |
 | UK | `1` (`current_law_id` in `/uk/metadata`) |
 
-Calling `/over/1` against an arbitrary reform usually returns a misleading parse error or computes against a stale baseline. Always use the documented current-law baseline.
+A baseline ID other than the country's current-law ID usually returns a misleading parse error or computes against a stale baseline. Always use the documented current-law baseline.
 
 ```python
 region = state.lower() if state else "us"
@@ -252,7 +252,7 @@ budget = pe.us.calculate_budgetary_impact(baseline, reform)  # total / federal /
 
 `Simulation(policy=reform_dict)` takes the same flat reform dict as the API path. Call `economic_impact_analysis` before any manual `ensure()` — it configures the output variables both simulations need.
 
-For a UK run, follow the same pattern with `pe.uk`, which has `economic_impact_analysis` but no `calculate_budgetary_impact`. `pe.uk.ensure_datasets(years=[year])` loads the certified default, Microcosm's `microcosm_uk_2024_25`, from a private Hugging Face repo, so set `HUGGING_FACE_TOKEN`. When the caller names a dataset, load it by name: `pe.uk.ensure_datasets(datasets=[dataset], years=[year])`. policyengine.py serves the Enhanced FRS and FRS files that policyengine-uk-data builds (`enhanced_frs_2024_25`, `frs_2024_25`, and their 2023-24 and `_tiny` siblings) only by name, from the `dataset_overlays` in its bundle manifest. It downloads them from the gated `policyengine/policyengine-uk-data-private` repo, so the token also needs access there. Say in the result that a run on one of them left the certified default.
+For a UK run, follow the same pattern with `pe.uk`, which has `economic_impact_analysis` but no `calculate_budgetary_impact`, and whose analysis result carries no budget total. Take a UK run's cost from policyengine-uk's household `gov_balance`, which adds `gov_tax` and subtracts `gov_spending`: the reform's weighted total minus the baseline's gives the change in the government's balance, and `annual_cost_billion_year1` takes the opposite sign, in £ billions. `pe.uk.ensure_datasets(years=[year])` loads the certified default, Microcosm's `microcosm_uk_2024_25`, from a private Hugging Face repo, so set `HUGGING_FACE_TOKEN`. When the caller names a dataset, load it by name: `pe.uk.ensure_datasets(datasets=[dataset], years=[year])`. policyengine.py serves the Enhanced FRS and FRS files that policyengine-uk-data builds (`enhanced_frs_2024_25`, `frs_2024_25`, and their 2023-24 and `_tiny` siblings) only by name, from the `dataset_overlays` in its bundle manifest. It downloads them from the gated `policyengine/policyengine-uk-data-private` repo, so the token also needs access there. Say in the result that a run on one of them left the certified default.
 
 Record the dataset the run used and its version for the output, in either country:
 
@@ -333,7 +333,7 @@ The comparator agent expects BOTH absolute and relative values for Gini — publ
   - **Float-typed parameters** (caps, thresholds, amounts): accept either the string `".inf"` OR a large numeric like `1e15`. Prefer `.inf` for clarity.
   - **Integer-typed parameters** (ages, qualifying-children counts): the string `".inf"` fails silently — the POST is accepted but the `/economy` call later returns `status: "error", message: null` with no diagnostic. Use a large *integer* like `999` instead.
   - When unsure, read the YAML — if it has `value_type: int` or values look like integers (no decimal), use the integer form.
-- **Wrong baseline ID:** calling `/over/1` against an arbitrary reform returns a parse error or a stale baseline. Always use `/over/{baseline_policy_id}` — see Step 2.
+- **Wrong baseline ID:** a baseline ID other than the country's current-law ID returns a parse error or a stale baseline. Always use `/over/{baseline_policy_id}` — see Step 2.
 - **Multi-year discontinuities:** TCJA / OBBBA / similar regime-shift parameters make single-year results unrepresentative of a 10-year window. When the reform touches a parameter that sunsets or inflates, run all 10 years (`--horizon 10`) — do NOT extrapolate. The 2026-07-01 std-ded +$1K empirical case: yr1×10 = $178.6B understated the real 10-year cost ($196.10B) by 10%.
 
 ## Hand-off

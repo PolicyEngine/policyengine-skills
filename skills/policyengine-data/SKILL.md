@@ -158,9 +158,9 @@ those diagnostics into hypotheses about a score.
 - **New data work → the `microcosm` repo.** Build plans, calibration targets, conditional models,
   release gates, the published registry.
 <!-- stale-ok -->
-- **`policyengine-us-data` is ARCHIVED (2026-07-02).** The US enhancement path it owned (CPS +
-  IRS-PUF imputation, calibration, its enhanced-CPS H5 releases, and the per-state / per-district
-  H5s) is superseded by Microcosm, and policyengine.py's bundle serves none of that repo's files.
+- **`policyengine-us-data` is ARCHIVED (2026-07-02).** Microcosm supersedes the US enhancement
+  path it owned (CPS + IRS-PUF imputation, calibration, its enhanced-CPS H5 releases, and the
+  per-state / per-district H5s), and policyengine.py's bundle serves none of that repo's files.
   Treat that repo as read-only history; do not target it with PRs.
 - **PolicyEngine archived microimpute on 2026-11-08.** Treat that repo as read-only history and
   open no PRs or issues there. PyPI keeps all of its releases, including the 1.8.1 that
