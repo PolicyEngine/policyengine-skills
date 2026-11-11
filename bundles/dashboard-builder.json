@@ -2,7 +2,7 @@
   "name": "dashboard-builder",
   "description": "Orchestrated AI workflow for creating PolicyEngine dashboards from natural-language descriptions",
   "category": "development",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "keywords": [
     "dashboard",
     "calculator",

@@ -456,6 +456,142 @@ The reform dramatically slashes child poverty
 This is Montana's largest income tax cut in history
 ```
 
+## Figures, covers and replication in posts
+
+**Charts.** Draw every chart in a policyengine.org post as a ```` ```chart ```` block: a
+JSON spec that the website renders with ui-kit's chart defaults, Inter and the PolicyEngine
+watermark. `bar`, `line` and `waterfall` draw with Recharts; `stateMap` draws a US tile
+grid. In policyengine-app-v2, the header comments of `BlogChart.tsx`, `BlogLineChart.tsx`,
+`BlogWaterfallChart.tsx` and `BlogStateMap.tsx` (under `website/src/components/blog/`)
+document each spec, and the engineering chart standards (`chart-standards.md` under
+`docs/engineering/skills/`) cover the details. Do not put matplotlib
+PNGs or Plotly JSON in new posts; when a post needs a chart type the website lacks, add the
+type with tests first. Keep each chart's numbers identical to the table or text beside it.
+
+**Charts elsewhere.** For a newsletter or social image, screenshot the chart as the live post
+renders it (headless Chromium at 2x). A re-plot drifts from the post's labels, source line
+and styling.
+
+**Covers.** Give research posts a photographic cover: a still life of objects from the
+post's subject, with PolicyEngine teal (`#319795`, `#285E61`) only in the objects. Keep
+everything legible or recognizable out of it: no text, numbers, currency, logos, charts,
+portraits or faces. Generate it with an image model, crop the result to 2.14:1 centered on
+the objects, inspect every object for stray lettering, and save it as an 1800×840 WebP
+beside the post's other assets. Never use a chart or an infographic as a cover. A product
+or tool launch may use a 1200×630 typographic card with no data graphic instead.
+
+**Scene.** Choose the setting, camera angle and light from the post's subject, so each post
+gets its own scene. Before you commit the cover, put it on a contact sheet with the covers
+of the 20 newest posts (the `image` fields in policyengine-app-v2's
+`app/src/data/posts/posts.json`; the files sit under `app/public/assets/posts/`). If it
+repeats a recent cover's setting (a desk by a window, say) or composition (the same camera
+angle and arrangement), change the scene and generate it again. The research page loads
+eight covers at a time and the home page shows five, so readers see neighbors side by side.
+
+**Crops.** The website fills fixed boxes with the cover (`object-fit: cover`, centered), so
+the research and home page cards show only part of it:
+
+- Research cards (`ResearchClient.tsx` under `website/src/app/[countryId]/research/`) give
+  the cover a box 260 px tall. On a 375 px phone the box runs 341 px wide and shows the
+  central 61% of the cover's width (59% on a 360 px phone). On screens 1408 px and wider it
+  runs 543 px wide and shows nearly the whole cover.
+- The home page's "Expert policy analysis" block (`HomeBlogPreview.tsx` under
+  `website/src/components/home/`) shows the country's five newest posts and research apps.
+  Its two large cards hold the two newest and size the cover's box from the layout, never
+  below 200 px tall. With a cover in each, they showed the central 76% to 80% of its width
+  on 360 to 375 px phones, the whole cover from 600 to 991 px, and 69% to 98% on desktops,
+  depending on the titles and descriptions beside them. Its three smaller cards stand
+  180 px tall. On tablets and desktops they run wider than 2.14:1 and cut the top and
+  bottom. A 1440 px desktop shows the middle 57% of the cover's height, and tablets from
+  768 to 991 px wide show the middle 40% to 53%.
+- The article page shows the whole cover, and the post's social cards use it as their
+  image.
+
+Keep the main objects inside the central 60% of the width and the middle half of the
+height, and leave only surface, light and shadow near the edges. Phones narrower than
+375 px and tablets from 768 to 991 px wide cut a little into that zone, so put what
+matters most nearest its center. Ask for the zone in the image prompt itself: the porch
+prompt below asks only for clear side edges, and the 1440 px home card trims the tops of
+its boots. A launch card's 1.9:1 shape loses more of its height in the small home cards
+(as little as 36% shows on tablets), so set its words inside the central 60% of its width
+and the middle third of its height.
+
+Borrow the constraints of the two prompts below, not their scenes.
+
+The first prompt, adapted from the one behind the graded 2025 SPM prediction post's cover,
+asks for a light oak table by a window and groups the objects on the right two-thirds.
+Don't copy that grouping, which puts objects outside the crop zone: on a 375 px phone, the
+research card keeps about a third of that cover's teal notebook and none of its teal folder:
+
+> Photorealistic editorial still life, high three-quarter angle, on a light oak table beside
+> a window, soft diffuse morning light from the left, shallow depth of field. Objects grouped
+> on the right two-thirds, leaving calm empty wood on the left: [objects]. Muted natural
+> palette of warm wood, white paper and soft gray, with teal (#319795 and #285E61) appearing
+> only in [two or three objects]. No legible text, numbers, currency, logos, charts or faces
+> anywhere. Wide 2.14:1 landscape (1800×840).
+
+The second prompt asks for a porch, with the camera at floor level in low autumn sun and the
+objects just right of center, clear of both edges. It comes from the cover prompt for a
+Veterans Day post on state income taxes on military retired pay
+(PolicyEngine/veterans-day-2026, `post/cover_prompt.md`):
+
+> Photorealistic editorial still life, camera low and close to the floor of a pale weathered
+> wooden front porch, late-afternoon November sun low from the right, warm raking light and
+> long soft shadows, shallow depth of field with the background falling into soft blur.
+> Grouped just right of center, with open space on both sides and nothing important near the
+> left or right edges: a pair of worn tan leather military boots standing side by side,
+> laces loosened; a pair of blank, unembossed steel dog tags on a ball chain draped over the
+> top of one boot; a neatly folded olive wool blanket beside them; a teal enamel camp mug
+> with a thin wisp of steam resting on the blanket; a teal knit watch cap folded next to it;
+> a plain white envelope, blank and unopened, tucked under the mug; and a few fallen oak
+> leaves scattered on the boards. Muted autumn palette of pale wood, olive, tan and soft
+> gray, with teal (#319795 and #285E61) appearing only in the mug and the knit cap. No
+> legible text, numbers, logos, brand marks, flags, stars, insignia, charts, people or faces
+> anywhere. Wide 2.14:1 landscape (1800x840); use the widest landscape format you can.
+
+**Replication detail.** Name the model and its version in the body, as in the
+methodological transparency example below. Put other package versions, script paths, commit
+hashes and rerun steps in footnotes, so the body states what the numbers show and the
+footnotes let a reader reproduce them.
+
+**Post dates.** A `posts.json` date can be a bare day (`"2026-09-29"`) or a day and time
+(`"2026-09-29 08:00:00"`). The site shows either as that calendar day in every time zone
+([policyengine-app-v2#1237](https://github.com/PolicyEngine/policyengine-app-v2/pull/1237)).
+Leave out time zone offsets such as `Z` or `-04:00`: a date with one shows the reader's local
+day, the research list sorts dates as text, and a website test fails on it.
+
+## Grading forecasts and explaining misses
+
+When a post grades a registered prediction or explains why the model missed:
+
+- **Grade the registered quantity.** Compare it with the published figure at the precision
+  the source publishes, and give the published margins of error. When the registration
+  builds a level from a modeled change, grade the change as well. When the published change
+  falls short of statistical significance, say so.
+- **Reruns show which assumptions matter.** A rerun that matches the published figure does
+  not identify the right inputs; say so beside the result.
+- **Run the full model for every rerun**, and enter the changed assumption as a model input.
+  Never estimate a rerun by scaling an earlier run's output or by adding effects from
+  separate runs. Name the run or runs behind each figure.
+- **Lead with totals.** Splitting a change into parts (thresholds and resources, or one
+  income source at a time) can give different answers depending on the order of the steps.
+  Decompose each rerun from its own runs, report each order or the average over all
+  orders, and do not assign a remaining gap to one part on the strength of the baseline
+  decomposition.
+- **Compare survey years with care.** The CPS reweights to new population controls, so the
+  weighted count of people in a group, or of benefit recipients, can jump for reasons that
+  have nothing to do with the economy. Compare amounts per recipient, hold the age mix fixed
+  when it shifts, and treat two survey years as separate cross-sections, not a panel.
+- **Show sampling error before claiming a pattern.** A gradient across deciles or groups
+  needs a bootstrap or replicate-weight standard error. When the pattern sits within its
+  error, present a rerun built on it as a sensitivity check.
+- **Name each rate exactly**: "CPI-U, annual average" or "January over January"; "per
+  recipient aged 66 and over, at the 2024 age mix". Use the publisher's label for a data
+  series; change it only after checking the primary source.
+- **Review before publishing.** Have an independent reviewer check every number and
+  mechanism claim against the result files and the code, and review again after each round
+  of fixes.
+
 ## Structure and Organization
 
 Follow a clear hierarchical structure with key findings up front.
@@ -759,6 +895,11 @@ Before publishing, verify:
 - [ ] Public copy describes the policy, the result, and what the reader can do; cut production, process, and work-in-progress notes
 - [ ] Remove self-referential clauses, empty contrasts, and unintroduced names or roles
 - [ ] Check mechanism claims against the code, test, or primary source
+- [ ] Draw charts as ```` ```chart ```` blocks; no chart PNGs or Plotly JSON in new posts
+- [ ] Use a photographic cover with nothing legible, never a chart, and unlike recent covers
+- [ ] Keep the cover's main objects inside the central 60% of its width and the middle half of its height
+- [ ] Name the model and its version in the body; put other package versions, script paths and rerun steps in footnotes
+- [ ] For graded forecasts: totals first, order-dependent splits labeled, sampling error shown for any pattern
 
 ## Resources
 

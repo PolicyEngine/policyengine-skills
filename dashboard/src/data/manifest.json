@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-11T13:45:24.002773Z",
+  "generated_at": "2026-11-11T19:22:03.053796Z",
   "counts": {
     "skill": 24,
     "agent": 36,
@@ -661,7 +661,7 @@
       ],
       "registry_notes": "A newer artifact explicitly supersedes this one. Prefer the replacement.",
       "references": {},
-      "body_length": 9289
+      "body_length": 9731
     },
     {
       "id": "policyengine-github-agent",
@@ -1230,7 +1230,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 28693
+      "body_length": 38811
     },
     {
       "id": "review-program",
@@ -14393,7 +14393,7 @@
       "name": "analysis-tools",
       "description": "Policy analysis and research - impact studies, dashboards, notebooks, and visualizations",
       "category": "analysis",
-      "version": "4.1.1",
+      "version": "4.1.2",
       "keywords": [
         "analysis",
         "research",
@@ -14460,7 +14460,7 @@
       "name": "api-development",
       "description": "API development - Flask endpoints, caching, services, and integration patterns",
       "category": "development",
-      "version": "4.1.1",
+      "version": "4.1.2",
       "keywords": [
         "api",
         "flask",
@@ -14500,7 +14500,7 @@
       "name": "app-development",
       "description": "React app development - app-v2, standalone tools, Vercel deployment, and PolicyEngine-specific patterns",
       "category": "development",
-      "version": "4.1.1",
+      "version": "4.1.2",
       "keywords": [
         "react",
         "frontend",
@@ -14551,7 +14551,7 @@
       "name": "complete",
       "description": "Complete PolicyEngine knowledge base - all agents, commands, and skills for users, analysts, and contributors",
       "category": "complete",
-      "version": "4.1.1",
+      "version": "4.1.2",
       "keywords": [
         "complete",
         "all",
@@ -14654,7 +14654,7 @@
       "name": "country-models",
       "description": "Complete multi-agent workflow for implementing government benefit programs in PolicyEngine country packages",
       "category": "development",
-      "version": "4.1.1",
+      "version": "4.1.2",
       "keywords": [
         "tax",
         "benefits",
@@ -14708,7 +14708,7 @@
       "name": "dashboard-builder",
       "description": "Orchestrated AI workflow for creating PolicyEngine dashboards from natural-language descriptions",
       "category": "development",
-      "version": "4.1.1",
+      "version": "4.1.2",
       "keywords": [
         "dashboard",
         "calculator",
@@ -14754,7 +14754,7 @@
       "name": "data-science",
       "description": "Data analysis, survey enhancement, imputation, calibration, and microdata utilities",
       "category": "data",
-      "version": "4.1.1",
+      "version": "4.1.2",
       "keywords": [
         "data",
         "microdata",
@@ -14788,7 +14788,7 @@
       "name": "essential",
       "description": "Essential PolicyEngine knowledge for all users - understanding the platform, using the web app, and basic concepts",
       "category": "getting-started",
-      "version": "4.1.1",
+      "version": "4.1.2",
       "keywords": [
         "beginner",
         "users",
