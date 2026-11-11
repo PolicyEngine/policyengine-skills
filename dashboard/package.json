@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "manifest": "cd .. && python3 scripts/build_manifest.py",
-    "manifest:safe": "test -f ../scripts/build_manifest.py && (cd .. && python3 scripts/build_manifest.py) || echo 'using committed manifest.json (parent repo not visible to build)'",
+    "manifest": "cd .. && uv run python scripts/build_manifest.py",
+    "manifest:safe": "(test -f ../scripts/build_manifest.py && cd .. && uv run python scripts/build_manifest.py) || echo 'Kept the committed src/data/manifest.json: this build has no parent repo or no uv, or the manifest build failed.'",
     "predev": "npm run manifest",
     "prebuild": "npm run manifest:safe",
     "dev": "vite",

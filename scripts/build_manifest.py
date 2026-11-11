@@ -15,30 +15,40 @@ emits a single JSON manifest consumed by the React dashboard under
 - Coverage gaps (skills with no bundle, agents nobody calls, commands that
   reference missing artifacts, etc.).
 
-With PyYAML installed, a rebuild with no content change rewrites nothing but
-``generated_at``, whatever the string-hash seed or Python version;
-``tests/test_build_manifest.py`` checks the hash seed. ``--output PATH``
-writes the manifest somewhere other than the dashboard's data directory.
-
 The script needs PyYAML, which ``pyproject.toml`` lists, so run it as
-``uv run python scripts/build_manifest.py``. Without PyYAML,
-``parse_frontmatter`` falls back to a subset parser that reads every scalar
-as a string and drops nested fields, such as each analysis's
-``jurisdiction``. The dashboard's Analyses page then throws an error when it
-formats numbers that arrive as strings.
+``uv run python scripts/build_manifest.py``; the dashboard's ``predev`` and
+``prebuild`` hooks do the same. Without PyYAML it stops with an error before
+it writes anything. The dashboard needs what only a full YAML parser gives
+it: nested fields, such as each analysis's ``jurisdiction``, and numbers that
+arrive as numbers, which the Analyses page formats.
+
+A rebuild with no content change rewrites nothing but ``generated_at``, on
+macOS or Linux, whatever the string-hash seed, the Python version (3.11 on) or
+the locale.
+``--check`` builds the manifest without writing it and exits 1 if the copy on
+disk differs anywhere but ``generated_at``; CI runs it on Linux.
+``--output PATH`` writes or checks a manifest somewhere other than the
+dashboard's data directory.
 """
 
 from __future__ import annotations
 
 import argparse
+import decimal
+import difflib
 import json
 import math
 import re
+import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
+
+try:
+    import yaml
+except ImportError:  # main() stops with PYYAML_MISSING before it writes anything.
+    yaml = None
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = ROOT / "skills"
@@ -52,88 +62,46 @@ OUTPUT_PATH = ROOT / "dashboard" / "src" / "data" / "manifest.json"
 
 
 # ---------------------------------------------------------------------------
-# Frontmatter parsing (zero deps — handles only the small subset we need).
+# Frontmatter parsing (PyYAML).
 # ---------------------------------------------------------------------------
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
 
+PYYAML_MISSING = """\
+build_manifest.py needs PyYAML, and {executable} can't import it.
+Run the script through uv, which installs the repo's dependencies:
+    uv run python scripts/build_manifest.py
+The script wrote nothing."""
 
-def parse_frontmatter(text: str) -> tuple[dict, str]:
-    """Return ``(metadata, body)``. Metadata is empty dict if no frontmatter.
 
-    Uses PyYAML when available (handles nested dicts, lists of dicts, all
-    valid YAML). Falls back to the zero-dep subset parser otherwise, which
-    covers the shape used by legacy Claude artifact frontmatter but does not
-    handle nested structures like `jurisdiction: {country, state}`.
+class FrontmatterError(ValueError):
+    """An artifact's frontmatter isn't valid YAML, or isn't a mapping."""
+
+
+def parse_frontmatter(text: str, source: str = "frontmatter") -> tuple[dict, str]:
+    """Return ``(metadata, body)``; metadata is ``{}`` when there is no frontmatter.
+
+    Raises ``FrontmatterError``, naming ``source``, when the frontmatter isn't
+    valid YAML or isn't a mapping, so a broken file stops the build instead of
+    reaching the dashboard half-parsed.
     """
     match = FRONTMATTER_RE.match(text)
     if not match:
         return {}, text
+    if yaml is None:
+        raise ModuleNotFoundError(PYYAML_MISSING.format(executable=sys.executable))
     raw_meta, body = match.group(1), match.group(2)
     try:
-        import yaml
-        parsed = yaml.safe_load(raw_meta) or {}
-        if isinstance(parsed, dict):
-            return parsed, body
-    except (ImportError, Exception):
-        pass
-    return parse_yaml_subset(raw_meta), body
-
-
-def parse_yaml_subset(raw: str) -> dict:
-    """Parse the simple subset of YAML used by Claude artifacts.
-
-    Supports:
-      - ``key: value``
-      - ``key: |`` multi-line block scalars
-      - ``key:`` followed by ``- item`` lists
-      - ``key: [a, b, c]`` inline lists
-    """
-    lines = raw.splitlines()
-    result: dict = {}
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        if not line.strip() or line.lstrip().startswith("#"):
-            i += 1
-            continue
-        match = re.match(r"^([A-Za-z_][\w\-]*)\s*:\s*(.*)$", line)
-        if not match:
-            i += 1
-            continue
-        key, value = match.group(1), match.group(2)
-        if value == "|" or value == ">":
-            # Block scalar — collect indented lines.
-            i += 1
-            block: list[str] = []
-            while i < len(lines) and (lines[i].startswith(" ") or not lines[i].strip()):
-                block.append(lines[i].lstrip())
-                i += 1
-            sep = "\n" if value == "|" else " "
-            result[key] = sep.join(s for s in block if s != "").strip()
-            continue
-        if value == "":
-            # Could be a nested list.
-            i += 1
-            items: list[str] = []
-            while i < len(lines) and lines[i].lstrip().startswith("- "):
-                items.append(lines[i].lstrip()[2:].strip().strip('"').strip("'"))
-                i += 1
-            if items:
-                result[key] = items
-            else:
-                result[key] = ""
-            continue
-        if value.startswith("[") and value.endswith("]"):
-            inner = value[1:-1]
-            result[key] = [
-                item.strip().strip('"').strip("'") for item in inner.split(",") if item.strip()
-            ]
-            i += 1
-            continue
-        result[key] = value.strip().strip('"').strip("'")
-        i += 1
-    return result
+        parsed = yaml.safe_load(raw_meta)
+    except yaml.YAMLError as error:
+        raise FrontmatterError(f"{source}: frontmatter isn't valid YAML: {error}") from error
+    if parsed is None:
+        return {}, body
+    if not isinstance(parsed, dict):
+        raise FrontmatterError(
+            f"{source}: frontmatter must be a YAML mapping, not {type(parsed).__name__}"
+        )
+    return parsed, body
 
 
 # ---------------------------------------------------------------------------
@@ -364,11 +332,22 @@ TOOLING_RELEVANT_KINDS = {
 }
 
 
+def read_utf8(path: Path) -> str:
+    """Read one of the builder's inputs as UTF-8, the encoding they're written in.
+
+    ``read_text()`` without an encoding decodes with the locale's encoding.
+    Under a locale that isn't UTF-8 (Windows, or a Latin-9 locale on Linux or
+    macOS), Python before 3.15 decodes UTF-8 text wrongly: the build can stop
+    on a file that is fine, or garble non-ASCII text in the manifest.
+    """
+    return path.read_text(encoding="utf-8")
+
+
 def load_org_repos() -> list[dict]:
     """Load the cached GitHub org inventory; empty list if missing."""
     if not ORG_REPOS_PATH.exists():
         return []
-    return json.loads(ORG_REPOS_PATH.read_text())
+    return json.loads(read_utf8(ORG_REPOS_PATH))
 
 
 def build_known_repos() -> list[tuple[str, str]]:
@@ -449,24 +428,12 @@ def extract_triggers(description: str) -> list[str]:
 def load_skills() -> list[Artifact]:
     artifacts: list[Artifact] = []
     for skill_md in sorted(SKILLS_DIR.glob("**/SKILL.md")):
-        text = skill_md.read_text()
-        meta, body = parse_frontmatter(text)
+        meta, body = parse_frontmatter(read_utf8(skill_md), relpath(skill_md))
         # Flat layout: skills/<slug>/SKILL.md with the category declared in
-        # frontmatter metadata. parse_frontmatter only nests when PyYAML is
-        # available, so fall back to a direct scan of the frontmatter block,
-        # then to the parent dir for any legacy nested layout.
-        metadata = meta.get("metadata") or {}
-        category = (
-            metadata.get("category") if isinstance(metadata, dict) else None
-        )
-        if not category:
-            fm_match = FRONTMATTER_RE.match(text)
-            if fm_match:
-                cat_match = re.search(
-                    r"^\s+category:\s*(\S+)", fm_match.group(1), re.MULTILINE
-                )
-                if cat_match:
-                    category = cat_match.group(1)
+        # frontmatter metadata. Fall back to the parent dir for any legacy
+        # nested layout (skills/<category>/<slug>/SKILL.md).
+        metadata = meta.get("metadata")
+        category = metadata.get("category") if isinstance(metadata, dict) else None
         if not category:
             category = skill_md.parent.parent.name
         if category == "skills":
@@ -497,7 +464,7 @@ def load_agents() -> list[Artifact]:
     for agent_md in sorted(AGENTS_DIR.glob("**/*.md")):
         if agent_md.name == "README.md":
             continue
-        meta, body = parse_frontmatter(agent_md.read_text())
+        meta, body = parse_frontmatter(read_utf8(agent_md), relpath(agent_md))
         rel_to_agents = agent_md.relative_to(AGENTS_DIR)
         category = rel_to_agents.parts[0] if len(rel_to_agents.parts) > 1 else "general"
         name = meta.get("name") or agent_md.stem
@@ -529,7 +496,7 @@ def load_agents() -> list[Artifact]:
 def load_commands() -> list[Artifact]:
     artifacts: list[Artifact] = []
     for cmd_md in sorted(COMMANDS_DIR.glob("*.md")):
-        meta, body = parse_frontmatter(cmd_md.read_text())
+        meta, body = parse_frontmatter(read_utf8(cmd_md), relpath(cmd_md))
         name = cmd_md.stem
         description = meta.get("description") or ""
         if isinstance(description, list):
@@ -552,7 +519,7 @@ def load_commands() -> list[Artifact]:
 def load_bundles() -> list[Artifact]:
     artifacts: list[Artifact] = []
     for bundle_path in sorted(BUNDLES_DIR.glob("*.json")):
-        data = json.loads(bundle_path.read_text())
+        data = json.loads(read_utf8(bundle_path))
         name = data.get("name") or bundle_path.stem
         artifacts.append(
             Artifact(
@@ -666,11 +633,35 @@ def tokenize(text: str) -> list[str]:
     ]
 
 
+# math.log calls the C library's log, and the C standard leaves its accuracy
+# to each implementation, so the last bit can differ between platforms. On
+# macOS, math.log misses the correctly rounded value of ln((n + 1) / (df + 1))
+# for 44 of the 79,799 pairs with 2 <= n < 400 and 1 <= df <= n. One bit can
+# reorder near-tied shared_terms, and a manifest built on macOS would then
+# fail CI's check on Linux. The decimal module computes ln in software,
+# correctly rounded to 34 digits, and float() rounds that to a double, so
+# every platform gets the same float. For all 79,799 pairs that double is the
+# correctly rounded one.
+LN_CONTEXT = decimal.Context(prec=34)
+
+
+def smoothed_idf(n_docs: int, doc_freq: int) -> float:
+    """Return ``ln((n_docs + 1) / (doc_freq + 1)) + 1``, the same on every platform."""
+    ratio = (n_docs + 1) / (doc_freq + 1)
+    return float(LN_CONTEXT.ln(decimal.Decimal(ratio))) + 1
+
+
 def compute_overlaps(artifacts: list[Artifact]) -> list[dict]:
-    """Return ranked (i, j, score) pairs for overlap pairs above threshold.
+    """Return every pair of artifacts whose TF-IDF cosine similarity is 0.15 or more.
 
     Compares within and across kinds — a command that duplicates a skill is
     just as interesting as two skills covering the same ground.
+
+    Pairs follow the order of ``artifacts``: by ``a``, then by ``b``, with
+    ``a`` before ``b``. An edit to one artifact changes the IDF of the terms
+    it adds or drops, which moves many scores; in this order such an edit
+    rewrites only the lines that change, where an order by score would move
+    most pairs. The dashboard sorts pairs by score where it ranks them.
     """
     docs: list[list[str]] = []
     for art in artifacts:
@@ -687,7 +678,8 @@ def compute_overlaps(artifacts: list[Artifact]) -> list[dict]:
     for doc in docs:
         df.update(set(doc))
     n_docs = len(docs)
-    idf = {term: math.log((n_docs + 1) / (count + 1)) + 1 for term, count in df.items()}
+    idf_by_df = {count: smoothed_idf(n_docs, count) for count in set(df.values())}
+    idf = {term: idf_by_df[count] for term, count in df.items()}
 
     vectors: list[dict[str, float]] = []
     for doc in docs:
@@ -722,13 +714,15 @@ def compute_overlaps(artifacts: list[Artifact]) -> list[dict]:
                         "a": {"kind": artifacts[i].kind, "id": artifacts[i].id},
                         "b": {"kind": artifacts[j].kind, "id": artifacts[j].id},
                         "score": round(score, 4),
+                        # Ties go to the term that sorts first, so the order
+                        # never depends on where a term first appears in a text.
                         "shared_terms": sorted(
                             (term for term in a if term in b),
-                            key=lambda t: -a[t] * b[t],
+                            key=lambda t: (-a[t] * b[t], t),
                         )[:8],
                     }
                 )
-    pairs.sort(key=lambda p: -p["score"])
+    # No sort by score: the loops above already put pairs in artifact order.
     return pairs
 
 
@@ -1043,7 +1037,7 @@ def attach_functional_tags(artifacts_by_kind: dict[str, list[Artifact]]) -> None
     """Merge hand-curated functional tags from functional_tags.json."""
     if not FUNCTIONAL_TAGS_PATH.exists():
         return
-    data = json.loads(FUNCTIONAL_TAGS_PATH.read_text())
+    data = json.loads(read_utf8(FUNCTIONAL_TAGS_PATH))
     for kind_plural, kind_singular in (
         ("skills", "skill"),
         ("agents", "agent"),
@@ -1247,7 +1241,7 @@ def load_analyses() -> list[dict]:
     for path in sorted(ANALYSES_DIR.glob("*.md")):
         if path.name.lower() == "readme.md":
             continue
-        meta, _body = parse_frontmatter(path.read_text())
+        meta, _body = parse_frontmatter(read_utf8(path), relpath(path))
         if not meta:
             continue
         jurisdiction = meta.get("jurisdiction") or {}
@@ -1283,27 +1277,14 @@ def load_analyses() -> list[dict]:
     return out
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Build the ecosystem dashboard manifest from this repo."
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=OUTPUT_PATH,
-        help=f"Where to write the manifest (default: {relpath(OUTPUT_PATH)}).",
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv: list[str] | None = None) -> None:
-    output_path = parse_args(argv).output.resolve()
+def assemble_manifest() -> dict:
+    """Scan the repo and return the dashboard manifest."""
     skills = load_skills()
     agents = load_agents()
     commands = load_commands()
     bundles = load_bundles()
     analyses = load_analyses()
-    raw_bundles = [json.loads(p.read_text()) for p in sorted(BUNDLES_DIR.glob("*.json"))]
+    raw_bundles = [json.loads(read_utf8(p)) for p in sorted(BUNDLES_DIR.glob("*.json"))]
 
     artifacts_by_kind = {
         "skill": skills,
@@ -1387,21 +1368,138 @@ def main(argv: list[str] | None = None) -> None:
         "tooling_relevant_kinds": sorted(TOOLING_RELEVANT_KINDS),
         "repo_coverage": repo_coverage,
     }
+    return manifest
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(manifest, indent=2))
-    shown = relpath(output_path) if output_path.is_relative_to(ROOT) else output_path
-    print(f"Wrote {shown}")
-    print(
-        f"  skills={len(skills)} agents={len(agents)} commands={len(commands)} "
-        f"bundles={len(bundles)} analyses={len(analyses)} edges={len(edges)} "
-        f"overlaps={len(overlaps)} functional_overlaps={len(functional_overlaps)}"
+
+def render_manifest(manifest: dict) -> str:
+    """Return the manifest as the text the dashboard reads."""
+    return json.dumps(manifest, indent=2)
+
+
+# A rebuild with no content change rewrites only this line.
+GENERATED_AT_LINE = re.compile(r'^  "generated_at": "[^"\n]*",\n', re.MULTILINE)
+CHECK_DIFF_LINES = 200
+
+
+def without_generated_at(text: str) -> str:
+    """Blank the ``generated_at`` value, so two builds of the same content match."""
+    return GENERATED_AT_LINE.sub('  "generated_at": "",\n', text, count=1)
+
+
+def display_path(path: Path) -> str:
+    return relpath(path) if path.is_relative_to(ROOT) else str(path)
+
+
+def check_manifest(path: Path, fresh_text: str) -> int:
+    """Compare the manifest at ``path`` with a fresh build; return an exit status.
+
+    Writes nothing. Returns 0 when the two match apart from ``generated_at``.
+    Otherwise prints the sections that differ and the start of a diff to
+    stderr, and returns 1.
+    """
+    shown = display_path(path)
+    fix = (
+        "Rebuild it with `uv run python scripts/build_manifest.py` "
+        "and commit the result."
     )
-    from collections import Counter as _C
-    by_cat = _C(p["category"] for p in functional_overlaps)
-    for cat, n in sorted(by_cat.items()):
-        print(f"    {cat}: {n}")
+    if not path.exists():
+        print(f"{shown} doesn't exist. {fix}", file=sys.stderr)
+        return 1
+    on_disk = without_generated_at(read_utf8(path))
+    fresh = without_generated_at(fresh_text)
+    if on_disk == fresh:
+        print(f"{shown} matches a fresh build apart from generated_at.")
+        return 0
+
+    print(f"{shown} differs from a fresh build.", file=sys.stderr)
+    try:
+        old = json.loads(on_disk)
+    except json.JSONDecodeError:
+        print(f"{shown} isn't valid JSON.", file=sys.stderr)
+    else:
+        if isinstance(old, dict):
+            new = json.loads(fresh)
+            keys = list(new) + [key for key in old if key not in new]
+            sections = [key for key in keys if old.get(key) != new.get(key)]
+            print(
+                "Sections that differ: "
+                + (", ".join(sections) or "none, only formatting or key order"),
+                file=sys.stderr,
+            )
+        else:
+            print(f"{shown} isn't a JSON object.", file=sys.stderr)
+    diff = list(
+        difflib.unified_diff(
+            on_disk.splitlines(keepends=True),
+            fresh.splitlines(keepends=True),
+            fromfile=f"{shown} (on disk)",
+            tofile=f"{shown} (fresh build)",
+            n=2,
+        )
+    )
+    for line in diff[:CHECK_DIFF_LINES]:
+        sys.stderr.write(line if line.endswith("\n") else line + "\n")
+    if len(diff) > CHECK_DIFF_LINES:
+        print(f"... {len(diff) - CHECK_DIFF_LINES} more diff lines", file=sys.stderr)
+    print(fix, file=sys.stderr)
+    return 1
+
+
+def print_summary(manifest: dict) -> None:
+    counts = manifest["counts"]
+    print(
+        f"  skills={counts['skill']} agents={counts['agent']} "
+        f"commands={counts['command']} bundles={counts['bundle']} "
+        f"analyses={counts['analysis']} edges={len(manifest['edges'])} "
+        f"overlaps={len(manifest['overlaps'])} "
+        f"functional_overlaps={len(manifest['functional_overlaps'])}"
+    )
+    by_category = Counter(p["category"] for p in manifest["functional_overlaps"])
+    for category, n in sorted(by_category.items()):
+        print(f"    {category}: {n}")
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build the ecosystem dashboard manifest from this repo."
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=OUTPUT_PATH,
+        help=f"Where to write the manifest (default: {relpath(OUTPUT_PATH)}).",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help=(
+            "Build the manifest without writing it, and exit 1 if the file at "
+            "--output differs from it anywhere but generated_at."
+        ),
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    output_path = args.output.resolve()
+    if yaml is None:
+        print(PYYAML_MISSING.format(executable=sys.executable), file=sys.stderr)
+        return 1
+    try:
+        manifest = assemble_manifest()
+    except FrontmatterError as error:
+        print(f"build_manifest.py: {error}\nThe script wrote nothing.", file=sys.stderr)
+        return 1
+    text = render_manifest(manifest)
+    if args.check:
+        return check_manifest(output_path, text)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(text, encoding="utf-8", newline="\n")
+    print(f"Wrote {display_path(output_path)}")
+    print_summary(manifest)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
