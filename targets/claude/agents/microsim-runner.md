@@ -19,7 +19,7 @@ Runs a single reform through PolicyEngine and returns structured impact results.
 - `jurisdiction`: `{country, state?}` (e.g., `{country: us, state: ri}`, `{country: us}` for federal, or `{country: uk}`)
 - `year`: simulation year (default `2026`)
 - `mode`: `api` (default) or `local`
-- `dataset` (optional): a dataset name from policyengine.py's bundle, such as `populace_us_2024_acs_local` or `enhanced_frs_2024_25`. Omit it to run the certified default. The API runs only the default, so take the local path for a named `dataset`, whatever `mode` says, and record `execution_mode: "local"` in the output.
+- `dataset` (optional): a dataset name from policyengine.py's bundle, such as `populace_us_2024_acs_local` or `enhanced_frs_2024_25`. Omit it to run the certified default. The API runs only the default, so when `dataset` names anything other than the default `/{country}/metadata` lists, take the local path whatever `mode` says, and record `execution_mode: "local"` in the output.
 
 ## Process — API path
 
@@ -63,7 +63,7 @@ For a UK run, call the same routes under `/uk/` with `region=uk` and baseline po
 
 ### Dataset check (REQUIRED)
 
-After the run completes, name the dataset and data version behind it and check them against the default that `/{country}/metadata` lists. The result's `policyengine_bundle` reports what the simulation loaded: its `dataset` holds that file's `hf://` URI or `default`, and its `data_version` holds the release. `run_dataset` turns the URI into the dataset's name the way policyengine.py's `dataset_logical_name` does. When the bundle reads `default` or names no dataset, the function takes the name from the metadata's default entry. When the bundle leaves `data_version` empty, it reads the release from the URI's `@` revision, or from the default entry for a run on the default dataset.
+After the run completes, name the dataset and data version behind it and check them against the default that `/{country}/metadata` lists. The result's `policyengine_bundle` reports what the simulation loaded: its `dataset` holds the URI of the file the simulation loaded, or `default`, and its `data_version` holds the release. The URI starts `hf://`, or `gs://` for a file the gateway reads from a PolicyEngine data repo's Cloud Storage mirror. `run_dataset` turns the URI into the dataset's name the way policyengine.py's `dataset_logical_name` does. When the bundle reads `default` or names no dataset, the function takes the name from the metadata's default entry, since the API runs every request on that dataset. It takes the data version from the bundle, or else from the URI's `@` revision, and never from the metadata: a bundle that records neither leaves `data_version` empty.
 
 ```python
 from pathlib import PurePosixPath
@@ -74,6 +74,8 @@ def run_dataset(bundle, datasets):
 
     bundle: the result's `policyengine_bundle`; None for a budget-window result.
     datasets: `economy_options.datasets` from /{country}/metadata.
+    `dataset_matches_default` reads None when the result doesn't say which
+    release it loaded.
     """
     default = next(entry for entry in datasets if entry.get("default"))
     bundle = bundle or {}
@@ -83,18 +85,17 @@ def run_dataset(bundle, datasets):
     else:
         name = PurePosixPath(uri.rsplit("@", 1)[0]).stem
     pinned = uri.rsplit("@", 1)[1] if "@" in uri else None
-    data_version = bundle.get("data_version") or pinned
-    if not data_version and name == default["name"]:
-        data_version = default["data_version"]
-    return {
-        "dataset": name,
-        "data_version": data_version,
-        "dataset_matches_default": (name, data_version)
-        == (default["name"], default["data_version"]),
-    }
+    data_version = bundle.get("data_version") or pinned or None
+    if name != default["name"]:
+        matches = False
+    elif data_version and default.get("data_version"):
+        matches = data_version == default["data_version"]
+    else:
+        matches = None
+    return {"dataset": name, "data_version": data_version, "dataset_matches_default": matches}
 ```
 
-Fetch the metadata once per run and record the check with the model version:
+Fetch the metadata once the result arrives, so the check compares the run with the default the API lists now, and record the check with the model version:
 
 ```python
 metadata = requests.get(f"https://api.policyengine.org/{country}/metadata").json()["result"]
@@ -103,9 +104,9 @@ check = run_dataset(result.get("policyengine_bundle"), metadata["economy_options
 model_version = result.get("model_version") or metadata["version"]
 ```
 
-If `dataset_matches_default` comes back false, the bundle names a dataset or data release other than the default the API lists now. Record the bundle's values, since they name what the run loaded, and the comparator flags the run.
+`dataset_matches_default` reads true when the run loaded the default dataset at the default's data version, and false when it loaded another dataset or another release of the default. Record the bundle's values either way, since they name what the run loaded, and the comparator flags a false. It reads null when the result names no data version, as every budget-window result does, so nothing confirms which release ran; record `data_version` as null rather than copying the metadata's, and the comparator notes the run as unverified.
 
-**Polling:** the response starts with `status: "computing"` and carries stage fields (`stage`, `progress`, `progress_max`, `segments`) while the job runs. Wait 30s and retry. A failed run answers HTTP 502 with `status: "error"` and a `message`. Real-world wall-clock for a US economy-wide reform is **5-10 minutes**, not 1-3 minutes as some older docs suggest. Retry up to ~20 minutes before giving up.
+**Polling:** the response starts with `status: "computing"` and can carry stage fields, such as `stage`, `progress`, `progress_max` and `segments`, while the job runs. Wait 30s and retry, for up to 20 minutes. A failed run answers HTTP 502 with `status: "error"` and a `message`. A US economy-wide run for policy 97853 on 2026-11-08 finished in about three minutes.
 
 ### Reform-dict row coverage pre-flight (REQUIRED before submission)
 
@@ -148,7 +149,9 @@ GET /{country}/economy/{policy_id}/over/{baseline_id}/budget-window
     &window_size=N
 ```
 
-It also takes the annual route's optional `version` and `spm`, and it answers HTTP 400 to `dataset` as the annual route does.
+It also takes the annual route's optional `version` and `spm`, and `target` only as `general`. It answers HTTP 400 to `breakdown` and to `dataset`.
+
+Keep the window inside the years `/{country}/metadata` lists under `economy_options.time_period`: 2024-2035 for the US and 2024-2032 for the UK on 2026-11-11. The route checks only `start_year` against that list, and the single-year fallback answers HTTP 400 to any year outside it.
 
 Response while computing:
 
@@ -165,31 +168,47 @@ Response while computing:
 }
 ```
 
-When `status: "ok"`, `result` holds `kind: "budgetWindow"`, `startYear`, `endYear`, `windowSize`, one `annualImpacts` row per year and a `totals` row. Each row carries `budgetaryImpact`, `taxRevenueImpact`, `federalTaxRevenueImpact`, `stateTaxRevenueImpact` and `benefitSpendingImpact` in dollars. The result carries no `policyengine_bundle` or `model_version`. Call `run_dataset(None, datasets)` to take the dataset and data version from the metadata default, and take `model_version` from `/{country}/metadata`'s `version`.
+When `status: "ok"`, `result` holds `kind: "budgetWindow"`, `startYear`, `endYear`, `windowSize`, one `annualImpacts` row per year and a `totals` row. Each row carries `budgetaryImpact`, `taxRevenueImpact`, `federalTaxRevenueImpact`, `stateTaxRevenueImpact` and `benefitSpendingImpact` in the country's currency. The result carries no `policyengine_bundle` or `model_version`. Call `run_dataset(None, datasets)`: it names the metadata's default dataset, which the API runs every request on, and returns `data_version` null and `dataset_matches_default` null, since the batch doesn't report its release. Take `model_version` from `/{country}/metadata`'s `version`.
 
-**Polling cadence:** the endpoint returns quickly; poll every 30-60s while `status == "computing"`. Wall-clock for a full 10-year US run is typically 15-25 min (depends on API queue).
+A failed batch answers HTTP 200 with `status: "error"` and the reason in `error`. The route answers HTTP 502 only when it can't reach the simulation service, and HTTP 400 or 404 when it refuses the request itself.
 
-**Fallback:** if the budget-window run fails (`status: "error"`, or an HTTP 502) or keeps computing past 45 minutes, fall back to N parallel calls to the single-year endpoint. Log the fallback so the analyst knows the runner degraded gracefully.
+**Polling cadence:** poll every 60s while `status == "computing"`. A poll that times out or answers with something other than JSON doesn't end the wait, since the batch keeps running on the server. On 2026-11-08 a two-year US window finished 2027 within 45 minutes of the first request and still showed 2026 computing two hours in.
+
+**Fallback:** if `run_horizon` raises `RuntimeError` (a failed batch, or an HTTP 502) or `TimeoutError` (a batch that keeps computing past 45 minutes), fall back to N parallel calls to the single-year endpoint. Log the fallback and its reason, so the analyst knows the years came from single-year calls. A `ValueError` means the API refused the request (HTTP 400 or 404): report its message and fix the request instead of falling back.
 
 ```python
+import time
+
+import requests
+
+
 def run_horizon(country, region, policy_id, baseline_id, start_year, window_size, max_wait_minutes=45):
     url = (
         f"https://api.policyengine.org/{country}/economy/{policy_id}/over/{baseline_id}/budget-window"
         f"?region={region}&start_year={start_year}&window_size={window_size}"
     )
     deadline = time.monotonic() + 60 * max_wait_minutes
+    message = None
     while True:
-        r = requests.get(url, timeout=120).json()
-        if r["status"] == "ok":
-            return r["result"]
-        if r["status"] != "computing":
-            raise RuntimeError(r.get("error") or r.get("message"))
+        try:
+            response = requests.get(url, timeout=120)
+            r = response.json()
+        except (requests.RequestException, ValueError) as error:
+            message = f"last poll failed: {error!r}"  # the batch keeps running; poll again
+        else:
+            if response.status_code in (400, 404):
+                raise ValueError(r.get("message"))
+            if r.get("status") == "ok":
+                return r["result"]
+            if r.get("status") != "computing":
+                raise RuntimeError(r.get("error") or r.get("message"))
+            message = r.get("message")
         if time.monotonic() >= deadline:
-            raise TimeoutError(f"still computing after {max_wait_minutes} minutes: {r.get('message')}")
+            raise TimeoutError(f"still computing after {max_wait_minutes} minutes: {message}")
         time.sleep(60)
 ```
 
-**Do NOT compute a naive `yr1 × N` extrapolation.** If the horizon is `1`, report yr-1 cost only in the archive. If the horizon is `10` (or a custom multi-year list), use the budget-window endpoint and report the actual per-year cost table AND the summed multi-year cost.
+**Do NOT compute a naive `yr1 × N` extrapolation.** If the horizon is `1`, report yr-1 cost only in the archive. If the horizon is `10` or a custom year range, use the budget-window endpoint; for a custom list of separate years, make one single-year call per year. Either way, report the actual per-year cost table AND the summed multi-year cost.
 
 ### Step 2b: Real response shape
 
@@ -249,11 +268,11 @@ The API returns **raw baseline and reform LEVELS**, not deltas. The agent must c
 
 ### Step 3: For multi-year scoring
 
-The horizon prompt in `/analyze-policy` (see Phase 0) sets the number of years, and the budget-window endpoint above scores them in one request.
+The analyst picks the number of years at `/analyze-policy`'s horizon prompt (Phase 0), and the budget-window endpoint above scores them in one batch.
 
 **Naive `yr1 × N` extrapolation is banned.** It silently misstates 10-year totals whenever the baseline evolves over the window (inflation-indexed thresholds, 2030 OBBBA snap-back, phase-out schedules, TCJA-style sunsets). Empirical case from 2026-07-01 std-ded +$1K: yr1×10 = $178.6B understated the real 10-year cost ($196.10B) by 10%. If the analyst asks for a single year, the archive reports one year — no fabricated 10-year total.
 
-For a 10-year cost, call `run_horizon(country, region, policy_id, baseline_id, start_year=2026, window_size=10)` and report its `annualImpacts` rows and `totals`.
+For a 10-year US cost, call `run_horizon(country, region, policy_id, baseline_id, start_year=2026, window_size=10)` and report its `annualImpacts` rows and `totals`. A UK window must end by 2032, the last year `/uk/metadata` lists.
 
 ## Process — Local path
 
@@ -282,14 +301,15 @@ budget = pe.us.calculate_budgetary_impact(baseline, reform)  # total / federal /
 
 For a UK run, follow the same pattern with `pe.uk`, which has `economic_impact_analysis` but no `calculate_budgetary_impact`, and whose analysis result carries no budget total. Take a UK run's cost from policyengine-uk's household `gov_balance`, which adds `gov_tax` and subtracts `gov_spending`. pe.uk's default outputs leave it out, so pass `extra_variables={"household": ["gov_balance"]}` to both `Simulation`s. The reform's weighted total minus the baseline's gives the change in the government's balance, and `annual_cost_billion_year1` takes the opposite sign, in £ billions. `pe.uk.ensure_datasets(years=[year])` loads the certified default, Microcosm's `microcosm_uk_2024_25`, from a private Hugging Face repo, so set `HUGGING_FACE_TOKEN`. When the caller names a dataset, load it by name: `pe.uk.ensure_datasets(datasets=[dataset], years=[year])`. policyengine.py serves the Enhanced FRS and FRS files that policyengine-uk-data builds (`enhanced_frs_2024_25`, `frs_2024_25`, and their 2023-24 and `_tiny` siblings) only by name, from the `dataset_overlays` in its bundle manifest. It downloads them from the gated `policyengine/policyengine-uk-data-private` repo, so the token also needs access there. Say in the result that a run on one of them left the certified default.
 
-Record the dataset the run used and its version for the output, in either country:
+Record the dataset the run used and its version for the output, in either country, with the API path's `run_dataset`, so `dataset_matches_default` compares the local run with the same default `/{country}/metadata` lists:
 
 ```python
-from policyengine.provenance.manifest import dataset_logical_name, resolve_managed_dataset_reference
+from policyengine.provenance.manifest import resolve_managed_dataset_reference
 
 uri = resolve_managed_dataset_reference(country, dataset)  # dataset=None gives the certified default
-dataset_name = dataset_logical_name(uri)  # e.g. "microcosm_uk_2024_25"
-data_version = uri.rsplit("@", 1)[1]  # the revision the bundle pins
+metadata = requests.get(f"https://api.policyengine.org/{country}/metadata").json()["result"]
+check = run_dataset({"dataset": uri}, metadata["economy_options"]["datasets"])
+# check["dataset"]: e.g. "microcosm_uk_2024_25"; check["data_version"]: the URI's @ revision
 ```
 
 For the analyst MicroSeries surface (weighted `.calc()` on the certified default `populace_us_2024`):
@@ -344,7 +364,7 @@ The agent normalizes the raw API response into this canonical shape. **Always in
 }
 ```
 
-**`dataset` and `data_version`** name the dataset that backed the run and its version. /analyze-policy records them in the archive's frontmatter as `dataset_at_run` and `data_version_at_run`, and report-logger routes a UK data issue by the dataset. On the API path, the dataset check in "Process — API path" reads both from `response.json()["result"]["policyengine_bundle"]` and fills any gap from `/{country}/metadata` under `economy_options.datasets`. For a result with no `policyengine_bundle`, budget-window results included, the check takes both values from the metadata's default entry. On the local path, compute them as "Process — Local path" shows. `model_version` comes from the result's `model_version`, or from `/{country}/metadata`'s `version` for a budget-window run.
+**`dataset` and `data_version`** name the dataset that backed the run and its version. /analyze-policy records them in the archive's frontmatter as `dataset_at_run` and `data_version_at_run`, and report-logger routes a UK data issue by the dataset. On the API path, the dataset check in "Process — API path" reads both from `response.json()["result"]["policyengine_bundle"]`. It takes a missing name from the default entry `/{country}/metadata` lists under `economy_options.datasets`, and a missing data version only from the URI's `@` revision. For a result with no `policyengine_bundle`, budget-window results included, the check names the default dataset and leaves `data_version` and `dataset_matches_default` null. On the local path, compute all three as "Process — Local path" shows. `model_version` comes from the result's `model_version`, or from `/{country}/metadata`'s `version` for a budget-window run.
 
 **Sign conventions:**
 - `annual_cost_billion`: positive = revenue/spending COST to government (reform makes the gov spend more or collect less). For a cap repeal like SALT, this is a positive number (revenue loss to gov).

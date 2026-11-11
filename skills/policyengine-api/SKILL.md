@@ -54,15 +54,20 @@ finishes; the response is a status envelope, not the result on the first call:
                  policyengine_bundle, once status == "ok" */ } }
 ```
 
-While the job runs, the envelope also carries stage fields (`stage`, `progress`,
-`progress_max`, `segments`), and a failed run answers HTTP 502 with `status: "error"`.
+While the job runs, the envelope can also carry stage fields, such as `stage`, `progress`,
+`progress_max` and `segments`, and a failed run answers HTTP 502 with `status: "error"`.
+The budget-window route adds `progress`, the `completed_years`, `computing_years` and
+`queued_years` lists, and `error` to the same three keys. It reports a failed batch with HTTP 200,
+`status: "error"` and the reason in `error`, and answers HTTP 502 only when it can't reach
+the simulation service.
 
 Query params on the annual economy call: `region` (`us`, `state/ca` or a bare `ca`,
 `congressional_district/CA-01`, `uk`, etc.), `time_period` (a four-digit year that
 `/{country}/metadata` lists under `economy_options.time_period`), and optional `version`,
-`target` and `spm`; UK runs also take `breakdown`. The budget-window route takes `start_year`
-and `window_size` in place of `time_period`. The API answers HTTP 400 to any other parameter,
-`dataset` included, and runs every reform on the one dataset `/{country}/metadata` lists under
+`target` and `spm`; UK runs also take `breakdown`. The budget-window route takes `region`,
+`start_year`, `window_size`, `version`, `spm` and `target` (`general` only). The API answers
+HTTP 400 to any other parameter, such as `dataset`, or `breakdown` on the budget-window route,
+and runs every reform on the one dataset `/{country}/metadata` lists under
 `economy_options.datasets`. The household `POST /{country}/calculate`
 body nests values by year (`{"people": {"you": {"age": {"2026": 40}}}, "households": {...}}`);
 read `/{country}/metadata` for the exact variable and entity names rather than guessing.

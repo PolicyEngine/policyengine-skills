@@ -11,7 +11,7 @@ The Microsimulation guard is kept narrow on purpose so prose that merely
 
 The product-name guard is span-based: frozen dataset IDs and machine surfaces
 are explicitly allowlisted without exempting stale prose elsewhere on the same
-line. Dated analyses and the dataset-naming regression corpus remain verbatim.
+line. Dated analyses remain verbatim.
 
 Caught: same-line imports, paren-wrapped multiline imports, backslash
 continuations occurring after ``import``, and same-line module-qualified

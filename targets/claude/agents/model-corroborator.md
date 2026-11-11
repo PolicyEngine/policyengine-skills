@@ -105,9 +105,9 @@ Capture `policy_id`. Then submit the economy run:
 curl -sS "https://api.policyengine.org/us/economy/{mirror_policy_id}/over/{baseline_policy_id}?region=us&time_period=2026"
 ```
 
-Send no `dataset` parameter. The API answers it with HTTP 400 and runs every mirror on the default dataset `/us/metadata` lists. When the original run used a named dataset on the local path, say in the corroboration block that the mirrors ran on the default.
+Send no `dataset` parameter: the API answers one with HTTP 400. Without it, the API runs every mirror on the default dataset `/us/metadata` lists. When the original run used a named dataset on the local path, say in the corroboration block that the mirrors ran on the default.
 
-Run multiple mirrors in parallel (background poll loops). Each takes 5-10 min.
+Run multiple mirrors in parallel (background poll loops). A US run for policy 97853 on 2026-11-08 took about three minutes.
 
 ### Step 5: Normalize comparison units
 
