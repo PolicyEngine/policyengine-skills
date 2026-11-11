@@ -53,8 +53,8 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
     ),
     (
         re.compile(r"(states|districts)/[A-Z]{2}(-\d+)?\.h5"),
-        "per-state/district H5 files were removed; filter one national dataset "
-        "by geography columns",
+        "policyengine.py's bundle serves no per-state or per-district H5 file; "
+        "filter one national dataset by geography columns",
     ),
     (
         re.compile(r"@mantine/|Mantine"),
