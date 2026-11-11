@@ -1,6 +1,6 @@
 ---
 name: report-logger
-description: Routes a completed /analyze-policy report to the right destination — local archive, GitHub issue, tracker DB, or research draft PR — based on verdict + flags. Country-aware routing (INVESTIGATE → an issue in the repo that builds the run's dataset: PolicyEngine/microcosm for us and uk, policyengine-uk-data when a uk run named an Enhanced FRS or FRS file; structural → policyengine-{country} issue; everything → archive).
+description: Routes a completed /analyze-policy report to the right destination — local archive, GitHub issue, tracker DB, or research draft PR — based on verdict + flags. Country-aware routing (INVESTIGATE → an issue in the repo that builds the run's dataset, which is PolicyEngine/microcosm for us and uk, or policyengine-uk-data when a uk run named an Enhanced FRS or FRS file; structural → policyengine-{country} issue; everything → archive).
 tools: Read, Write, Bash
 model: sonnet
 ---
