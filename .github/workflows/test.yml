@@ -16,6 +16,13 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      # The differential tests in tests/pipeline/test_country_routing.py run
+      # report-logger's bash under zsh too, the shell Claude Code gives the
+      # agent on a Mac. ubuntu-latest has no zsh, and in CI a missing zsh fails
+      # those tests rather than skipping them.
+      - name: Install zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
       - name: Run tests
         run: uv run pytest --ignore=tests/test_skill_examples.py
 

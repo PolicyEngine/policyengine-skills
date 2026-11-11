@@ -276,8 +276,10 @@ See archived report.
 ```bash
 # Fill in the report's values. Quoted heredocs below hand the title and body
 # to gh as written, with their quotes, apostrophes, $ and backticks intact.
-country='{country}'          # us, uk or ca: the reform's jurisdiction
-dataset='{dataset_at_run}'   # the archive's dataset_at_run; empty for the bundle default
+# country: us, uk or ca, the reform's jurisdiction.
+# dataset: dataset_at_run from the archive, or empty for the bundle default.
+country='{country}'
+dataset='{dataset_at_run}'
 
 # Send the data issue to the repo that builds the dataset the run used.
 # `dataset` holds a dataset name or an hf:// URI. An empty value routes as the
@@ -309,11 +311,12 @@ if [ -n "$DATA_REPO" ]; then
   # gh stops before it creates the issue when any --label names a label the
   # repo lacks, so pass only the labels the repo has. gh ignores case when it
   # matches label names, so compare them in lower case. --limit 1000: gh
-  # lists only 30 labels by default.
+  # lists only 30 labels by default. `command grep` skips any shell function
+  # named grep, such as the one Claude Code defines.
   REPO_LABELS="$(gh label list --repo "$DATA_REPO" --limit 1000 --json name --jq '.[].name | ascii_downcase')"
   LABEL_ARGS=()
   for label in calibration auto-filed; do
-    if printf '%s\n' "$REPO_LABELS" | grep -qxF -- "$label"; then
+    if printf '%s\n' "$REPO_LABELS" | command grep -qxF -- "$label"; then
       LABEL_ARGS+=(--label "$label")
     fi
   done
@@ -327,9 +330,9 @@ END_BODY
 fi
 ```
 
-gh looks up every `--label` name among the repo's labels before it creates the issue, and it stops without creating one when a name is missing (`could not add label: '<name>' not found`). So the block passes only the labels the repo has, and gh files the issue even in a repo with neither label. If `gh label list` fails, the block still files the issue, without the labels it could not confirm. Follow the same rule for any other issue you file, such as a structural one or an `issue:<repo>` destination.
+gh looks up every `--label` name among the repo's labels before it creates the issue, and it stops without creating one when a name is missing (`could not add label: '<name>' not found`). So the block passes only the labels the repo has, and gh files the issue even in a repo with neither label. If `gh label list` fails, the block still files the issue, without the labels it could not confirm. For any issue you file outside this block, such as a structural one or an `issue:<repo>` destination, list the repo's labels first with `--limit 1000` and pass only labels it has. Give a structural issue no `calibration` label: in policyengine-us and policyengine-uk that label marks calibration work, and a structural issue asks for a change to the model.
 
-Replace `{country}`, `{dataset_at_run}`, `{title}` and `{body}` with the report's values, and keep the quotes and heredoc lines around them. gh reads the body from standard input (`--body-file -`), so the shell never parses the body's quotes or parentheses.
+Replace `{country}`, `{dataset_at_run}`, `{title}` and `{body}` with the report's values, and keep the quotes and heredoc lines around them. If the country or dataset holds an apostrophe, write it as `'\''`. gh reads the body from standard input (`--body-file -`), so the shell never parses the body's quotes or parentheses. A heredoc ends at the first line that matches its closing word, though, and the shell runs every line after it. So check that the title isn't `END_TITLE` and that no line of the body is `END_BODY`; if one is, rename that heredoc's closing word in both places. Run the block as written, without `set -e` or `set -u`: either can stop the block before gh files the issue.
 
 Capture the returned issue URL/number and append to the archive's `issues_opened` frontmatter list. When `DATA_REPO` is empty (`ca`), the block files nothing: list the issue under `skipped` in the output, with the reason. For any other country the block prints an error and files nothing: report it under `errors`.
 

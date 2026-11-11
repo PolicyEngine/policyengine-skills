@@ -51,7 +51,10 @@ Invariants, checked for any dataset string and any set of repo labels:
   and zsh, whatever quotes, apostrophes, `$`, backticks or parentheses they
   hold;
 - for any country but us, uk and ca the block files nothing and says why on
-  stderr.
+  stderr;
+- the block routes any dataset string the agent writes into it, quoted as
+  report-logger.md says, the same way it routes that string from the
+  environment.
 """
 from __future__ import annotations
 
@@ -231,7 +234,11 @@ SHELL_PARAMS = [
     pytest.param(
         "zsh",
         id="zsh",
-        marks=pytest.mark.skipif(shutil.which("zsh") is None, reason="zsh is not installed"),
+        # CI installs zsh, so there a missing zsh fails the zsh runs instead of
+        # skipping them.
+        marks=pytest.mark.skipif(
+            shutil.which("zsh") is None and not os.environ.get("CI"), reason="zsh is not installed"
+        ),
     ),
 ]
 
@@ -252,12 +259,15 @@ def fake_gh_dir(tmp_path_factory) -> Path:
 PLACEHOLDERS = ("'{country}'", "'{dataset_at_run}'", "{title}", "{body}")
 PLACEHOLDER_PATTERN = re.compile("|".join(re.escape(p) for p in PLACEHOLDERS))
 # A title and body that hold what reports hold: apostrophes, dollar amounts,
-# backticks, quotes and parentheses, balanced or not. bash 3.2 cannot parse a
-# quoted heredoc inside "$(...)" whose body holds an odd number of apostrophes.
+# backticks, quotes, parentheses, balanced or not, and lines that start with a
+# tab. bash 3.2 cannot parse a quoted heredoc inside "$(...)" whose body holds
+# an odd number of apostrophes, and a <<- heredoc strips leading tabs.
 TITLE = """INVESTIGATE: CBO's $28B vs our $40B for `ctc_expansion` ("refundability")"""
 BODY = """We estimate $40B; CBO's score doesn't (it shows $28B.
 `$(touch /tmp/report-logger-ran-the-body)` and ${HOME} stay as text.
 EOF
+\t- a tab-led list item
+\t\t- and a nested one
 'single' "double" \\backslash\\ and a trailing backslash \\"""
 
 
@@ -273,11 +283,20 @@ def issue_block() -> str:
     return block
 
 
-def filled_block(title: str, body: str) -> str:
-    """Return the block with its placeholders filled in one pass."""
+def single_quoted(value: str) -> str:
+    """Quote a value the way report-logger.md tells the agent to: an apostrophe becomes '\\''."""
+    return "'" + value.replace("'", "'\\''") + "'"
+
+
+def filled_block(title: str, body: str, country: str | None = None, dataset: str | None = None) -> str:
+    """Return the block with its placeholders filled in one pass.
+
+    By default the country and dataset become references to the environment.
+    Given a country and dataset, the block holds them as the agent writes them.
+    """
     values = {
-        "'{country}'": '"$TEST_COUNTRY"',
-        "'{dataset_at_run}'": '"$TEST_DATASET"',
+        "'{country}'": '"$TEST_COUNTRY"' if country is None else single_quoted(country),
+        "'{dataset_at_run}'": '"$TEST_DATASET"' if dataset is None else single_quoted(dataset),
         "{title}": title,
         "{body}": body,
     }
@@ -308,8 +327,13 @@ def run_block(
     label_lookup_fails: bool = False,
     title: str = TITLE,
     body: str = BODY,
+    literal_fill: bool = False,
 ) -> BlockRun:
-    """Run report-logger's issue-filing block with its placeholders filled."""
+    """Run report-logger's issue-filing block with its placeholders filled.
+
+    With literal_fill, the block holds the country and dataset as quoted text,
+    as the agent writes them, rather than reading them from the environment.
+    """
     lowered = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
     with tempfile.TemporaryDirectory() as tmp:
         log = Path(tmp) / "gh-calls"
@@ -326,7 +350,11 @@ def run_block(
         if label_lookup_fails:
             env["FAKE_GH_LABEL_LIST_FAILS"] = "1"
         result = subprocess.run(
-            [*SHELLS[shell], FAKE_GH_FUNCTION + filled_block(title, body)],
+            [
+                *SHELLS[shell],
+                FAKE_GH_FUNCTION
+                + (filled_block(title, body, country, dataset) if literal_fill else filled_block(title, body)),
+            ],
             env=env,
             stdin=subprocess.DEVNULL,
             capture_output=True,
@@ -734,3 +762,36 @@ def test_report_logger_bash_matches_reference_for_any_input(
 ):
     calls = run_issue_block(shell, fake_gh_dir, country, dataset, labels)
     assert filed_issue(calls) == expected_issue(country, dataset, labels)
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize(
+    ("country", "dataset"),
+    [
+        ("us", ""),
+        ("uk", ENHANCED_FRS_URI),
+        ("uk", "microcosm_uk_2024_25"),
+        ("uk", "o'brien/frs_2024_25.h5"),
+        ("ca", ""),
+    ],
+)
+def test_report_logger_bash_routes_a_literal_fill_like_the_reference(shell, fake_gh_dir, country, dataset):
+    """The block routes the values the agent writes into it, apostrophes included."""
+    run = run_block(shell, fake_gh_dir, country, dataset, list(ISSUE_LABELS), literal_fill=True)
+    assert filed_issue(run.calls) == expected_issue(country, dataset, list(ISSUE_LABELS))
+    assert run.stderr == ""
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@settings(max_examples=100, deadline=None)
+@given(
+    country=st.sampled_from(["us", "uk", "ca"]),
+    dataset=any_dataset | edge_dataset,
+    labels=repo_labels,
+)
+def test_report_logger_bash_matches_reference_for_any_literal_fill(
+    shell, fake_gh_dir, country, dataset, labels
+):
+    """Quoting a value as report-logger.md says hands the block any dataset string intact."""
+    run = run_block(shell, fake_gh_dir, country, dataset, labels, literal_fill=True)
+    assert filed_issue(run.calls) == expected_issue(country, dataset, labels)
