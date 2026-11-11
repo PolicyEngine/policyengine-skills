@@ -514,3 +514,100 @@ def test_skill_household_example_asks_for_an_output() -> None:
     # The calculation adds no omitted variables, so an example that names no
     # output would get its inputs back unchanged.
     assert "household_net_income: { 2026: null }" in skill_text()
+
+
+# --- Choosing how a dashboard gets its data ------------------------------------
+
+TOOLS_SKILL_FILE = REPO_ROOT / "skills" / "policyengine-tools" / "SKILL.md"
+PLANNER_FILE = REPO_ROOT / "targets" / "claude" / "agents" / "dashboard" / "dashboard-planner.md"
+BACKEND_BUILDER_FILE = REPO_ROOT / "targets" / "claude" / "agents" / "dashboard" / "backend-builder.md"
+NEW_TOOL_FILE = REPO_ROOT / "targets" / "claude" / "commands" / "new-tool.md"
+
+# The four questions a dashboard builder asks, in order; each place that lists
+# them names its outcome with these markers, so the places cannot drift apart.
+DATA_PATTERN_ORDER = ("precomputed", "policyengine-api", "new dashboard operation", "custom-modal")
+DATA_PATTERN_SECTIONS = (
+    (TOOLS_SKILL_FILE, "## Data and backend patterns"),
+    (PLANNER_FILE, "### Step 4: Determine Data Pattern"),
+    (BACKEND_BUILDER_FILE, "## Backend Selection Priority"),
+)
+DATA_PATTERN_SECTION_IDS = ("policyengine-tools", "dashboard-planner", "backend-builder")
+
+# www.policyengine.org's firewall limits per IP address a minute (tracker 2.3 · 6).
+RATE_LIMITS_PER_MINUTE = {
+    "household calculations": 30,
+    "economy-comparison reads": 120,
+    "policy creations and metadata reads": 300,
+}
+
+
+def single_spaced(text: str) -> str:
+    """``text`` with every run of whitespace, line breaks included, as one space."""
+    return " ".join(text.split())
+
+
+def section_text(path: Path, heading: str) -> str:
+    """The text under ``heading`` up to the next heading of any level."""
+    text = path.read_text()
+    assert heading in text, f"{path.relative_to(REPO_ROOT)} has no {heading!r} section"
+    after_heading = text.split(heading, 1)[1]
+    next_heading = re.search(r"\n#{1,6} ", after_heading)
+    return after_heading[: next_heading.start()] if next_heading else after_heading
+
+
+@pytest.mark.parametrize(("path", "heading"), DATA_PATTERN_SECTIONS, ids=DATA_PATTERN_SECTION_IDS)
+def test_data_pattern_questions_come_in_the_same_order(path: Path, heading: str) -> None:
+    questions = re.findall(r"^\d+\. (.+)$", section_text(path, heading), re.MULTILINE)
+    assert len(questions) == len(DATA_PATTERN_ORDER), questions
+    for question, marker in zip(questions, DATA_PATTERN_ORDER):
+        assert marker in question, (marker, question)
+
+
+@pytest.mark.parametrize(("path", "heading"), DATA_PATTERN_SECTIONS, ids=DATA_PATTERN_SECTION_IDS)
+def test_model_version_and_rate_limits_are_not_reasons_for_an_own_backend(path: Path, heading: str) -> None:
+    # The Public API's model lagging the newest country package is fixed by
+    # updating the Public API, not by each dashboard running its own model.
+    not_reasons = single_spaced(section_text(path, heading)).split("**Not reasons for", 1)
+    assert len(not_reasons) == 2, "the section must say what is not a reason for an own backend"
+    for topic in ("model", "rate limit"):
+        assert topic in not_reasons[1], topic
+
+
+def test_new_tool_says_model_version_is_no_reason_for_pattern_c() -> None:
+    prefer_b = NEW_TOOL_FILE.read_text().split("**Prefer Pattern B**", 1)[1].split("\n\n", 1)[0]
+    prefer_b = single_spaced(prefer_b.replace("\n> ", "\n"))
+    assert "model" in prefer_b
+    assert "Data and backend patterns" in prefer_b
+
+
+def test_skill_keeps_pages_at_half_of_each_rate_limit() -> None:
+    text = single_spaced(skill_text())
+    for name, limit in RATE_LIMITS_PER_MINUTE.items():
+        assert f"{limit} {name}" in text, f"the {name} limit is not stated"
+        assert f"{limit // 2} {name}" in text, f"no budget of {limit // 2} {name} a minute"
+    # compareEconomy reads every 5 seconds, so each running comparison is
+    # 12 reads a minute; five at once is the 60-read budget.
+    assert "12 reads a minute" in text
+    assert "at most five comparisons at once" in text
+
+
+def test_new_operation_section_says_when_to_ask_and_suggests_no_client() -> None:
+    text = single_spaced(section_text(SKILL_FILE, "## Asking for a new dashboard operation"))
+    assert "used unchanged" in text
+    assert "own backend" in text
+    assert "with its own client" not in text
+
+
+def test_route_table_has_new_dashboard_backends_run_policyengine_themselves() -> None:
+    table = section_text(SKILL_FILE, "## Which route to use")
+    rows = [row for row in table.splitlines() if row.startswith("| A dashboard's own backend")]
+    assert len(rows) == 1, rows
+    assert "`policyengine`" in rows[0] and "own process" in rows[0], rows[0]
+
+
+def test_planner_household_page_calculates_custom_inputs_through_the_dashboard_api() -> None:
+    planner = PLANNER_FILE.read_text()
+    household_page = single_spaced(planner.split("**Household page**", 1)[1].split("**Standard chrome", 1)[0])
+    assert "spawn-and-poll" not in household_page
+    assert "@policyengine/api-client" in household_page
+    assert "`axes`" in household_page
