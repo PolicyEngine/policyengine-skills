@@ -28,7 +28,7 @@ on:
         type: choice
         options: ['1', '10']
       log_to:
-        description: 'Override destination routing. Blank = auto-routing by verdict (INVESTIGATE → PolicyEngine/microcosm for us and uk, policyengine-{country}-data otherwise; structural → policyengine-{country}). Example: "archive,issue:microcosm"'
+        description: 'Override destination routing. Blank = auto-routing by verdict (INVESTIGATE → PolicyEngine/microcosm for us and uk, or policyengine-uk-data for a uk run on an Enhanced FRS or FRS file, and none for ca; structural → policyengine-us, -uk or -canada). Example: "archive,issue:microcosm"'
         required: false
         default: ''
         type: string

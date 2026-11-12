@@ -12,13 +12,27 @@ A local run can name an Enhanced FRS or FRS file instead. policyengine-uk-data
 builds those files and policyengine.py serves them only by name, as dataset
 overlays, so that run's data issues go to `PolicyEngine/policyengine-uk-data`.
 
-`resolve_issue_repo` restates report-logger.md's rule in Python. The
-differential tests run the bash snippet report-logger.md gives the agent on
-the same inputs, so an edit to one that the other lacks fails here.
+PolicyEngine has no Canada microdata: policyengine.py's bundle holds data for
+us and uk only, and policyengine-canada's one dataset is a three-person
+template. No repo builds the data a Canada issue would concern, so
+report-logger files none and the archive keeps the report. Canada's structural
+issues go to `PolicyEngine/policyengine-canada`.
 
-Invariants, checked for any dataset string:
+gh looks up each `--label` name among the target repo's labels before it
+creates an issue, and stops without creating it when one is missing (cli/cli
+`pkg/cmd/pr/shared/params.go`, `api/queries_repo.go` LabelsToIDs). So
+report-logger passes only the labels the repo has.
+
+`resolve_issue_repo` and `issue_labels` restate report-logger.md's rules in
+Python. The differential tests run the issue-filing bash block report-logger.md
+gives the agent, under bash and, where installed, zsh, with a stand-in `gh` that
+records each call. An edit to the block or to the rules that the other lacks
+fails here.
+
+Invariants, checked for any dataset string and any set of repo labels:
 - routing returns None or a `PolicyEngine/<repo>` name;
-- only INVESTIGATE and structural verdicts route to an issue;
+- only INVESTIGATE and structural verdicts route to an issue, and INVESTIGATE
+  routes to one only for us and uk;
 - structural routing and US INVESTIGATE routing ignore the dataset;
 - UK INVESTIGATE routing lands in microcosm or policyengine-uk-data and reads
   only the dataset's name: it cuts at the last "@" and keeps the last path
@@ -26,14 +40,33 @@ Invariants, checked for any dataset string:
   the file extension, so a name and its hf:// URI agree;
 - only a name that starts with the exact, lower-case `enhanced_frs_` or
   `frs_` goes to policyengine-uk-data;
-- report-logger's bash and `resolve_issue_repo` agree for `us` and `uk`, on
-  any string and on the strings `edge_dataset` builds around those prefixes.
+- the issue carries each wanted label the repo has in some letter case and no
+  other label, so gh never meets a label the repo lacks;
+- report-logger's block files the issue in the reference's repo with the
+  reference's labels, on any string and on the strings `edge_dataset` builds
+  around those prefixes, reads the labels of that same repo, and calls gh not
+  at all for ca;
+- when `gh label list` fails, the block still files the issue, without labels;
+- gh gets the title and the body exactly as the agent wrote them, under bash
+  and zsh, whatever quotes, apostrophes, `$`, backticks or parentheses they
+  hold;
+- for any country but us, uk and ca the block files nothing and says why on
+  stderr;
+- the block routes any dataset string the agent writes into it, quoted as
+  report-logger.md says, the same way it routes that string from the
+  environment.
 """
 from __future__ import annotations
 
+import csv
 import os
+import re
+import shutil
+import string
 import subprocess
+import tempfile
 from functools import lru_cache
+from typing import NamedTuple
 from pathlib import Path
 
 import pytest
@@ -45,8 +78,8 @@ REPORT_LOGGER = (
 )
 
 COUNTRY_MODEL_REPOS = {"us": "policyengine-us", "uk": "policyengine-uk", "ca": "policyengine-canada"}
-OTHER_DATA_REPOS = {"ca": "policyengine-canada-data"}
 UK_DATA_FILE_PREFIXES = ("enhanced_frs_", "frs_")  # files policyengine-uk-data builds
+ISSUE_LABELS = ("calibration", "auto-filed")  # the labels report-logger wants on a data issue
 
 MICROCOSM = "PolicyEngine/microcosm"
 UK_DATA = "PolicyEngine/policyengine-uk-data"
@@ -89,6 +122,27 @@ ENHANCED_FRS_BRANCH_URI = (
     "hf://policyengine/policyengine-uk-data-private/enhanced_frs_2024_25.h5@refs/pr/3"
 )
 
+# Labels that differ from a wanted label by one character, one letter's
+# script, or white space: gh resolves none of them to a wanted label.
+NEAR_MISS_LABELS = (
+    "calibrations",
+    "recalibration",
+    "calibratio",
+    "c.libration",
+    "calibration ",
+    " calibration",
+    "calibration\r",
+    "calıbration",  # dotless i
+    "calİbration",  # dotted capital I
+    "auto-file",
+    "auto-filed2",
+    "auto_filed",
+    "autofiled",
+    "auto.filed",
+    "auto-filed\t",
+    "ａuto-filed",  # fullwidth a
+)
+
 
 def dataset_name(dataset: str | None) -> str:
     """Return the name report-logger routes by: cut at the last "@", keep the last path segment.
@@ -115,36 +169,258 @@ def resolve_issue_repo(verdict: str, country: str, dataset: str | None = None) -
         if dataset_name(dataset).startswith(UK_DATA_FILE_PREFIXES):
             return UK_DATA
         return MICROCOSM
-    return f"PolicyEngine/{OTHER_DATA_REPOS[country]}"
+    return None  # no Canada microdata, so no repo for a ca data issue
+
+
+def gh_resolves_label(name: str, repo_labels) -> bool:
+    """Return whether gh can add label `name` to an issue in a repo with `repo_labels`.
+
+    gh compares names with Go's strings.EqualFold. For the names in ISSUE_LABELS,
+    EqualFold accepts only ASCII case variants: run over every Unicode code point
+    (Go 1.27), it pairs no letter of "calibration" or "auto-filed" with anything
+    beyond its ASCII upper and lower case. Only k and s have such partners
+    (U+212A and U+017F), and neither name holds one.
+    """
+    return any(label.isascii() and label.lower() == name for label in repo_labels)
+
+
+def issue_labels(repo_labels) -> list[str]:
+    """Return the labels report-logger passes to `gh issue create`, in order."""
+    return [name for name in ISSUE_LABELS if gh_resolves_label(name, repo_labels)]
+
+
+def swap_ascii_case(text: str) -> str:
+    """Swap the case of A-Z and a-z, leaving every other character alone."""
+    return text.translate(str.maketrans(string.ascii_letters, string.ascii_letters.swapcase()))
+
+
+# --- Running report-logger's block -------------------------------------------
+
+# Stand-in for gh, defined as a shell function ahead of the block: it records
+# the call (its argument count, then each argument, NUL-terminated), answers
+# `gh label list` (or fails it, when FAKE_GH_LABEL_LIST_FAILS is set), and
+# accepts `gh issue create`, saving its standard input to FAKE_GH_BODY, where
+# `--body-file -` makes gh read the body. A function saves a process per call,
+# which keeps the property tests fast. A grep function stands in for the one
+# Claude Code defines (it runs ugrep): the block calls `command grep`, so the
+# function must never run.
+FAKE_GH_FUNCTION = r"""grep() {
+  printf '%s\n' "report-logger's block called a shell function named grep: grep $*" >&2
+  return 98
+}
+gh() {
+  printf '%s\0' "$#" "$@" >> "$FAKE_GH_LOG"
+  case "$1 $2" in
+    "label list")
+      if [ -n "$FAKE_GH_LABEL_LIST_FAILS" ]; then
+        printf '%s\n' "stand-in gh: HTTP 502: Bad Gateway" >&2
+        return 1
+      fi
+      printf '%s' "$FAKE_GH_LABEL_LIST" ;;
+    "issue create")
+      cat > "$FAKE_GH_BODY"
+      printf '%s\n' "https://github.com/PolicyEngine/stand-in/issues/1" ;;
+    *) printf 'stand-in gh: unexpected call: %s\n' "$*" >&2; return 2 ;;
+  esac
+}
+"""
+# First on PATH, so a block that reaches past the function (`command gh`)
+# fails here instead of running the real gh.
+GUARD_GH = """#!/bin/sh
+echo "report-logger's block ran gh past the stand-in function: gh $*" >&2
+exit 97
+"""
+
+SHELLS = {
+    "bash": ("bash", "-c"),
+    "zsh": ("zsh", "-f", "-c"),  # -f skips the user's startup files
+}
+SHELL_PARAMS = [
+    pytest.param("bash", id="bash"),
+    pytest.param(
+        "zsh",
+        id="zsh",
+        # CI installs zsh, so there a missing zsh fails the zsh runs instead of
+        # skipping them.
+        marks=pytest.mark.skipif(
+            shutil.which("zsh") is None and not os.environ.get("CI"), reason="zsh is not installed"
+        ),
+    ),
+]
+
+
+@pytest.fixture(scope="session")
+def fake_gh_dir(tmp_path_factory) -> Path:
+    """Return a directory holding the guard gh, to put first on PATH."""
+    directory = tmp_path_factory.mktemp("guard-gh")
+    gh = directory / "gh"
+    gh.write_text(GUARD_GH, encoding="utf-8")
+    gh.chmod(0o755)
+    return directory
+
+
+# The block's placeholders. The agent writes the report's values in their
+# place; the tests write the country and dataset as references to the
+# environment, so any string reaches the block's own assignments.
+PLACEHOLDERS = ("'{country}'", "'{dataset_at_run}'", "{title}", "{body}")
+PLACEHOLDER_PATTERN = re.compile("|".join(re.escape(p) for p in PLACEHOLDERS))
+# A title and body that hold what reports hold: apostrophes, dollar amounts,
+# backticks, quotes, parentheses, balanced or not, and lines that start with a
+# tab. bash 3.2 cannot parse a quoted heredoc inside "$(...)" whose body holds
+# an odd number of apostrophes, and a <<- heredoc strips leading tabs.
+TITLE = """INVESTIGATE: CBO's $28B vs our $40B for `ctc_expansion` ("refundability")"""
+BODY = """We estimate $40B; CBO's score doesn't (it shows $28B.
+`$(touch /tmp/report-logger-ran-the-body)` and ${HOME} stay as text.
+EOF
+\t- a tab-led list item
+\t\t- and a nested one
+'single' "double" \\backslash\\ and a trailing backslash \\"""
 
 
 @lru_cache(maxsize=1)
-def routing_snippet() -> str:
-    """Return the lines of report-logger's issue-filing bash block that set DATA_REPO."""
+def issue_block() -> str:
+    """Return report-logger's issue-filing bash block."""
     text = REPORT_LOGGER.read_text(encoding="utf-8")
     section = text.split("### Open issue mechanics", 1)[1]
     block = section.split("```bash\n", 1)[1].split("```", 1)[0]
-    snippet = block.split("gh issue create", 1)[0]
-    assert "DATA_REPO=" in snippet, "report-logger's issue-filing block no longer sets DATA_REPO"
-    return snippet
+    assert "gh issue create" in block, "report-logger's issue-filing block no longer runs gh issue create"
+    for placeholder in PLACEHOLDERS:
+        assert block.count(placeholder) == 1, f"the block should hold {placeholder} once"
+    return block
 
 
-def run_routing_snippet(country: str, dataset: str) -> str:
-    """Run report-logger's bash routing for one country and dataset; return DATA_REPO."""
-    result = subprocess.run(
-        ["bash", "-c", routing_snippet() + '\nprintf %s "$DATA_REPO"'],
-        env={
-            "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+def single_quoted(value: str) -> str:
+    """Quote a value the way report-logger.md tells the agent to: an apostrophe becomes '\\''."""
+    return "'" + value.replace("'", "'\\''") + "'"
+
+
+def filled_block(title: str, body: str, country: str | None = None, dataset: str | None = None) -> str:
+    """Return the block with its placeholders filled in one pass.
+
+    By default the country and dataset become references to the environment.
+    Given a country and dataset, the block holds them as the agent writes them.
+    """
+    values = {
+        "'{country}'": '"$TEST_COUNTRY"' if country is None else single_quoted(country),
+        "'{dataset_at_run}'": '"$TEST_DATASET"' if dataset is None else single_quoted(dataset),
+        "{title}": title,
+        "{body}": body,
+    }
+    return PLACEHOLDER_PATTERN.sub(lambda match: values[match.group(0)], issue_block())
+
+
+def label_list_call(repo: str) -> list[str]:
+    """Return the `gh label list` call whose output the stand-in imitates.
+
+    For this call gh prints each label name on its own line, with A-Z lowered by
+    jq's ascii_downcase.
+    """
+    return ["label", "list", "--repo", repo, "--limit", "1000", "--json", "name", "--jq", ".[].name | ascii_downcase"]
+
+
+class BlockRun(NamedTuple):
+    calls: list[list[str]]  # the gh calls, in order
+    body: str | None  # what gh issue create read on standard input
+    stderr: str
+
+
+def run_block(
+    shell: str,
+    fake_gh_dir: Path,
+    country: str,
+    dataset: str,
+    repo_labels,
+    label_lookup_fails: bool = False,
+    title: str = TITLE,
+    body: str = BODY,
+    literal_fill: bool = False,
+) -> BlockRun:
+    """Run report-logger's issue-filing block with its placeholders filled.
+
+    With literal_fill, the block holds the country and dataset as quoted text,
+    as the agent writes them, rather than reading them from the environment.
+    """
+    lowered = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
+    with tempfile.TemporaryDirectory() as tmp:
+        log = Path(tmp) / "gh-calls"
+        body_file = Path(tmp) / "gh-body"
+        env = {
+            "PATH": f"{fake_gh_dir}{os.pathsep}{os.environ.get('PATH', '/usr/bin:/bin')}",
             "LC_ALL": "C",
-            "country": country,
-            "dataset": dataset,
-        },
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return result.stdout
+            "TEST_COUNTRY": country,
+            "TEST_DATASET": dataset,
+            "FAKE_GH_LOG": str(log),
+            "FAKE_GH_BODY": str(body_file),
+            "FAKE_GH_LABEL_LIST": "\n".join(name.translate(lowered) for name in repo_labels),
+        }
+        if label_lookup_fails:
+            env["FAKE_GH_LABEL_LIST_FAILS"] = "1"
+        result = subprocess.run(
+            [
+                *SHELLS[shell],
+                FAKE_GH_FUNCTION
+                + (filled_block(title, body, country, dataset) if literal_fill else filled_block(title, body)),
+            ],
+            env=env,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        fields = log.read_bytes().split(b"\0")[:-1] if log.exists() else []
+        read_body = body_file.read_bytes().decode("utf-8", "surrogateescape") if body_file.exists() else None
+    calls = []
+    while fields:
+        argc = int(fields[0])
+        calls.append([field.decode("utf-8", "surrogateescape") for field in fields[1 : 1 + argc]])
+        fields = fields[1 + argc :]
+    return BlockRun(calls, read_body, result.stderr)
 
+
+def run_issue_block(shell, fake_gh_dir, country, dataset, repo_labels, label_lookup_fails=False):
+    """Run report-logger's issue-filing block; return the gh calls it made, in order."""
+    return run_block(shell, fake_gh_dir, country, dataset, repo_labels, label_lookup_fails).calls
+
+
+def gh_label_names(value: str) -> list[str]:
+    """Return the label names gh reads from one --label value.
+
+    gh's --label is a pflag StringSlice, which splits each value as one CSV
+    record and reads an empty value as no names (pflag 1.0.10 readAsCSV).
+    """
+    return next(csv.reader([value])) if value else []
+
+
+def filed_issue(calls: list[list[str]]) -> tuple[str, list[str]] | None:
+    """Return (repo, label names gh looks up) for the issue filed, or None for none.
+
+    Fails if the block made any other gh call, or read the labels of a repo
+    other than the issue's.
+    """
+    if not calls:
+        return None
+    *before, create = calls
+    assert create[:2] == ["issue", "create"], f"the block's last gh call is not issue create: {calls}"
+    args = create[2:]
+    assert len(args) % 2 == 0, f"gh issue create got a flag without a value: {args}"
+    values = {"--repo": [], "--title": [], "--body-file": [], "--label": []}
+    for flag, value in zip(args[::2], args[1::2]):
+        assert flag in values, f"gh issue create got an unexpected argument {flag!r}"
+        values[flag].append(value)
+    assert all(len(values[flag]) == 1 for flag in ("--repo", "--title", "--body-file")), values
+    assert values["--body-file"] == ["-"], "gh should read the body from standard input"
+    repo = values["--repo"][0]
+    assert before == [label_list_call(repo)], f"the block should read {repo}'s labels once first: {before}"
+    return repo, [name for value in values["--label"] for name in gh_label_names(value)]
+
+
+def expected_issue(country: str, dataset: str, repo_labels) -> tuple[str, list[str]] | None:
+    """Return the issue the reference files for an INVESTIGATE run, or None."""
+    repo = resolve_issue_repo("INVESTIGATE", country, dataset)
+    return None if repo is None else (repo, issue_labels(repo_labels))
+
+
+# --- Strategies ---------------------------------------------------------------
 
 # Any string an environment variable can hold: no NUL, no lone surrogates.
 any_dataset = st.text(
@@ -192,9 +468,43 @@ NEAR_MISSES = (
     "microcosm_uk_frs_x",
 )
 AT_IN_PATH_URI = "a@b/enhanced_frs_2024_25.h5@1.58.1"
+# Titles and bodies: any text but NUL, which no shell argument can hold, and a
+# line that ends the block's heredoc. A title is one line.
+report_text = st.characters(blacklist_categories=("Cs",), blacklist_characters="\x00")
+issue_title = st.text(
+    alphabet=st.characters(blacklist_categories=("Cs",), blacklist_characters="\x00\n"),
+    max_size=80,
+).filter(lambda title: title != "END_TITLE")
+issue_body = st.text(alphabet=report_text, max_size=300).filter(
+    lambda body: "END_BODY" not in body.split("\n")
+)
 
 
-# --- Examples --------------------------------------------------------------
+def ascii_case_variants(name: str):
+    """Strategy for `name` with each of its letters in either case."""
+    return st.lists(st.booleans(), min_size=len(name), max_size=len(name)).map(
+        lambda upper: "".join(c.upper() if u else c for c, u in zip(name, upper))
+    )
+
+
+# A label name of any characters but a newline (the block reads gh's output one
+# name per line), NUL or a lone surrogate.
+any_label = st.text(
+    alphabet=st.characters(blacklist_categories=("Cs",), blacklist_characters="\x00\n"),
+    min_size=1,
+    max_size=30,
+)
+repo_labels = st.lists(
+    st.one_of(
+        st.sampled_from(ISSUE_LABELS).flatmap(ascii_case_variants),
+        st.sampled_from(NEAR_MISS_LABELS),
+        any_label,
+    ),
+    max_size=8,
+)
+
+
+# --- Examples -----------------------------------------------------------------
 
 
 def test_us_investigate_routes_correctly():
@@ -233,8 +543,14 @@ def test_uk_structural_does_not_route_to_us():
     assert result != "PolicyEngine/policyengine-us"
 
 
-def test_canada_investigate_routes_correctly():
-    assert resolve_issue_repo("INVESTIGATE", "ca") == "PolicyEngine/policyengine-canada-data"
+@pytest.mark.parametrize("dataset", [None, "", "microcosm_uk_2024_25", "enhanced_frs_2024_25"])
+def test_canada_investigate_files_no_issue(dataset):
+    """No repo builds Canada data, whatever dataset the run names."""
+    assert resolve_issue_repo("INVESTIGATE", "ca", dataset) is None
+
+
+def test_canada_structural_routes_to_policyengine_canada():
+    assert resolve_issue_repo("structural", "ca") == "PolicyEngine/policyengine-canada"
 
 
 def test_pass_verdicts_dont_route_to_issues():
@@ -243,7 +559,30 @@ def test_pass_verdicts_dont_route_to_issues():
             assert resolve_issue_repo(verdict, country) is None
 
 
-# --- Properties --------------------------------------------------------------
+def test_issue_label_names_fold_only_to_ascii_case_variants():
+    """gh_resolves_label holds only for lower-case ASCII names without k or s."""
+    for name in ISSUE_LABELS:
+        assert name.isascii() and name == name.lower()
+        assert not set(name) & {"k", "s"}
+
+
+@pytest.mark.parametrize(
+    ("labels", "expected"),
+    [
+        pytest.param([], [], id="neither label, like microcosm and uk-data on 2026-11-08"),
+        pytest.param(
+            ["bug", "calibration"], ["calibration"], id="calibration only, like policyengine-us"
+        ),
+        pytest.param(["auto-filed", "calibration"], ["calibration", "auto-filed"], id="both"),
+        pytest.param(["AUTO-FILED", "Calibration"], ["calibration", "auto-filed"], id="any case"),
+        pytest.param(list(NEAR_MISS_LABELS), [], id="near misses"),
+    ],
+)
+def test_issue_labels(labels, expected):
+    assert issue_labels(labels) == expected
+
+
+# --- Properties ---------------------------------------------------------------
 
 
 @given(
@@ -253,7 +592,7 @@ def test_pass_verdicts_dont_route_to_issues():
 )
 def test_routing_returns_none_or_one_policyengine_repo(verdict, country, dataset):
     result = resolve_issue_repo(verdict, country, dataset)
-    if verdict in ("INVESTIGATE", "structural"):
+    if verdict == "structural" or (verdict == "INVESTIGATE" and country in ("us", "uk")):
         assert result is not None
         owner, _, repo = result.partition("/")
         assert owner == "PolicyEngine"
@@ -282,6 +621,11 @@ def test_uk_investigate_lands_in_microcosm_or_uk_data(dataset):
     assert resolve_issue_repo("INVESTIGATE", "uk", dataset) in {MICROCOSM, UK_DATA}
 
 
+@given(dataset=st.none() | any_dataset)
+def test_ca_investigate_files_no_issue_for_any_dataset(dataset):
+    assert resolve_issue_repo("INVESTIGATE", "ca", dataset) is None
+
+
 @given(name=known_dataset, path=repo_path, rev=revision)
 def test_uk_investigate_routes_a_uri_like_its_dataset_name(name, path, rev):
     uri = f"hf://{path}/{name}.h5@{rev}"
@@ -290,9 +634,27 @@ def test_uk_investigate_routes_a_uri_like_its_dataset_name(name, path, rev):
     )
 
 
-# --- Differential: report-logger's bash against the reference ---------------
+@given(labels=repo_labels)
+def test_issue_labels_are_wanted_labels_gh_resolves_in_order(labels):
+    result = issue_labels(labels)
+    assert result == [name for name in ISSUE_LABELS if name in result]
+    assert all(gh_resolves_label(name, labels) for name in result)
 
 
+@given(labels=repo_labels, more=repo_labels)
+def test_issue_labels_never_drop_a_label_when_the_repo_gains_labels(labels, more):
+    assert set(issue_labels(labels)) <= set(issue_labels(labels + more))
+
+
+@given(labels=repo_labels)
+def test_issue_labels_ignore_letter_case(labels):
+    assert issue_labels([swap_ascii_case(label) for label in labels]) == issue_labels(labels)
+
+
+# --- Differential: report-logger's block against the reference ---------------
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
 @pytest.mark.parametrize("country", ["us", "uk"])
 @pytest.mark.parametrize(
     "dataset",
@@ -307,27 +669,135 @@ def test_uk_investigate_routes_a_uri_like_its_dataset_name(name, path, rev):
         *NEAR_MISSES,
     ],
 )
-def test_report_logger_bash_matches_reference(country, dataset):
-    assert run_routing_snippet(country, dataset) == resolve_issue_repo(
-        "INVESTIGATE", country, dataset
-    )
+def test_report_logger_bash_matches_reference(shell, fake_gh_dir, country, dataset):
+    calls = run_issue_block(shell, fake_gh_dir, country, dataset, [])
+    assert filed_issue(calls) == expected_issue(country, dataset, [])
 
 
-@settings(max_examples=150, deadline=None)
-@given(country=st.sampled_from(["us", "uk"]), dataset=any_dataset | edge_dataset)
-def test_report_logger_bash_matches_reference_for_any_dataset(country, dataset):
-    assert run_routing_snippet(country, dataset) == resolve_issue_repo(
-        "INVESTIGATE", country, dataset
-    )
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize("dataset", ["", "microcosm_uk_2024_25", ENHANCED_FRS_URI])
+def test_report_logger_bash_files_no_issue_for_ca(shell, fake_gh_dir, dataset):
+    """For ca the block calls gh not at all, not even to list labels."""
+    run = run_block(shell, fake_gh_dir, "ca", dataset, list(ISSUE_LABELS))
+    assert run.calls == []
+    assert run.stderr == ""
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "report-logger's bash sends ca to policyengine-ca-data while its prose and "
-        "this reference say policyengine-canada-data; neither repo exists, and "
-        "policyengine.py's bundle has no Canada data"
-    ),
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize("country", ["", "US", "UK", "CA", "fr", "us ", "canada"])
+def test_report_logger_bash_names_a_country_it_cannot_route(shell, fake_gh_dir, country):
+    """A country the block doesn't know files nothing, and stderr says so."""
+    run = run_block(shell, fake_gh_dir, country, "", list(ISSUE_LABELS))
+    assert run.calls == []
+    assert f"report-logger: no data repo for country '{country}'" in run.stderr
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize("country", ["us", "uk"])
+def test_report_logger_bash_hands_gh_a_reports_title_and_body_unchanged(shell, fake_gh_dir, country):
+    run = run_block(shell, fake_gh_dir, country, ENHANCED_FRS_URI, list(ISSUE_LABELS))
+    create = run.calls[-1]
+    assert create[create.index("--title") + 1] == TITLE
+    assert run.body == BODY + "\n"
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize(
+    "title",
+    [
+        pytest.param("  spaces at both ends  ", id="spaces"),
+        pytest.param("\ttabs at both ends\t", id="tabs"),
+        pytest.param("a backslash \\n and a trailing one \\", id="backslashes"),
+        pytest.param("", id="empty"),
+    ],
 )
-def test_report_logger_bash_routes_ca_like_the_reference():
-    assert run_routing_snippet("ca", "") == resolve_issue_repo("INVESTIGATE", "ca")
+def test_report_logger_bash_keeps_a_titles_whitespace_and_backslashes(shell, fake_gh_dir, title):
+    run = run_block(shell, fake_gh_dir, "us", "", [], title=title)
+    create = run.calls[-1]
+    assert create[create.index("--title") + 1] == title
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@settings(max_examples=100, deadline=None)
+@given(title=issue_title, body=issue_body)
+def test_report_logger_bash_hands_gh_any_title_and_body_unchanged(shell, fake_gh_dir, title, body):
+    """The heredocs pass any title and body through, apart from their closing lines."""
+    run = run_block(shell, fake_gh_dir, "us", "", [], title=title, body=body)
+    create = run.calls[-1]
+    assert create[create.index("--title") + 1] == title
+    assert run.body == body + "\n"
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize(
+    "labels",
+    [
+        pytest.param([], id="neither label"),
+        pytest.param(["bug", "calibration"], id="calibration only"),
+        pytest.param(["auto-filed"], id="auto-filed only"),
+        pytest.param(["auto-filed", "calibration"], id="both"),
+        pytest.param(["AUTO-FILED", "Calibration"], id="any case"),
+        pytest.param(list(NEAR_MISS_LABELS), id="near misses"),
+    ],
+)
+def test_report_logger_bash_passes_only_labels_the_repo_has(shell, fake_gh_dir, labels):
+    calls = run_issue_block(shell, fake_gh_dir, "us", "", labels)
+    assert filed_issue(calls) == (MICROCOSM, issue_labels(labels))
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@settings(max_examples=50, deadline=None)
+@given(country=st.sampled_from(["us", "uk", "ca"]), dataset=any_dataset, labels=repo_labels)
+def test_report_logger_bash_files_the_issue_when_the_label_lookup_fails(
+    shell, fake_gh_dir, country, dataset, labels
+):
+    """A failed `gh label list` costs the issue its labels, not the issue itself."""
+    calls = run_issue_block(shell, fake_gh_dir, country, dataset, labels, label_lookup_fails=True)
+    assert filed_issue(calls) == expected_issue(country, dataset, [])
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@settings(max_examples=150, deadline=None)
+@given(
+    country=st.sampled_from(["us", "uk", "ca"]),
+    dataset=any_dataset | edge_dataset,
+    labels=repo_labels,
+)
+def test_report_logger_bash_matches_reference_for_any_input(
+    shell, fake_gh_dir, country, dataset, labels
+):
+    calls = run_issue_block(shell, fake_gh_dir, country, dataset, labels)
+    assert filed_issue(calls) == expected_issue(country, dataset, labels)
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@pytest.mark.parametrize(
+    ("country", "dataset"),
+    [
+        ("us", ""),
+        ("uk", ENHANCED_FRS_URI),
+        ("uk", "microcosm_uk_2024_25"),
+        ("uk", "o'brien/frs_2024_25.h5"),
+        ("ca", ""),
+    ],
+)
+def test_report_logger_bash_routes_a_literal_fill_like_the_reference(shell, fake_gh_dir, country, dataset):
+    """The block routes the values the agent writes into it, apostrophes included."""
+    run = run_block(shell, fake_gh_dir, country, dataset, list(ISSUE_LABELS), literal_fill=True)
+    assert filed_issue(run.calls) == expected_issue(country, dataset, list(ISSUE_LABELS))
+    assert run.stderr == ""
+
+
+@pytest.mark.parametrize("shell", SHELL_PARAMS)
+@settings(max_examples=100, deadline=None)
+@given(
+    country=st.sampled_from(["us", "uk", "ca"]),
+    dataset=any_dataset | edge_dataset,
+    labels=repo_labels,
+)
+def test_report_logger_bash_matches_reference_for_any_literal_fill(
+    shell, fake_gh_dir, country, dataset, labels
+):
+    """Quoting a value as report-logger.md says hands the block any dataset string intact."""
+    run = run_block(shell, fake_gh_dir, country, dataset, labels, literal_fill=True)
+    assert filed_issue(run.calls) == expected_issue(country, dataset, labels)
