@@ -564,19 +564,22 @@ def test_data_pattern_questions_come_in_the_same_order(path: Path, heading: str)
 
 
 @pytest.mark.parametrize(("path", "heading"), DATA_PATTERN_SECTIONS, ids=DATA_PATTERN_SECTION_IDS)
-def test_model_version_and_rate_limits_are_not_reasons_for_an_own_backend(path: Path, heading: str) -> None:
-    # The Public API's model lagging the newest country package is fixed by
-    # updating the Public API, not by each dashboard running its own model.
-    not_reasons = single_spaced(section_text(path, heading)).split("**Not reasons for", 1)
-    assert len(not_reasons) == 2, "the section must say what is not a reason for an own backend"
-    for topic in ("model", "rate limit"):
-        assert topic in not_reasons[1], topic
+def test_rate_limits_are_no_reason_and_model_version_depends_on_weekly_bundles(path: Path, heading: str) -> None:
+    # A rate limit is never a reason for an own backend. The Public API's model
+    # version is one only until the policyengine package's model bundle is
+    # updated weekly.
+    section = single_spaced(section_text(path, heading))
+    not_a_reason = section.split("**Not a reason for", 1)
+    assert len(not_a_reason) == 2, "the section must say what is not a reason for an own backend"
+    assert "rate limit" in not_a_reason[1].split("**", 2)[1]
+    assert "updated weekly" in section
 
 
-def test_new_tool_says_model_version_is_no_reason_for_pattern_c() -> None:
+def test_new_tool_ties_model_version_to_weekly_bundle_updates() -> None:
     prefer_b = NEW_TOOL_FILE.read_text().split("**Prefer Pattern B**", 1)[1].split("\n\n", 1)[0]
     prefer_b = single_spaced(prefer_b.replace("\n> ", "\n"))
-    assert "model" in prefer_b
+    assert "updated weekly" in prefer_b
+    assert "rate limits are not" in prefer_b
     assert "Data and backend patterns" in prefer_b
 
 
@@ -678,3 +681,69 @@ def test_new_tool_says_a_host_outside_the_rewrites_needs_an_allow_list_entry() -
     assert len(hosts) == 1
     paragraph = single_spaced(hosts[0])
     assert "exact" in paragraph and f"`{DASHBOARD_API_ALLOW_LIST_FILE}`" in paragraph
+
+
+# Changes from the dashboard-builder review of 2026-11-12.
+INTEGRATOR_FILE = REPO_ROOT / "targets" / "claude" / "agents" / "dashboard" / "dashboard-integrator.md"
+
+
+def test_tools_skill_says_how_to_check_for_weekly_model_bundle_updates() -> None:
+    patterns = single_spaced(section_text(TOOLS_SKILL_FILE, "## Data and backend patterns"))
+    for detail in ("https://pypi.org/pypi/policyengine/", "`requires_dist`", "`models` extra", "last four weeks"):
+        assert detail in patterns, detail
+    assert "the model version is not a reason for C" in patterns
+    assert "may use C" in patterns
+
+
+def test_preset_scripts_use_the_dashboard_api() -> None:
+    # Presets and the page's live calculations then come from the same model.
+    text = skill_text()
+    rows = [table_row for table_row in text.splitlines() if table_row.startswith("| A dashboard's precompute script")]
+    assert len(rows) == 1 and "dashboard API" in rows[0], rows
+    script = single_spaced(text.split("**From a dashboard's precompute script.**", 1)[1].split("\n## ", 1)[0])
+    assert "https://www.policyengine.org/api/household/calculate" in script
+    assert "time.sleep(60)" in script, "a 429 must wait for the next window"
+    presets = single_spaced(PLANNER_FILE.read_text().split("**Precomputed presets, live custom inputs.**", 1)[1].split("\n\n", 1)[0])
+    assert "/calculate call" not in presets
+    assert "precompute script" in presets and "dashboard API" in presets
+
+
+def test_developers_ask_in_a_new_issue_or_slack() -> None:
+    client = single_spaced(section_text(SKILL_FILE, "### Getting a client"))
+    assert "Ask the Public API's maintainers" not in client
+    assert "new issue in `PolicyEngine/policyengine-api`" in client and "Slack" in client
+    operation = single_spaced(section_text(SKILL_FILE, "## Asking for a new dashboard operation"))
+    assert "new issue in `PolicyEngine/policyengine-app-v2`" in operation and "Slack" in operation
+
+
+def test_integrator_retries_only_502_503_and_504() -> None:
+    integrator = INTEGRATOR_FILE.read_text()
+    assert "retry: 1" not in integrator, "a fixed retry repeats a 429 inside the same minute"
+    assert "[502, 503, 504]" in integrator
+    assert "retry: retryServerErrors" in integrator
+
+
+def test_team_vercel_hosts_work_before_the_rewrite() -> None:
+    text = single_spaced(skill_text())
+    assert "or a Vercel host not named in `appZoneRoutes.ts`)" not in text
+    assert "`<project>-policy-engine.vercel.app`" in text
+    assert "`/deploy-dashboard`" in text
+
+
+def test_pages_take_metadata_names_at_build_time() -> None:
+    text = single_spaced(skill_text())
+    assert "- Read the metadata once per page load." not in skill_text()
+    assert "about 75 MB uncompressed" in text
+    assert "at build time" in text
+
+
+def test_skill_says_what_a_page_shows_after_a_429() -> None:
+    text = single_spaced(skill_text())
+    assert "keep the last answer on screen" in text
+    assert "everyone on the same network" in text
+
+
+def test_skill_says_what_a_dashboard_for_another_country_does() -> None:
+    text = single_spaced(skill_text())
+    assert "serves `us` and `uk` only" in text
+    assert "`policyengine-canada`" in text

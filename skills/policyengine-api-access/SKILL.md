@@ -44,9 +44,14 @@ credential. Pages go through a server that does.
 | Where the code runs | How it reaches the Public API |
 |---|---|
 | A dashboard page (browser) | www.policyengine.org's dashboard API, through `@policyengine/api-client` |
+| A dashboard's precompute script (presets, fixed grids) | The same dashboard API, with plain HTTPS requests and no credential, within the budget below ("From a dashboard's precompute script") |
 | A dashboard's own backend (Modal, Cloud Run, a Vercel function) | Runs `policyengine` in its own process and doesn't call the Public API (policyengine-tools, Pattern C). Only a backend that already has a client sends its token in `Authorization: Bearer` |
-| A CI job or script | Its own Auth0 client, one token per job run |
+| Any other CI job or script | Its own Auth0 client, one token per job run |
 | Python analysis or a notebook | The `policyengine` package (policyengine skill), not REST |
+
+The dashboard API serves `us` and `uk` only. A dashboard for another country, such as Canada,
+precomputes its results with that country's package (`policyengine-canada`) or, when it can't,
+runs that package in its own backend (policyengine-tools, Pattern C).
 
 If a backend exists only to relay one of the four dashboard operations, drop it and call the
 dashboard API from the page instead. Whether a dashboard needs a backend at all is settled by
@@ -133,7 +138,8 @@ failure for `retry_after_seconds`, so polling sooner returns it again. Keep
 - pages on www.policyengine.org itself, which is how dashboards served through the website's
   rewrites (`website/src/data/appZoneRoutes.ts`) reach it: same origin, no CORS;
 - `http://localhost` and `http://127.0.0.1` on any port;
-- the PolicyEngine team's Vercel previews, `*-policy-engine.vercel.app`;
+- the PolicyEngine team's Vercel hosts, `*-policy-engine.vercel.app`: its previews and each
+  project's `<project>-policy-engine.vercel.app` host;
 - each dashboard's own `*.vercel.app` host named in `appZoneRoutes.ts`.
 
 Every other origin gets 403, "Pages on this origin may not call the dashboard API.", and the
@@ -146,11 +152,18 @@ request never reaches the Public API. Allowed request headers are `Content-Type`
 before, or with, the first release whose pages call the dashboard API. Pages served through
 the rewrite are then same-origin on www.policyengine.org, and the dashboard's own
 `*.vercel.app` host is allowed automatically. A dashboard served only from somewhere else (a
-Modal URL, a custom domain, or a Vercel host not named in `appZoneRoutes.ts`) gets 403, which
-the browser shows as a CORS error, until its exact host is added to the dashboard API's allow
-list in `website/src/lib/dashboardApi/cors.ts` in PolicyEngine/policyengine-app-v2 and that
-change is deployed. The allow list takes only exact host names, never a pattern such as
-`*.vercel.app` or `*.modal.run`, because anyone can deploy there.
+Modal URL, a custom domain, or a `*.vercel.app` host that `appZoneRoutes.ts` doesn't name and
+that doesn't end in `-policy-engine.vercel.app`) gets 403, which the browser shows as a CORS
+error, until its exact host is added to the dashboard API's allow list in
+`website/src/lib/dashboardApi/cors.ts` in PolicyEngine/policyengine-app-v2 and that change is
+deployed. The allow list takes only exact host names, never a pattern such as `*.vercel.app`
+or `*.modal.run`, because anyone can deploy there.
+
+The order matters only for the shorter host. A project's `<project>-policy-engine.vercel.app`
+host is allowed from its first deploy, so a page opened there works before the rewrite exists;
+`/deploy-dashboard` relies on that when it deploys first and adds the rewrite afterwards. Its
+`<project>.vercel.app` host, or any other alias, is refused until the rewrite naming it is
+deployed, so a release that sends readers to that host needs the rewrite first.
 
 **Rate limits.** www.policyengine.org's Vercel firewall limits each IP address in
 fixed 60-second windows, counted per Vercel region: 30 household calculations, 120
@@ -165,19 +178,61 @@ on every keystroke.
 **Stay at half of each limit.** Design a page so one person's normal use takes at most 15
 household calculations, 60 economy-comparison reads, and 150 policy creations and metadata
 reads in any minute. Everyone behind one address shares the limits, so the rest is theirs.
+When a calculation is refused for the limit anyway (429 on www.policyengine.org, `status`
+`null` elsewhere), keep the last answer on screen and say that everyone on the same network,
+such as a workshop or an office, shares a limit on calculations a minute, and that the page can
+calculate again within a minute. Don't send the calculation again until then.
 
 - Make one household calculation per user action where you can: put every charted input in
   `axes` in that one call (separate inner lists give a grid over two inputs), and ask for each
   year's outputs in the same household.
 - Keep answers in the page, and don't calculate again for inputs that haven't changed.
-- Precompute fixed households, such as presets, and comparisons of fixed policies.
+- Precompute fixed households, such as presets, and comparisons of fixed policies. A page
+  that also calculates live through the dashboard API computes its presets through the
+  dashboard API too, so both use the same model release ("From a dashboard's precompute
+  script", below).
 - `compareEconomy` reads every 5 seconds, which is 12 reads a minute for each comparison in
   progress, so run at most five comparisons at once, and one where you can.
-- Read the metadata once per page load.
+- Don't load the metadata in a page unless the page needs it: the US metadata is about 75 MB
+  uncompressed. Take the variable and parameter names and labels the page needs at build
+  time. A page that does need it reads it once per page load.
 
 A feature that can't fit this budget, even with `axes`, is precomputed; only one that can't be
 precomputed goes to the dashboard's own backend (policyengine-tools, "Data and backend
 patterns").
+
+**From a dashboard's precompute script.** A Python script that builds a dashboard's presets or
+fixed grids at build time calls the same dashboard API, so its results match what the page
+calculates live. It sends no credential and no `Origin` header, which the dashboard API accepts
+from servers. Keep it within the budget: one calculation per preset or grid slice, with the
+slice's charted input in `axes`, at most 15 a minute, and a wait for the next window after a
+429:
+
+```python
+import time
+
+import requests
+
+HOUSEHOLD_CALCULATION = "https://www.policyengine.org/api/household/calculate"
+
+
+def calculate_household(country: str, household: dict, policy: dict | None = None) -> dict:
+    """One household calculation through the dashboard API, the model the page uses."""
+    body = {"country": country, "household": household}
+    if policy:
+        body["policy"] = policy
+    while True:
+        response = requests.post(HOUSEHOLD_CALCULATION, json=body, timeout=300)
+        if response.status_code == 429:
+            time.sleep(60)  # this minute's limit is used up; never retry at once
+            continue
+        response.raise_for_status()
+        time.sleep(4)  # at most 15 calculations a minute
+        return response.json()["result"]
+```
+
+Fixed comparisons of a policy with current law work the same way through `/api/policies` and
+`/api/economy/compare`, reading every few seconds until the answer's `status` is `ok`.
 
 ## From servers: your own Auth0 client
 
@@ -252,10 +307,11 @@ Also:
 
 ### Getting a client
 
-1. Ask the Public API's maintainers for a client for your caller. Say which repository and
-   service it is, and which environments it needs: production, and staging if previews or local
-   work call the Public API too.
-2. They create a machine-to-machine application in each tenant, with only the
+1. Ask for a client for your caller in a new issue in `PolicyEngine/policyengine-api`, in
+   PolicyEngine's Slack, or both. Say which repository and service it is, and which
+   environments it needs: production, and staging if previews or local work call the Public
+   API too.
+2. The Public API's maintainers create a machine-to-machine application in each tenant, with only the
    `client_credentials` grant and a grant for that tenant's audience, and put the secret straight
    into your caller's secret store. A secret never goes in an issue, a chat message, a PR or a
    file.
@@ -289,15 +345,16 @@ use too, such as the budget-window comparison. "Used unchanged" means the page s
 the route already accepts and uses its answer as it comes back, with nothing computed on top.
 Anything else the four can't give is precomputed, fixed in the country package or the Public
 API, or, last, the dashboard's own backend (policyengine-tools, "Data and backend patterns").
-The Public API's model being older than the one you need is not a reason for any of these:
-build on the dashboard API.
+The Public API's model being older than the one you need is a reason for none of these
+while the `policyengine` package's model bundle is updated weekly; policyengine-tools' "Data
+and backend patterns" says how to check.
 
 Adding one is a change to
 `PolicyEngine/policyengine-app-v2`: a route under `website/src/app/api/` and its check in
 `website/src/lib/dashboardApi/operations.ts`, a method in `packages/api-client`, and a new
-release of `@policyengine/api-client`. Ask for it in an issue in
-`PolicyEngine/policyengine-app-v2` that names the Public API call it maps to, the request and
-answer shapes the dashboard needs, how often a page calls it, and whether its answers can be
+release of `@policyengine/api-client`. Ask for it in a new issue in
+`PolicyEngine/policyengine-app-v2`, in PolicyEngine's Slack, or both, naming the Public API
+call it maps to, the request and answer shapes the dashboard needs, how often a page calls it, and whether its answers can be
 cached. Until it ships, do not call the Public API from the page as a stopgap; precompute the
 data.
 

@@ -36,7 +36,9 @@ Builds the data layer for a dashboard based on the approved `plan.yaml`.
 
 A structural reform goes into the country package as a contributed reform switched on by a `gov.contrib.…` parameter, and then uses Pattern B; it is not a reason for Pattern C.
 
-**Not reasons for `custom-modal`:** the Public API's model being older than the newest country package, or a feature coming close to a rate limit; keep the page within the budget in policyengine-api-access, and precompute what can't fit.
+**The Public API's model version** is a reason for `custom-modal` only while the `policyengine` package's model bundle isn't updated weekly; the plan says what the check in "Data and backend patterns" found.
+
+**Not a reason for `custom-modal`:** a feature coming close to a rate limit; keep the page within the budget in policyengine-api-access, and precompute what can't fit.
 
 Pattern C is the most complex and should be the last resort. If the plan specifies `custom-modal`, the plan MUST include a `reason` explaining why Pattern B is insufficient.
 

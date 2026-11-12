@@ -158,9 +158,10 @@ export default function Home() {
 
 > **Prefer Pattern B** (the dashboard API) unless the tool needs outputs the dashboard API
 > can't give and precomputing can't cover. A structural reform goes into the country package
-> as a contributed reform rather than into a Pattern C backend, and the Public API's model
-> version and rate limits are not reasons for Pattern C (policyengine-tools, "Data and
-> backend patterns"). Pattern C is significantly more complex and should be the last resort.
+> as a contributed reform rather than into a Pattern C backend, rate limits are not reasons
+> for Pattern C, and the Public API's model version is one only while the `policyengine`
+> package's model bundle isn't updated weekly (policyengine-tools, "Data and backend
+> patterns"). Pattern C is significantly more complex and should be the last resort.
 
 Based on the user's choice, add the appropriate data fetching code.
 

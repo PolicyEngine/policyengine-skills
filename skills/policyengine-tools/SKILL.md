@@ -167,12 +167,21 @@ so precomputed presets next to a free-input household calculator make it B.
 - A server a page needs for something other than PolicyEngine results, such as an LLM call or
   sending email, doesn't move its PolicyEngine calculations off the dashboard API.
 
-**Not reasons for C:**
-- The Public API's model is older than the newest `policyengine-us` or `policyengine-uk`
-  release. If a parameter the reform needs isn't in its metadata yet, still build on B and say
-  which model release the dashboard waits for.
-- A feature could come close to a rate limit. Keep it within the budget in
-  policyengine-api-access, and precompute what can't fit.
+**When the Public API's model is older than the release the dashboard needs** (the dashboard
+API's metadata gives the Public API's model release as `result.version`), check whether the
+`policyengine` package's model bundle is updated weekly yet. The bundle is the
+`policyengine-us` and `policyengine-uk` versions each `policyengine` release pins in its
+`models` extra; the Public API runs the bundle its `policyengine` pin names. List the
+`policyengine` releases from the last four weeks on PyPI, read each one's `requires_dist`
+(`https://pypi.org/pypi/policyengine/<version>/json`), and see whether the pin for the
+dashboard's country changed in each of those weeks.
+- If it did, the bundle is updated weekly, and the model version is not a reason for C: build
+  on B and say which model release the dashboard waits for.
+- If it didn't, the bundle isn't updated weekly yet, and the dashboard may use C, running the
+  release it needs. Say in the plan that the check found no weekly updates.
+
+**Not a reason for C:** a feature coming close to a rate limit. Keep it within the budget in
+policyengine-api-access, and precompute what can't fit.
 
 The patterns:
 

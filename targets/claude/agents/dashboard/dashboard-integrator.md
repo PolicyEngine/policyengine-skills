@@ -143,9 +143,30 @@ export function buildChartData(
 
 For `data_pattern: policyengine-api`, calculate from debounced form values, so typing or dragging a slider sends one calculation when the user pauses, not one per keystroke: the dashboard API allows 30 household calculations a minute from one address. A query keyed on the debounced values also skips values it has already calculated:
 
+Retry only an answer that says the service failed for a moment (502, 503 or 504), once, after the wait it gives. Never retry a 429, or a `status` `null` that may be one: the limit counts fixed 60-second windows, so a retry a second later is refused again. A 400 or a 403 won't change either.
+
 ```typescript
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { PolicyEngineApiError } from '@policyengine/api-client';
+
+const RETRYABLE_STATUSES = [502, 503, 504];
+
+/** TanStack Query's retry: once, and only after a 502, 503 or 504. */
+export function retryServerErrors(failureCount: number, error: unknown): boolean {
+  return (
+    failureCount < 1 &&
+    error instanceof PolicyEngineApiError &&
+    error.status !== null &&
+    RETRYABLE_STATUSES.includes(error.status)
+  );
+}
+
+/** Wait as long as the answer's Retry-After says, or 5 seconds. */
+export function retryDelayFromAnswer(_failureCount: number, error: unknown): number {
+  const seconds = error instanceof PolicyEngineApiError ? error.retryAfterSeconds : null;
+  return (seconds ?? 5) * 1000;
+}
 
 /** The value, once it has stopped changing for delayMilliseconds. */
 export function useDebouncedValue<Value>(value: Value, delayMilliseconds = 500): Value {
@@ -163,7 +184,8 @@ export function useHouseholdCalculation(values: FormValues, countryId: 'us' | 'u
   return useQuery({
     queryKey: ['household', countryId, debouncedValues],
     queryFn: ({ signal }) => calculate(countryId, buildHouseholdDict(debouncedValues), signal),
-    retry: 1,
+    retry: retryServerErrors,
+    retryDelay: retryDelayFromAnswer,
   });
 }
 ```
@@ -239,7 +261,8 @@ export function useIncomeVariation(baseValues: FormValues, countryId: 'us' | 'uk
     },
     // Only run when required inputs are set; UK households have no state.
     enabled: countryId === 'uk' || !!debouncedValues.state,
-    retry: 1,
+    retry: retryServerErrors, // Step 4
+    retryDelay: retryDelayFromAnswer,
     staleTime: 30 * 60 * 1000,
   });
 }
