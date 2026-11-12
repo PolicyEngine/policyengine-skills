@@ -70,8 +70,9 @@ HTTP 400 to any other parameter, such as `dataset`, or `breakdown` on the budget
 The executor selects data by region: national runs use the default that
 `/{country}/metadata` lists under `economy_options.datasets`, and US state and district
 runs use ACS-local data. The gateway's `policyengine_bundle` describes the app default,
-so it cannot identify a regional run's file. Preserve the annual result's top-level
-`data_version`; leave an unverified dataset name null. The budget-window result reports
+so it cannot identify a regional run's file. Preserve the worker's top-level `dataset`
+when supplied (UK local-area breakdowns include it), and its `data_version`; leave an
+unverified dataset name null. The budget-window result reports
 no dataset or model versions, so do not fill those from current metadata.
 The household `POST /{country}/calculate`
 body nests values by year (`{"people": {"you": {"age": {"2026": 40}}}, "households": {...}}`);

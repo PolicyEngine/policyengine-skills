@@ -12,7 +12,7 @@ region, including ACS-local for US states and congressional districts.
 An annual result's gateway `policyengine_bundle` describes the app default,
 not necessarily the selected regional file. The worker's top-level
 `data_version` describes the run. `api_run_dataset` preserves that version
-and leaves regional dataset names unknown. A budget-window result carries
+and any explicit worker dataset; other regional names stay unknown. A budget-window result carries
 no provenance. `run_dataset` compares a known identity, including a resolved
 local URI. These tests execute the helpers and recording examples directly
 from microsim-runner.md.
@@ -445,6 +445,46 @@ def test_other_dataset_never_borrows_the_default_release():
 
 
 # --- Gateway bundle versus the run's provenance -----------------------------
+
+
+@pytest.mark.parametrize("region", ["uk", "local_authority/E09000001"])
+def test_explicit_worker_dataset_wins_even_for_a_country_wide_local_area_breakdown(
+    region,
+):
+    # LocalAreaBreakdownBuilder names the local-area dataset, while the
+    # gateway bundle still names the national default for region=uk.
+    default = UK_METADATA_DATASETS[0]
+    result = {
+        "kind": "local_areas",
+        "dataset": "microcosm_uk_2024_25_local_areas",
+        "data_version": "local-area-worker-release",
+        "policyengine_bundle": {
+            "dataset": default["dataset_uri"],
+            "data_version": default["data_version"],
+        },
+    }
+    assert api_run_dataset(
+        result, UK_METADATA_DATASETS, country="uk", region=region
+    ) == {
+        "dataset": "microcosm_uk_2024_25_local_areas",
+        "data_version": "local-area-worker-release",
+        "dataset_matches_default": False,
+    }
+
+
+def test_local_area_result_without_its_dataset_never_borrows_the_national_identity():
+    result = {
+        "kind": "local_areas",
+        "policyengine_bundle": {
+            "dataset": UK_METADATA_DATASETS[0]["dataset_uri"],
+            "data_version": UK_METADATA_DATASETS[0]["data_version"],
+        },
+    }
+    assert api_run_dataset(result, UK_METADATA_DATASETS, country="uk", region="uk") == {
+        "dataset": None,
+        "data_version": None,
+        "dataset_matches_default": None,
+    }
 
 
 @pytest.mark.parametrize("region", ["us", "US"])

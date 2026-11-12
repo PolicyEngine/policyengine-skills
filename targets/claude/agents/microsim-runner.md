@@ -63,9 +63,9 @@ For a UK run, call the same routes under `/uk/` with `region=uk` and baseline po
 
 ### Dataset check (REQUIRED)
 
-After the run completes, record the provenance the response supports and compare it with the default that `/{country}/metadata` lists. The gateway's `policyengine_bundle` describes the app's default dataset, even for a regional run that loads another dataset. The worker's top-level `data_version` reports the run's revision; preserve it ahead of the bundle's release. For a regional API run, record `dataset` as null because the response does not identify its selected file. Do not infer the file from a release-name prefix. A budget-window result reports neither a bundle nor a release, so its dataset and release both stay null.
+After the run completes, record the provenance the response supports and compare it with the default that `/{country}/metadata` lists. The gateway's `policyengine_bundle` describes the app's default dataset, even for a regional run that loads another dataset. Preserve an explicit top-level `dataset` from the worker, as a UK `kind: "local_areas"` result supplies, ahead of that bundle. The worker's top-level `data_version` reports the run's revision; preserve it ahead of the bundle's release. Otherwise, a regional API result leaves `dataset` null because it does not identify the selected file. Do not infer the file from a release-name prefix. A budget-window result reports neither a bundle nor a release, so its dataset and release both stay null.
 
-The gateway contract comes from `bundle_payloads.py:build_policyengine_bundle`; regional selection and the worker's release come from the executor's `region_resolution.py:resolve_region`, `simulation_runtime.py:_resolve_dataset_selection` and `simulation_output_provenance.py:output_data_version` (policyengine-api-v2 `a6b12d7b8`). `run_dataset` below compares a known dataset URI, for local runs and national API bundles. `api_run_dataset` applies the gateway distinction before using it. URIs can start `hf://` or `gs://`; the name follows policyengine.py's `dataset_logical_name`.
+The gateway contract comes from `bundle_payloads.py:build_policyengine_bundle`; regional selection and the worker's release come from the executor's `region_resolution.py:resolve_region`, `simulation_runtime.py:_resolve_dataset_selection` and `simulation_output_provenance.py:output_data_version` (policyengine-api-v2 `a6b12d7b8`). `simulation_output_local_areas.py:LocalAreaBreakdownBuilder` reports the selected dataset even when `region=uk` requests the local-area breakdown. `run_dataset` below compares a known dataset URI, for local runs and national API bundles. `api_run_dataset` applies the gateway distinction before using it. URIs can start `hf://` or `gs://`; the name follows policyengine.py's `dataset_logical_name`.
 
 ```python
 from pathlib import PurePosixPath
@@ -102,8 +102,11 @@ def api_run_dataset(result, datasets, *, country, region):
     result = result or {}
     bundle = result.get("policyengine_bundle") or {}
     worker_version = result.get("data_version") or None
+    worker_dataset = result.get("dataset")
+    if isinstance(worker_dataset, str) and worker_dataset not in ("", "default"):
+        return run_dataset({"dataset": worker_dataset, "data_version": worker_version}, datasets)
     default = next(entry for entry in datasets if entry.get("default"))
-    if region.lower() != country.lower() or not bundle:
+    if region.lower() != country.lower() or result.get("kind") == "local_areas" or not bundle:
         matches = None
         if worker_version and default.get("data_version"):
             if worker_version != default["data_version"]:
@@ -384,7 +387,7 @@ The agent normalizes the raw API response into this canonical shape. **Always in
 }
 ```
 
-**`dataset` and `data_version`** name the dataset that backed the run and its version when the response verifies them; otherwise use null. /analyze-policy records them in the archive's frontmatter as `dataset_at_run` and `data_version_at_run`, and report-logger routes a UK data issue by the dataset. On the API path, call `api_run_dataset` with the whole result and the requested country and region. A regional response preserves the worker's top-level `data_version` and leaves `dataset` null, because its gateway bundle describes the app default rather than the selected file. A budget-window result leaves all three provenance fields and `model_version` null. On the local path, compute the dataset fields as "Process — Local path" shows. For an annual API result, `model_version` comes from the worker's `model_version`, then from its bundle; metadata never fills a missing run version.
+**`dataset` and `data_version`** name the dataset that backed the run and its version when the response verifies them; otherwise use null. /analyze-policy records them in the archive's frontmatter as `dataset_at_run` and `data_version_at_run`, and report-logger routes a UK data issue by the dataset. On the API path, call `api_run_dataset` with the whole result and the requested country and region. It preserves the worker's explicit top-level dataset and release, including for UK local-area breakdowns. A regional response without a worker dataset leaves `dataset` null, because its gateway bundle describes the app default rather than the selected file. A budget-window result leaves all three provenance fields and `model_version` null. On the local path, compute the dataset fields as "Process — Local path" shows. For an annual API result, `model_version` comes from the worker's `model_version`, then from its bundle; metadata never fills a missing run version.
 
 **Sign conventions:**
 - `annual_cost_billion`: positive = revenue/spending COST to government (reform makes the gov spend more or collect less). For a cap repeal like SALT, this is a positive number (revenue loss to gov).
