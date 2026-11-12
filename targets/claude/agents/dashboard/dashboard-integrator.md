@@ -143,16 +143,16 @@ export function buildChartData(
 
 For `data_pattern: policyengine-api`, calculate from debounced form values, so typing or dragging a slider sends one calculation when the user pauses, not one per keystroke: the dashboard API allows 30 household calculations a minute from one address. A query keyed on the debounced values also skips values it has already calculated:
 
-Retry only an answer that says the service failed for a moment (502, 503 or 504), once, after the wait it gives. Never retry a 429, or a `status` `null` that may be one: the limit counts fixed 60-second windows, so a retry a second later is refused again. A 400 or a 403 won't change either.
+Retry only an answer that says the service failed for a moment (502 or 503), once, after the wait it gives. Don't retry a 504: the household calculation has already waited 750 s for the Public API, so show the failure instead. Never retry a 429, or a `status` `null` that may be one: the limit counts fixed 60-second windows, so a retry a second later is refused again. A 400 or a 403 won't change either.
 
 ```typescript
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { PolicyEngineApiError } from '@policyengine/api-client';
 
-const RETRYABLE_STATUSES = [502, 503, 504];
+const RETRYABLE_STATUSES = [502, 503];
 
-/** TanStack Query's retry: once, and only after a 502, 503 or 504. */
+/** TanStack Query's retry: once, and only after a 502 or 503. */
 export function retryServerErrors(failureCount: number, error: unknown): boolean {
   return (
     failureCount < 1 &&
@@ -186,6 +186,7 @@ export function useHouseholdCalculation(values: FormValues, countryId: 'us' | 'u
     queryFn: ({ signal }) => calculate(countryId, buildHouseholdDict(debouncedValues), signal),
     retry: retryServerErrors,
     retryDelay: retryDelayFromAnswer,
+    placeholderData: keepPreviousData, // the last chart stays while the next one calculates
   });
 }
 ```
@@ -222,9 +223,38 @@ For every component that displays data:
 )}
 ```
 
-**Error state:**
+**Error state:** for `data_pattern: policyengine-api`, a 429, or a `status` `null` (how a 429 reaches a page on another origin), gets its own message with no Retry button: the limit counts calculations a minute from the reader's network, and policyengine-api-access says not to send again until the minute is up. Keep the last answer on screen meanwhile, so render charts and results from `useLastAnswer(...)` rather than straight from the query or mutation:
+
 ```tsx
-{mutation.isError && (
+import { useEffect, useState } from 'react';
+import { PolicyEngineApiError } from '@policyengine/api-client';
+
+/** A refusal for the per-minute limit, or a failure that may be one. */
+export function isRateLimited(error: unknown): boolean {
+  return error instanceof PolicyEngineApiError && (error.status === 429 || error.status === null);
+}
+
+/** The latest answer, kept while a newer calculation is refused or fails. */
+export function useLastAnswer<Answer>(answer: Answer | undefined): Answer | undefined {
+  const [lastAnswer, setLastAnswer] = useState(answer);
+  useEffect(() => {
+    if (answer !== undefined) setLastAnswer(answer);
+  }, [answer]);
+  return lastAnswer;
+}
+```
+
+```tsx
+{mutation.isError && isRateLimited(mutation.error) && (
+  <div className="notice">
+    <p>
+      Too many calculations came from your network in the last minute. Everyone on the same
+      network, such as an office or a workshop, shares this limit. The page can calculate
+      again within a minute.
+    </p>
+  </div>
+)}
+{mutation.isError && !isRateLimited(mutation.error) && (
   <div className="error-message">
     <p>Something went wrong. Please try again.</p>
     <button onClick={() => mutation.reset()}>Retry</button>
@@ -263,6 +293,7 @@ export function useIncomeVariation(baseValues: FormValues, countryId: 'us' | 'uk
     enabled: countryId === 'uk' || !!debouncedValues.state,
     retry: retryServerErrors, // Step 4
     retryDelay: retryDelayFromAnswer,
+    placeholderData: keepPreviousData, // the last chart stays while the next one calculates
     staleTime: 30 * 60 * 1000,
   });
 }

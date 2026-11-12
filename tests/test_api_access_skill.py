@@ -689,7 +689,7 @@ INTEGRATOR_FILE = REPO_ROOT / "targets" / "claude" / "agents" / "dashboard" / "d
 
 def test_tools_skill_says_how_to_check_for_weekly_model_bundle_updates() -> None:
     patterns = single_spaced(section_text(TOOLS_SKILL_FILE, "## Data and backend patterns"))
-    for detail in ("https://pypi.org/pypi/policyengine/", "`requires_dist`", "`models` extra", "last four weeks"):
+    for detail in ("https://pypi.org/pypi/policyengine/", "`requires_dist`", "`models` extra", "four 7-day periods"):
         assert detail in patterns, detail
     assert "the model version is not a reason for C" in patterns
     assert "may use C" in patterns
@@ -716,10 +716,12 @@ def test_developers_ask_in_a_new_issue_or_slack() -> None:
     assert "new issue in `PolicyEngine/policyengine-app-v2`" in operation and "Slack" in operation
 
 
-def test_integrator_retries_only_502_503_and_504() -> None:
+def test_integrator_retries_only_502_and_503() -> None:
+    # A household calculation's 504 comes after a 750-second wait
+    # (app-v2#1560), so retrying it could hold one calculation for 25 minutes.
     integrator = INTEGRATOR_FILE.read_text()
     assert "retry: 1" not in integrator, "a fixed retry repeats a 429 inside the same minute"
-    assert "[502, 503, 504]" in integrator
+    assert "[502, 503]" in integrator and "[502, 503, 504]" not in integrator
     assert "retry: retryServerErrors" in integrator
 
 
@@ -756,3 +758,81 @@ def test_504_row_gives_the_household_calculation_its_750_second_wait() -> None:
     assert "750 s for a household calculation" in row
     assert "40 s for a policy or a comparison read" in row and "60 s for metadata" in row
     assert "100 s" not in skill_text()
+
+
+# Changes from the dashboard-builder review's second round (2026-11-12).
+CREATE_DASHBOARD_FILE = REPO_ROOT / "targets" / "claude" / "commands" / "create-dashboard.md"
+
+
+def planner_presets_paragraph() -> str:
+    text = PLANNER_FILE.read_text()
+    return single_spaced(text.split("**Precomputed presets, live custom inputs.**", 1)[1].split("\n\n", 1)[0])
+
+
+def precompute_script_section() -> str:
+    return single_spaced(skill_text().split("**From a dashboard's precompute script.**", 1)[1].split("\n## ", 1)[0])
+
+
+def test_presets_come_from_where_the_page_calculates_live() -> None:
+    # On custom-modal, presets from the dashboard API would run an older model
+    # than the backend's live calculations: two answers for one household.
+    presets = planner_presets_paragraph()
+    assert "On `custom-modal`" in presets and "the backend's pinned `policyengine` release" in presets
+    rows = [table_row for table_row in skill_text().splitlines() if table_row.startswith("| A dashboard's precompute script")]
+    assert len(rows) == 1
+    assert "same place as the page's live calculations" in rows[0] and "pinned" in rows[0]
+
+
+def test_weekly_check_counts_raised_pins_in_7_day_periods_and_the_public_apis_release() -> None:
+    patterns = single_spaced(section_text(TOOLS_SKILL_FILE, "## Data and backend patterns"))
+    assert "each of the four 7-day periods ending today" in patterns
+    assert "above every earlier release's pin" in patterns
+    assert "releases that lower it don't count" in patterns
+    assert "`result.version`" in patterns and "highest pin from seven days ago" in patterns
+
+
+def test_a_plan_on_c_names_its_release_and_moves_to_b_once_the_check_passes() -> None:
+    patterns = single_spaced(section_text(TOOLS_SKILL_FILE, "## Data and backend patterns"))
+    assert "moves to B once the check passes" in patterns
+    planner = single_spaced(section_text(PLANNER_FILE, "### Step 4: Determine Data Pattern"))
+    assert "moves to `policyengine-api` once the check passes" in planner
+
+
+def test_precomputed_dashboard_may_run_the_pinned_package_when_the_check_fails() -> None:
+    patterns = single_spaced(section_text(TOOLS_SKILL_FILE, "## Data and backend patterns"))
+    assert "a precomputed dashboard's script may run that release with the `policyengine` package" in patterns
+
+
+def test_precompute_example_waits_longer_than_the_route() -> None:
+    # The household route waits up to 750 s and may run for 800 s (app-v2#1560).
+    timeouts = re.findall(r"timeout=(\d+)", precompute_script_section())
+    assert timeouts and all(int(seconds) > 800 for seconds in timeouts), timeouts
+
+
+def test_no_credential_path_is_only_for_a_dashboards_own_presets_and_grids() -> None:
+    script = precompute_script_section()
+    assert "only for a dashboard's own build-time presets and grids" in script
+    assert "Any other script" in script and "its own client" in script
+
+
+def test_integrator_keeps_the_last_answer_and_explains_a_429() -> None:
+    integrator = INTEGRATOR_FILE.read_text()
+    assert "placeholderData: keepPreviousData" in integrator
+    assert "export function useLastAnswer" in integrator
+    assert "export function isRateLimited" in integrator
+    assert "shares this limit" in integrator
+
+
+def test_create_dashboard_precomputes_comparisons_through_the_dashboard_api() -> None:
+    command = single_spaced(CREATE_DASHBOARD_FILE.read_text())
+    assert "`POST /us/policy`" not in command
+    assert "https://www.policyengine.org/api/policies" in command
+    assert "/api/economy/compare" in command
+
+
+def test_new_tool_menu_and_hosts_match_the_skill() -> None:
+    text = NEW_TOOL_FILE.read_text()
+    menu = [entry for entry in text.splitlines() if "**C) Custom Modal API**" in entry]
+    assert len(menu) == 1 and "structural reforms," not in menu[0], menu
+    hosts = [paragraph for paragraph in text.split("\n\n") if paragraph.startswith("The dashboard API answers pages")]
+    assert len(hosts) == 1 and "-policy-engine.vercel.app" in hosts[0]

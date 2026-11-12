@@ -36,7 +36,7 @@ Builds the data layer for a dashboard based on the approved `plan.yaml`.
 
 A structural reform goes into the country package as a contributed reform switched on by a `gov.contrib.…` parameter, and then uses Pattern B; it is not a reason for Pattern C.
 
-**The Public API's model version** is a reason for `custom-modal` only while the `policyengine` package's model bundle isn't updated weekly; the plan says what the check in "Data and backend patterns" found.
+**The Public API's model version** is a reason for `custom-modal` only while the `policyengine` package's model bundle isn't updated weekly; the plan says what the check in "Data and backend patterns" found and which release the dashboard needs. A `custom-modal` dashboard's presets come from its backend's pinned release, not the dashboard API, so the page shows one model release.
 
 **Not a reason for `custom-modal`:** a feature coming close to a rate limit; keep the page within the budget in policyengine-api-access, and precompute what can't fit.
 

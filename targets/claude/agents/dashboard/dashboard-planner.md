@@ -152,16 +152,20 @@ in addition to whatever the description asks for:
      calculation through `@policyengine/api-client` (`policyengine-api`): one
      calculation per user action, after a pause in typing, with every charted
      input varied by `axes` in that same call. A Modal backend calculates them
-     only when Step 4 gives `custom-modal`. The presets' precompute script
-     calls the same dashboard API's household calculation, so presets and
-     custom inputs use the same model release (policyengine-api-access, "From
-     a dashboard's precompute script"). Plan a full precomputed grid ONLY when
-     the description forbids live calculation; grid precompute burns build
-     time and caps the input space. For the `precomputed` data pattern, the
-     precompute script sweeps a grid over the lever inputs through the
-     dashboard API's household calculation (one calculation per grid slice,
-     the slice's input in `axes`, at most 15 a minute; household-level, never
-     a microsim) so every control combination resolves to a precomputed point.
+     only when Step 4 gives `custom-modal`. Presets come from the same place
+     as the custom inputs, so both use one model release. On
+     `policyengine-api`, the presets' precompute script calls the dashboard
+     API's household calculation (policyengine-api-access, "From a
+     dashboard's precompute script"). On `custom-modal`, it runs the
+     backend's pinned `policyengine` release in its own process, never the
+     dashboard API. Plan a full precomputed grid ONLY when the description
+     forbids live calculation; grid precompute burns build time and caps the
+     input space. For the `precomputed` data pattern, the precompute script
+     sweeps a grid over the lever inputs through the dashboard API's
+     household calculation (one calculation per grid slice, the slice's input
+     in `axes`, at most 15 a minute; household-level, never a microsim), or
+     with the pinned package when Step 4's model-version check allows it, so
+     every control combination resolves to a precomputed point.
 
 **Standard chrome (every dashboard, no exceptions):** the top of every page
 is the real PolicyEngine site header — ui-kit `PolicyEngineHeader` with the
@@ -246,7 +250,7 @@ Choose from the data patterns defined in the `policyengine-tools` skill (loaded 
 
 **Fix gaps where they are:** a structural reform goes into the country package as a contributed reform switched on by a `gov.contrib.…` parameter, and the plan uses `policyengine-api` once the Public API's model includes it; a general gap in the Public API is a change to the Public API. A server the dashboard needs for something other than PolicyEngine results (an LLM call, sending email) doesn't change its `data_pattern`.
 
-**The Public API's model version:** when it is older than the release the dashboard needs, run the check in the skill's "Data and backend patterns". If the `policyengine` package's model bundle is updated weekly, plan `policyengine-api` and say in the plan which model release it waits for; if it isn't, `custom-modal` is allowed, and the plan says the check found no weekly updates.
+**The Public API's model version:** when it is older than the release the dashboard needs, run the check in the skill's "Data and backend patterns". If the `policyengine` package's model bundle is updated weekly, plan `policyengine-api` and say in the plan which model release it waits for. If it isn't, `custom-modal` is allowed, and a `precomputed` dashboard's script may run that release with the `policyengine` package; the plan says the check found no weekly updates, names the release the dashboard needs, and says the dashboard moves to `policyengine-api` once the check passes.
 
 **Not a reason for `custom-modal`:** a feature coming close to a rate limit (keep it within the budget in policyengine-api-access, and precompute what can't fit).
 

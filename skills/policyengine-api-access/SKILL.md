@@ -44,7 +44,7 @@ credential. Pages go through a server that does.
 | Where the code runs | How it reaches the Public API |
 |---|---|
 | A dashboard page (browser) | www.policyengine.org's dashboard API, through `@policyengine/api-client` |
-| A dashboard's precompute script (presets, fixed grids) | The same dashboard API, with plain HTTPS requests and no credential, within the budget below ("From a dashboard's precompute script") |
+| A dashboard's precompute script (presets, fixed grids) | The same place as the page's live calculations, so both use one model release: on Pattern B, the dashboard API, with plain HTTPS requests and no credential, within the budget below ("From a dashboard's precompute script"); on Pattern C, the backend's pinned `policyengine` release in its own process. A precomputed-only dashboard uses the dashboard API, or the pinned package when policyengine-tools' model-version check allows it |
 | A dashboard's own backend (Modal, Cloud Run, a Vercel function) | Runs `policyengine` in its own process and doesn't call the Public API (policyengine-tools, Pattern C). Only a backend that already has a client sends its token in `Authorization: Bearer` |
 | Any other CI job or script | Its own Auth0 client, one token per job run |
 | Python analysis or a notebook | The `policyengine` package (policyengine skill), not REST |
@@ -204,9 +204,12 @@ patterns").
 **From a dashboard's precompute script.** A Python script that builds a dashboard's presets or
 fixed grids at build time calls the same dashboard API, so its results match what the page
 calculates live. It sends no credential and no `Origin` header, which the dashboard API accepts
-from servers. Keep it within the budget: one calculation per preset or grid slice, with the
-slice's charted input in `axes`, at most 15 a minute, and a wait for the next window after a
-429:
+from servers. This path is only for a dashboard's own build-time presets and grids. Any other
+script, especially a larger or recurring one, gets its own client ("Getting a client", below).
+Keep it within the budget: one calculation per preset or grid slice, with the slice's charted
+input in `axes`, at most 15 a minute, and a wait for the next window after a 429. Run a long
+sweep from CI rather than from an office network, whose limit everyone there shares while it
+runs:
 
 ```python
 import time
@@ -222,7 +225,8 @@ def calculate_household(country: str, household: dict, policy: dict | None = Non
     if policy:
         body["policy"] = policy
     while True:
-        response = requests.post(HOUSEHOLD_CALCULATION, json=body, timeout=300)
+        # The route waits up to 750 s for the Public API and runs for at most 800 s.
+        response = requests.post(HOUSEHOLD_CALCULATION, json=body, timeout=900)
         if response.status_code == 429:
             time.sleep(60)  # this minute's limit is used up; never retry at once
             continue
@@ -380,7 +384,7 @@ could be read), `message`, `body` and `retryAfterSeconds`. The dashboard API's o
 | 502 | Public API, economy comparison | `status: "error"` with `retry_after_seconds`: the comparison failed | Show the failure; do not ask again before `retry_after_seconds` |
 | 503 | Public API | `{"status":"error","message":"Authentication is unavailable"}`: it could not check the token (Auth0's signing keys unreachable, or its own settings) | Keep the token; retry with back-off. It is not a refusal of the client |
 | 503 | Dashboard API | Its own settings are missing or incomplete, for example on a website preview | Not retryable; report it to the website's maintainers |
-| 504 | Dashboard API | The Public API did not answer in time (750 s for a household calculation, 40 s for a policy or a comparison read, 60 s for metadata) | Retry later with back-off |
+| 504 | Dashboard API | The Public API did not answer in time (750 s for a household calculation, 40 s for a policy or a comparison read, 60 s for metadata) | Retry later with back-off. A household calculation has already waited 750 s, so a page shows the failure instead of retrying it |
 
 ## Related skills
 

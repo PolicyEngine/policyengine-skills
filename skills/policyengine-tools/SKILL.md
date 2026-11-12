@@ -172,13 +172,22 @@ API's metadata gives the Public API's model release as `result.version`), check 
 `policyengine` package's model bundle is updated weekly yet. The bundle is the
 `policyengine-us` and `policyengine-uk` versions each `policyengine` release pins in its
 `models` extra; the Public API runs the bundle its `policyengine` pin names. List the
-`policyengine` releases from the last four weeks on PyPI, read each one's `requires_dist`
-(`https://pypi.org/pypi/policyengine/<version>/json`), and see whether the pin for the
-dashboard's country changed in each of those weeks.
-- If it did, the bundle is updated weekly, and the model version is not a reason for C: build
-  on B and say which model release the dashboard waits for.
-- If it didn't, the bundle isn't updated weekly yet, and the dashboard may use C, running the
-  release it needs. Say in the plan that the check found no weekly updates.
+`policyengine` releases on PyPI in upload order and read each one's `requires_dist`
+(`https://pypi.org/pypi/policyengine/<version>/json`). The bundle is updated weekly when both
+hold:
+- in each of the four 7-day periods ending today, a release raised the pin for the
+  dashboard's country above every earlier release's pin (releases that lower it don't count,
+  such as a fix released from an older branch); and
+- the Public API keeps up: the release the dashboard API's metadata reports
+  (`result.version`) is no older than the highest pin from seven days ago.
+
+What follows:
+- If the bundle is updated weekly, the model version is not a reason for C: build on B and say
+  which model release the dashboard waits for.
+- If it isn't, the dashboard may use C, running the release it needs, and a precomputed
+  dashboard's script may run that release with the `policyengine` package instead of calling
+  the dashboard API. The plan says the check found no weekly updates, names the release the
+  dashboard needs, and the dashboard moves to B once the check passes.
 
 **Not a reason for C:** a feature coming close to a rate limit. Keep it within the budget in
 policyengine-api-access, and precompute what can't fit.
