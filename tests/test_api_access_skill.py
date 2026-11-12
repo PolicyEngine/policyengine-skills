@@ -747,3 +747,12 @@ def test_skill_says_what_a_dashboard_for_another_country_does() -> None:
     text = single_spaced(skill_text())
     assert "serves `us` and `uk` only" in text
     assert "`policyengine-canada`" in text
+
+
+def test_504_row_gives_the_household_calculation_its_750_second_wait() -> None:
+    # PolicyEngine/policyengine-app-v2#1560: HOUSEHOLD_CALCULATION_WAIT_MILLISECONDS
+    # is 750_000, the calculator route's wait; the other routes keep theirs.
+    row = error_table_row(skill_text(), "504", "Dashboard API")
+    assert "750 s for a household calculation" in row
+    assert "40 s for a policy or a comparison read" in row and "60 s for metadata" in row
+    assert "100 s" not in skill_text()

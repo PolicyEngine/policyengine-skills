@@ -380,7 +380,7 @@ could be read), `message`, `body` and `retryAfterSeconds`. The dashboard API's o
 | 502 | Public API, economy comparison | `status: "error"` with `retry_after_seconds`: the comparison failed | Show the failure; do not ask again before `retry_after_seconds` |
 | 503 | Public API | `{"status":"error","message":"Authentication is unavailable"}`: it could not check the token (Auth0's signing keys unreachable, or its own settings) | Keep the token; retry with back-off. It is not a refusal of the client |
 | 503 | Dashboard API | Its own settings are missing or incomplete, for example on a website preview | Not retryable; report it to the website's maintainers |
-| 504 | Dashboard API | The Public API did not answer in time (100 s for a household calculation, 40 s for a policy or a comparison read, 60 s for metadata) | Retry later with back-off |
+| 504 | Dashboard API | The Public API did not answer in time (750 s for a household calculation, 40 s for a policy or a comparison read, 60 s for metadata) | Retry later with back-off |
 
 ## Related skills
 
