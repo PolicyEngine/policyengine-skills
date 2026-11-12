@@ -44,6 +44,28 @@ Notes that matter for Chrome-headless rendering: position the logo with `top:` n
 inline external images as data URIs (or download them locally first) so they load; always
 preview the rendered PNG before using it.
 
+## Charts and other visuals from a post
+
+When a social post or newsletter attaches a chart, map or table from the post itself, put the
+image on a white canvas with a margin on every side of about 6% of its width. Feeds round the
+corners of attached images and crop some previews, and the margin keeps the figure's title, axes
+and labels inside the frame.
+
+```python
+from PIL import Image
+
+
+def pad_white(path, share=0.06):
+    """Put the image on a white canvas with `share` of its width on every side."""
+    img = Image.open(path).convert("RGB")
+    pad = round(img.width * share)
+    canvas = Image.new("RGB", (img.width + 2 * pad, img.height + 2 * pad), "white")
+    canvas.paste(img, (pad, pad))
+    canvas.save(path)
+```
+
+Open the padded PNG before you post it.
+
 ## Design tokens
 
 The source of truth for color is **`@policyengine/ui-kit`** (`theme.css`), not any older package.
