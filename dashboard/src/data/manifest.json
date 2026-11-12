@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-12T14:37:49.531502Z",
+  "generated_at": "2026-11-12T15:10:23.158868Z",
   "counts": {
     "skill": 25,
     "agent": 36,
@@ -376,7 +376,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 21453
+      "body_length": 22162
     },
     {
       "id": "policyengine-app",
@@ -3894,7 +3894,7 @@
           "new-tool"
         ]
       },
-      "body_length": 16310
+      "body_length": 16656
     },
     {
       "id": "prior-analysis",

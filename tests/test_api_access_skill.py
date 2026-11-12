@@ -638,3 +638,43 @@ def test_a_feature_over_the_budget_is_precomputed_before_it_gets_a_backend() -> 
     advice = over_budget[1].split(". ", 1)[0]
     assert "precompute" in advice and "own backend" in advice, advice
     assert advice.index("precompute") < advice.index("own backend"), advice
+
+
+# Which hosts the dashboard API answers (tracker 3.4 · 1): a dashboard served
+# through a rewrite in appZoneRoutes.ts is allowed with nothing else to do;
+# any other host needs an exact entry in the allow list in app-v2's cors.ts.
+DASHBOARD_API_ALLOW_LIST_FILE = "website/src/lib/dashboardApi/cors.ts"
+
+
+def error_table_row(text: str, status: str, source: str) -> str:
+    prefix = f"| {status} | {source} |"
+    rows = [table_row for table_row in text.splitlines() if table_row.startswith(prefix)]
+    assert len(rows) == 1, f"expected one {prefix} row, found {len(rows)}"
+    return rows[0]
+
+
+def test_skill_steers_new_dashboards_to_a_rewrite_and_names_the_exact_host_fallback() -> None:
+    text = single_spaced(skill_text())
+    # Untrue once the bill tracker's Modal host is allowed (app-v2#1552).
+    assert "reaches the dashboard API only through its www.policyengine.org path" not in text
+    assert "before, or with, the first release whose pages call the dashboard API" in text
+    assert "gets 403, which the browser shows as a CORS error" in text
+    assert f"`{DASHBOARD_API_ALLOW_LIST_FILE}`" in text
+    assert "exact host" in text
+    assert "never a pattern such as `*.vercel.app` or `*.modal.run`" in text
+
+
+def test_dashboard_api_403_fix_names_the_rewrite_and_the_allow_list() -> None:
+    row = error_table_row(skill_text(), "403", "Dashboard API")
+    fix = row.rstrip(" |").rsplit(" | ", 1)[1]
+    assert "`appZoneRoutes.ts`" in fix
+    assert "exact host" in fix and "`cors.ts`" in fix
+    assert "CORS error" in fix and "`status` `null`" in fix
+
+
+def test_new_tool_says_a_host_outside_the_rewrites_needs_an_allow_list_entry() -> None:
+    paragraphs = NEW_TOOL_FILE.read_text().split("\n\n")
+    hosts = [paragraph for paragraph in paragraphs if paragraph.startswith("The dashboard API answers pages")]
+    assert len(hosts) == 1
+    paragraph = single_spaced(hosts[0])
+    assert "exact" in paragraph and f"`{DASHBOARD_API_ALLOW_LIST_FILE}`" in paragraph

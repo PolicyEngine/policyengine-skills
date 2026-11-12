@@ -137,11 +137,20 @@ failure for `retry_after_seconds`, so polling sooner returns it again. Keep
 - each dashboard's own `*.vercel.app` host named in `appZoneRoutes.ts`.
 
 Every other origin gets 403, "Pages on this origin may not call the dashboard API.", and the
-request never reaches the Public API. A new dashboard's own host is allowed once its rewrite is
-in `appZoneRoutes.ts` and that change is deployed. A dashboard served from anywhere else, such
-as a Modal URL, reaches the dashboard API only through its www.policyengine.org path. Allowed
-request headers are `Content-Type`, `Authorization` and `PolicyEngine-Unauthenticated-User`;
-the client sends no cookies (`credentials: "omit"`).
+request never reaches the Public API. Allowed request headers are `Content-Type`,
+`Authorization` and `PolicyEngine-Unauthenticated-User`; the client sends no cookies
+(`credentials: "omit"`).
+
+**Serve a new dashboard through a www.policyengine.org rewrite.** Add its rewrite to
+`appZoneRoutes.ts` (policyengine-tools, "Multizone integration") and deploy that change
+before, or with, the first release whose pages call the dashboard API. Pages served through
+the rewrite are then same-origin on www.policyengine.org, and the dashboard's own
+`*.vercel.app` host is allowed automatically. A dashboard served only from somewhere else (a
+Modal URL, a custom domain, or a Vercel host not named in `appZoneRoutes.ts`) gets 403, which
+the browser shows as a CORS error, until its exact host is added to the dashboard API's allow
+list in `website/src/lib/dashboardApi/cors.ts` in PolicyEngine/policyengine-app-v2 and that
+change is deployed. The allow list takes only exact host names, never a pattern such as
+`*.vercel.app` or `*.modal.run`, because anyone can deploy there.
 
 **Rate limits.** www.policyengine.org's Vercel firewall limits each IP address in
 fixed 60-second windows, counted per Vercel region: 30 household calculations, 120
@@ -304,7 +313,7 @@ could be read), `message`, `body` and `retryAfterSeconds`. The dashboard API's o
 | 400 | Dashboard API | A missing or unknown field, or a malformed value | Fix the request; `message` names the field |
 | 401 | Public API | `{"status":"error","message":"Authentication is required"}` with `WWW-Authenticate: Bearer`. Usually the server's own token: an invalid or expired token, a client not on the allow list, a client token from another tenant, two `Authorization` headers, or, once the requirement is on, no server credential. A user route answers the same when the server forwards no user credential | Server: do not request another token, which would be refused too and counts against the tenant's monthly allowance. On a user route, check first that the request forwarded the user's credential; otherwise check that the client is listed in that environment and that its tenant and audience match, and report it. Page: the website's own credential failed; show an error, do not retry in a loop |
 | 401 | Public API user routes | `WWW-Authenticate: Bearer error="invalid_token"` and "The bearer access token is invalid": the forwarded `PolicyEngine-User-Authorization` token is invalid or expired | Keep the server token; the user signs in again |
-| 403 | Dashboard API | "Pages on this origin may not call the dashboard API." The page's origin is not allowed | Serve the page from an allowed origin. A cross-origin page cannot read this answer: the browser reports a CORS error and the client throws with `status` `null` |
+| 403 | Dashboard API | "Pages on this origin may not call the dashboard API." The page's origin is not allowed | Serve the page through its rewrite in `appZoneRoutes.ts`, or add its exact host to the allow list in `cors.ts`. A cross-origin page cannot read this answer: the browser reports a CORS error and the client throws with `status` `null` |
 | 403 | Public API user routes | A forwarded `PolicyEngine-User-Authorization` token is a machine-to-machine token, not a user's | Forward only a signed-in user's own token there |
 | 404 | Dashboard API | An unknown country in `/api/metadata/{country}` | Use `us` or `uk` |
 | 415 | Dashboard API | The body's `Content-Type` is not JSON | Send `Content-Type: application/json`; the client does |

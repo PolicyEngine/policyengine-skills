@@ -178,7 +178,7 @@ export function calculate(countryId, household, signal) {
 }
 ```
 
-The dashboard API answers pages on the tool's www.policyengine.org path, on `localhost`, on the team's Vercel previews and on the tool's own `*.vercel.app` host once its rewrite is in `appZoneRoutes.ts`. The policyengine-api-access skill has the other operations (policies, economy comparisons with polling, metadata) and the errors.
+The dashboard API answers pages on the tool's www.policyengine.org path, on `localhost`, on the team's Vercel previews and on the tool's own `*.vercel.app` host once its rewrite is in `appZoneRoutes.ts`. A tool served from a host not named in `appZoneRoutes.ts`, such as a Modal URL or a custom domain, needs an exact entry for that host in the allow list in `website/src/lib/dashboardApi/cors.ts` (PolicyEngine/policyengine-app-v2), deployed before its pages call the dashboard API; until then they get 403, which the browser shows as a CORS error. The policyengine-api-access skill has the other operations (policies, economy comparisons with polling, metadata) and the errors.
 
 **For Pattern C (Custom Modal API — gateway + polling):**
 
