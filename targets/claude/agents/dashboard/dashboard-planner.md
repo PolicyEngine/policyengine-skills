@@ -250,7 +250,7 @@ Choose from the data patterns defined in the `policyengine-tools` skill (loaded 
 
 **Fix gaps where they are:** a structural reform goes into the country package as a contributed reform switched on by a `gov.contrib.…` parameter, and the plan uses `policyengine-api` once the Public API's model includes it; a general gap in the Public API is a change to the Public API. A server the dashboard needs for something other than PolicyEngine results (an LLM call, sending email) doesn't change its `data_pattern`.
 
-**The Public API's model version:** when it is older than the release the dashboard needs, run the check in the skill's "Data and backend patterns". If the `policyengine` package's model bundle is updated weekly, plan `policyengine-api` and say in the plan which model release it waits for. If it isn't, `custom-modal` is allowed, and a `precomputed` dashboard's script may run that release with the `policyengine` package; the plan says the check found no weekly updates, names the release the dashboard needs, and says the dashboard moves to `policyengine-api` once the check passes.
+**The Public API's model version:** when it is older than the release the dashboard needs, run the check in the skill's "Data and backend patterns". If the `policyengine` package's model bundle is updated weekly, plan `policyengine-api` and say in the plan which model release it waits for. If it isn't, `custom-modal` is allowed, and a `precomputed` dashboard's script may run that release with the `policyengine` package; the plan says the check found no weekly updates and names the release the dashboard needs. It also says that once the check passes, a `custom-modal` dashboard moves to `policyengine-api`, and a `precomputed` one keeps its pattern while its script goes back to the dashboard API.
 
 **Not a reason for `custom-modal`:** a feature coming close to a rate limit (keep it within the budget in policyengine-api-access, and precompute what can't fit).
 
@@ -349,7 +349,7 @@ precomputed:  # for precomputed / precomputed-csv patterns
   output_files: ["public/data/results.json"]
 
 custom_modal:  # for custom-modal pattern
-  reason: "Needs microsimulation with custom CTC phase-out parameter"
+  reason: "Needs policyengine-us 2.118.4, newer than the Public API's model; Step 4's model-version check found no weekly bundle updates. Moves to policyengine-api once the check passes."
   policyengine_package: "policyengine[us]"  # top-level extra (>=5.0.1) — pins matched country model + certified bundle; microsim endpoints use pe.us.managed_microsimulation()
   architecture: gateway-polling  # Always use this — mirrors API v2 simulation service
   backend_files:  # Three-file structure (avoids module-level import crash-loop)

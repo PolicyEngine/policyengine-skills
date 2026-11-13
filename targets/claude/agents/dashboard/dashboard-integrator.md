@@ -143,7 +143,7 @@ export function buildChartData(
 
 For `data_pattern: policyengine-api`, calculate from debounced form values, so typing or dragging a slider sends one calculation when the user pauses, not one per keystroke: the dashboard API allows 30 household calculations a minute from one address. A query keyed on the debounced values also skips values it has already calculated:
 
-Retry only an answer that says the service failed for a moment (502 or 503), once, after the wait it gives. Don't retry a 504: the household calculation has already waited 750 s for the Public API, so show the failure instead. Never retry a 429, or a `status` `null` that may be one: the limit counts fixed 60-second windows, so a retry a second later is refused again. A 400 or a 403 won't change either.
+Retry only an answer that says the service failed for a moment (502 or 503), once, after the wait it gives. Don't retry a 504: the household calculation has already waited 750 s for the Public API, so show the failure instead. Never retry a 429, or a `status` `null`, which off www.policyengine.org may be one: the limit counts fixed 60-second windows, so a retry a second later is refused again. A 400 or a 403 won't change either.
 
 ```typescript
 import { useEffect, useState } from 'react';
@@ -223,15 +223,22 @@ For every component that displays data:
 )}
 ```
 
-**Error state:** for `data_pattern: policyengine-api`, a 429, or a `status` `null` (how a 429 reaches a page on another origin), gets its own message with no Retry button: the limit counts calculations a minute from the reader's network, and policyengine-api-access says not to send again until the minute is up. Keep the last answer on screen meanwhile, so render charts and results from `useLastAnswer(...)` rather than straight from the query or mutation:
+**Error state:** for `data_pattern: policyengine-api`, a 429 gets its own message with no Retry button: the limit counts calculations a minute from the reader's network, and policyengine-api-access says not to send again until the minute is up. So does a `status` `null` on a page that isn't on www.policyengine.org, such as `localhost` or a `*-policy-engine.vercel.app` preview, because that is how the firewall's 429 reaches it. A page served through its www.policyengine.org rewrite reads the 429 itself, so a `null` status there means no answer arrived at all, for example because the reader's connection dropped, and it gets the ordinary error message. Keep the last answer on screen meanwhile, so render charts and results from `useLastAnswer(...)` rather than straight from the query or mutation:
 
 ```tsx
 import { useEffect, useState } from 'react';
 import { PolicyEngineApiError } from '@policyengine/api-client';
 
-/** A refusal for the per-minute limit, or a failure that may be one. */
+/** Served through the www.policyengine.org rewrite, where a page can read the firewall's 429. */
+function servedFromPolicyEngineOrg(): boolean {
+  return typeof window !== 'undefined' && window.location.origin === 'https://www.policyengine.org';
+}
+
+/** A refusal for the per-minute limit. Off www.policyengine.org, that 429 arrives as status null. */
 export function isRateLimited(error: unknown): boolean {
-  return error instanceof PolicyEngineApiError && (error.status === 429 || error.status === null);
+  if (!(error instanceof PolicyEngineApiError)) return false;
+  if (error.status === 429) return true;
+  return error.status === null && !servedFromPolicyEngineOrg();
 }
 
 /** The latest answer, kept while a newer calculation is refused or fails. */
@@ -240,11 +247,13 @@ export function useLastAnswer<Answer>(answer: Answer | undefined): Answer | unde
   useEffect(() => {
     if (answer !== undefined) setLastAnswer(answer);
   }, [answer]);
-  return lastAnswer;
+  return answer !== undefined ? answer : lastAnswer;
 }
 ```
 
 ```tsx
+const answer = useLastAnswer(mutation.data); // charts and results render from this
+
 {mutation.isError && isRateLimited(mutation.error) && (
   <div className="notice">
     <p>
@@ -252,19 +261,21 @@ export function useLastAnswer<Answer>(answer: Answer | undefined): Answer | unde
       network, such as an office or a workshop, shares this limit. The page can calculate
       again within a minute.
     </p>
+    {answer !== undefined && <p>The results below are for your previous entries.</p>}
   </div>
 )}
 {mutation.isError && !isRateLimited(mutation.error) && (
   <div className="error-message">
     <p>Something went wrong. Please try again.</p>
+    {answer !== undefined && <p>The results below are for your previous entries.</p>}
     <button onClick={() => mutation.reset()}>Retry</button>
   </div>
 )}
 ```
 
-**Empty/initial state:**
+**Empty/initial state:** show it only before the first calculation, not under a kept answer or an error. `answer` is `useLastAnswer(mutation.data)` on `policyengine-api`, and `mutation.data` on a custom backend:
 ```tsx
-{!mutation.data && !mutation.isPending && (
+{answer === undefined && mutation.isIdle && (
   <div className="empty-state">
     <p>Enter your details and click Calculate to see results.</p>
   </div>

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-13T14:26:29.892696Z",
+  "generated_at": "2026-11-13T14:31:18.877622Z",
   "counts": {
     "skill": 25,
     "agent": 36,
@@ -376,7 +376,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 26405
+      "body_length": 27201
     },
     {
       "id": "policyengine-app",
@@ -1080,7 +1080,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 19677
+      "body_length": 19807
     },
     {
       "id": "policyengine-uk",
@@ -2340,7 +2340,7 @@
           "policyengine-tools"
         ]
       },
-      "body_length": 12729
+      "body_length": 13926
     },
     {
       "id": "dashboard-plan-validator",
@@ -2450,7 +2450,7 @@
           "analyze-policy"
         ]
       },
-      "body_length": 27349
+      "body_length": 27584
     },
     {
       "id": "dashboard-scaffold",
@@ -3507,7 +3507,7 @@
           "new-tool"
         ]
       },
-      "body_length": 22171
+      "body_length": 22374
     },
     {
       "id": "create-new-component",

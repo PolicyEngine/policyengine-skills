@@ -75,9 +75,12 @@ microsimulations in headless mode. For `precomputed` data patterns, fetch
 impacts from www.policyengine.org's dashboard API instead, which needs no
 credential: create the policy with `POST https://www.policyengine.org/api/policies`,
 then read `GET https://www.policyengine.org/api/economy/compare` (query
-`country`, `policy`, `baseline`, `region`, `year`) every few seconds until
-its `status` is `ok` (policyengine-api-access, "From a dashboard's
-precompute script"). The Public API computes it server-side. Scope the
+`country`, `policy`, `baseline`, `region`, `year`) with the polling rules in
+policyengine-api-access, "From a dashboard's precompute script": every 5
+seconds until its `status` is `ok`, giving up after 30 minutes, waiting 60
+seconds after a 429, and stopping at once on a failed comparison. Record a
+failed or timed-out comparison in the result file's `"warnings"`. The
+Public API computes it server-side. Scope the
 plan's metrics to what that comparison provides (budget, decile, poverty,
 winners/losers).
 Pass this constraint into the planner and backend-builder prompts verbatim.

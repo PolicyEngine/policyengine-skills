@@ -788,14 +788,19 @@ def test_weekly_check_counts_raised_pins_in_7_day_periods_and_the_public_apis_re
     assert "each of the four 7-day periods ending today" in patterns
     assert "above every earlier release's pin" in patterns
     assert "releases that lower it don't count" in patterns
-    assert "`result.version`" in patterns and "highest pin from seven days ago" in patterns
+    # "From seven days ago" could mean "as of" or "within"; upload dates settle it.
+    assert "`result.version`" in patterns
+    assert "highest pin among releases uploaded at least seven days ago" in patterns
 
 
-def test_a_plan_on_c_names_its_release_and_moves_to_b_once_the_check_passes() -> None:
+def test_once_the_check_passes_c_moves_to_b_and_a_precomputed_script_goes_back() -> None:
+    # A precomputed dashboard keeps its pattern; only its script changes.
     patterns = single_spaced(section_text(TOOLS_SKILL_FILE, "## Data and backend patterns"))
-    assert "moves to B once the check passes" in patterns
+    assert "a dashboard on C moves to B" in patterns
+    assert "a precomputed dashboard stays precomputed" in patterns
     planner = single_spaced(section_text(PLANNER_FILE, "### Step 4: Determine Data Pattern"))
-    assert "moves to `policyengine-api` once the check passes" in planner
+    assert "a `custom-modal` dashboard moves to `policyengine-api`" in planner
+    assert "a `precomputed` one keeps its pattern" in planner
 
 
 def test_precomputed_dashboard_may_run_the_pinned_package_when_the_check_fails() -> None:
@@ -836,3 +841,81 @@ def test_new_tool_menu_and_hosts_match_the_skill() -> None:
     assert len(menu) == 1 and "structural reforms," not in menu[0], menu
     hosts = [paragraph for paragraph in text.split("\n\n") if paragraph.startswith("The dashboard API answers pages")]
     assert len(hosts) == 1 and "-policy-engine.vercel.app" in hosts[0]
+
+
+# Suggestions from the dashboard-builder review's third round (2026-11-13).
+
+
+def integrator_function(name: str) -> str:
+    """The source of the integrator's exported function ``name``, up to its closing brace."""
+    text = INTEGRATOR_FILE.read_text()
+    start = text.index(f"export function {name}")
+    return text[start : text.index("\n}\n", start) + 2]
+
+
+def integrator_jsx_block(opening: str) -> str:
+    """The JSX block that starts with ``opening``, up to its closing ``)}``."""
+    text = INTEGRATOR_FILE.read_text()
+    start = text.index(opening)
+    return text[start : text.index("\n)}", start) + 3]
+
+
+def test_integrator_counts_a_null_status_as_a_429_only_off_www_policyengine_org() -> None:
+    # A page served through its www.policyengine.org rewrite reads the 429, so
+    # a null status there is a dropped connection, not the per-minute limit.
+    rate_limited = integrator_function("isRateLimited")
+    assert "error.status === 429 || error.status === null" not in rate_limited
+    assert "error.status === null && !servedFromPolicyEngineOrg()" in rate_limited
+    served = INTEGRATOR_FILE.read_text().split("function servedFromPolicyEngineOrg", 1)
+    assert len(served) == 2, "the integrator must say how a page knows it is on www.policyengine.org"
+    assert "window.location.origin === 'https://www.policyengine.org'" in served[1].split("\n}\n", 1)[0]
+
+
+def test_use_last_answer_shows_a_new_answer_in_the_same_render() -> None:
+    # useEffect runs after the paint, so returning lastAnswer alone shows the
+    # previous answer for one render after a new one arrives.
+    last_answer = integrator_function("useLastAnswer")
+    assert "return answer !== undefined ? answer : lastAnswer;" in last_answer
+
+
+def test_integrator_empty_state_reads_the_kept_answer() -> None:
+    # After a refused calculation mutation.data is undefined, but the kept
+    # answer is still on screen.
+    text = INTEGRATOR_FILE.read_text()
+    empty_state_div = text.index('<div className="empty-state">')
+    empty_state = text[text.rindex("\n{", 0, empty_state_div) + 1 : text.index("\n)}", empty_state_div) + 3]
+    assert "!mutation.data" not in empty_state
+    assert "answer === undefined" in empty_state
+    assert "mutation.isIdle" in empty_state
+
+
+def test_integrator_says_the_kept_answer_is_for_the_previous_entries() -> None:
+    notice = integrator_jsx_block("{mutation.isError && isRateLimited(mutation.error) && (")
+    assert "The results below are for your previous entries." in notice
+    assert "answer !== undefined" in notice
+
+
+def test_precompute_section_gives_scripts_the_comparison_polling_rules() -> None:
+    # A loop that only waits for status ok keeps reading a failed comparison
+    # until the CI job's time limit (six hours by default on GitHub Actions).
+    script = precompute_script_section()
+    for rule in ("every 5 seconds", "give up after 30 minutes", "or 60 seconds when there is none", "stop at once"):
+        assert rule in script, rule
+    assert "reading every few seconds until the answer's `status` is `ok`" not in script
+    command = single_spaced(CREATE_DASHBOARD_FILE.read_text())
+    assert "every few seconds until its `status` is `ok`" not in command
+    assert "failed or timed-out comparison" in command and '`"warnings"`' in command
+
+
+def test_precompute_section_opens_with_the_patterns_it_covers() -> None:
+    # On Pattern C the script runs the backend's pinned release instead.
+    assert precompute_script_section().startswith("On Pattern B")
+
+
+def test_planner_custom_modal_example_gives_a_reason_step_4_allows() -> None:
+    # A parameter reform's economy-wide effect is the dashboard API's comparison.
+    planner = PLANNER_FILE.read_text()
+    reasons = [entry for entry in planner.splitlines() if entry.strip().startswith("reason:")]
+    assert len(reasons) == 1, reasons
+    assert "parameter" not in reasons[0], reasons[0]
+    assert "model-version check" in reasons[0], reasons[0]

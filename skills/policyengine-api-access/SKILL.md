@@ -201,9 +201,11 @@ A feature that can't fit this budget, even with `axes`, is precomputed; only one
 precomputed goes to the dashboard's own backend (policyengine-tools, "Data and backend
 patterns").
 
-**From a dashboard's precompute script.** A Python script that builds a dashboard's presets or
-fixed grids at build time calls the same dashboard API, so its results match what the page
-calculates live. It sends no credential and no `Origin` header, which the dashboard API accepts
+**From a dashboard's precompute script.** On Pattern B, and on a precomputed-only dashboard
+unless policyengine-tools' model-version check lets its script run the pinned package, a Python
+script that builds a dashboard's presets or fixed grids at build time calls the same dashboard
+API, so its results match what the page calculates live. On Pattern C it runs the backend's
+pinned `policyengine` release instead (the route table above). It sends no credential and no `Origin` header, which the dashboard API accepts
 from servers. This path is only for a dashboard's own build-time presets and grids. Any other
 script, especially a larger or recurring one, gets its own client ("Getting a client", below).
 Keep it within the budget: one calculation per preset or grid slice, with the slice's charted
@@ -236,7 +238,13 @@ def calculate_household(country: str, household: dict, policy: dict | None = Non
 ```
 
 Fixed comparisons of a policy with current law work the same way through `/api/policies` and
-`/api/economy/compare`, reading every few seconds until the answer's `status` is `ok`.
+`/api/economy/compare`. Poll the way `compareEconomy` does for pages: read every 5 seconds until
+`status` is `ok`, and give up after 30 minutes; after a 429, wait for `Retry-After`, or 60 seconds
+when there is none; after another 502, 503 or 504, wait for `Retry-After`, or 5 seconds, and
+stop after the fourth in a row; and stop at once on a failed comparison (502 with
+`status: "error"` and `retry_after_seconds`), because the Public API returns the same failure
+until `retry_after_seconds` has passed. A loop that only waits for `ok` keeps reading a failed
+comparison until the job's time limit, which is six hours by default on GitHub Actions.
 
 ## From servers: your own Auth0 client
 

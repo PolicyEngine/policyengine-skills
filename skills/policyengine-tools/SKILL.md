@@ -179,15 +179,17 @@ hold:
   dashboard's country above every earlier release's pin (releases that lower it don't count,
   such as a fix released from an older branch); and
 - the Public API keeps up: the release the dashboard API's metadata reports
-  (`result.version`) is no older than the highest pin from seven days ago.
+  (`result.version`) is no older than the highest pin among releases uploaded at least seven
+  days ago.
 
 What follows:
 - If the bundle is updated weekly, the model version is not a reason for C: build on B and say
   which model release the dashboard waits for.
 - If it isn't, the dashboard may use C, running the release it needs, and a precomputed
   dashboard's script may run that release with the `policyengine` package instead of calling
-  the dashboard API. The plan says the check found no weekly updates, names the release the
-  dashboard needs, and the dashboard moves to B once the check passes.
+  the dashboard API. The plan says the check found no weekly updates and names the release the
+  dashboard needs. Once the check passes, a dashboard on C moves to B, and a precomputed
+  dashboard stays precomputed while its script goes back to the dashboard API.
 
 **Not a reason for C:** a feature coming close to a rate limit. Keep it within the budget in
 policyengine-api-access, and precompute what can't fit.
