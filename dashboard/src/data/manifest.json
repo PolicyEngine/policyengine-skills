@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-11-12T02:55:31.440649Z",
+  "generated_at": "2026-11-13T14:31:18.877622Z",
   "counts": {
-    "skill": 24,
+    "skill": 25,
     "agent": 36,
     "command": 20,
     "bundle": 8,
@@ -258,7 +258,7 @@
       "id": "policyengine",
       "kind": "skill",
       "name": "policyengine",
-      "description": "ALWAYS load this skill before writing any Python that computes taxes, benefits, or policy\nimpacts with PolicyEngine \u2014 household calculations, microsimulation, reform scoring, poverty\nor distributional analysis, state/district/constituency breakdowns.\nTriggers: policyengine, microsimulation, calculate_household, reform impact, budgetary impact,\ncost of a policy, revenue estimate, poverty rate, child poverty, winners and losers, decile,\nGini, inequality, CTC, EITC, SNAP, income tax, universal credit, state-level analysis,\ncongressional district, constituency, Microcosm dataset, MicroSeries, ensure_datasets,\neconomic_impact_analysis, managed_microsimulation, scenarios, uncertainty, Monte Carlo.\nNOT for: implementing new variables/parameters inside country models (use\npolicyengine-model-development) or calling the REST API from JS (use policyengine-api).",
+      "description": "ALWAYS load this skill before writing any Python that computes taxes, benefits, or policy\nimpacts with PolicyEngine \u2014 household calculations, microsimulation, reform scoring, poverty\nor distributional analysis, state/district/constituency breakdowns.\nTriggers: policyengine, microsimulation, calculate_household, reform impact, budgetary impact,\ncost of a policy, revenue estimate, poverty rate, child poverty, winners and losers, decile,\nGini, inequality, CTC, EITC, SNAP, income tax, universal credit, state-level analysis,\ncongressional district, constituency, Microcosm dataset, MicroSeries, ensure_datasets,\neconomic_impact_analysis, managed_microsimulation, scenarios, uncertainty, Monte Carlo.\nNOT for: implementing new variables/parameters inside country models (use\npolicyengine-model-development) or calling the REST API from a page or server (use\npolicyengine-api-access).",
       "category": "analysis",
       "path": "skills/policyengine/SKILL.md",
       "tools": [],
@@ -303,7 +303,7 @@
       "id": "policyengine-api",
       "kind": "skill",
       "name": "policyengine-api",
-      "description": "Load when consuming or developing the PolicyEngine REST APIs \u2014 the v1 Flask API at\napi.policyengine.org (production today) or the v2 alpha microservices in policyengine-api-v2.\nCovers the v1 endpoint surface (household calc, economy-over-baseline polling), the v2\narchitecture (three services, uv/Docker/Cloud Run, OpenAPI client-gen), and when to use REST\nvs the Python package.\nTriggers: PolicyEngine API, api.policyengine.org, REST endpoint, household calculate, economy\nover baseline, v2 API, api-full, api-simulation, api-tagger, OpenAPI client, v2.api.policyengine.org.\nNOT for: Python analysis (use the policyengine skill) or calling the API from the app\nfrontend (policyengine-app).",
+      "description": "Load when developing the PolicyEngine REST APIs or writing server code against them \u2014 the v1\nFlask API at api.policyengine.org (the Public API, production today, callable only with a\nserver credential) or the v2 alpha microservices in policyengine-api-v2. Covers the v1\nendpoint surface (household calc, economy-over-baseline polling), the v2 architecture (three\nservices, uv/Docker/Cloud Run, OpenAPI client-gen), and when to use REST vs the Python package.\nTriggers: PolicyEngine API, api.policyengine.org, REST endpoint, household calculate, economy\nover baseline, v2 API, api-full, api-simulation, api-tagger, OpenAPI client, v2.api.policyengine.org.\nNOT for: Python analysis (use the policyengine skill), or reaching the API from a dashboard\npage or your own server (policyengine-api-access).",
       "category": "apps",
       "path": "skills/policyengine-api/SKILL.md",
       "tools": [],
@@ -315,11 +315,10 @@
         "dashboard-builder"
       ],
       "target_repos": [
-        "policyengine-api-v2-alpha",
         "policyengine-api-v2",
         "policyengine-api",
-        "policyengine-app",
-        "policyengine-us"
+        "policyengine-us",
+        "policyengine-app"
       ],
       "functional_role": "apps:api",
       "functional_summary": "Consuming and developing the PolicyEngine APIs: v1 production endpoints, api-v2 alpha.",
@@ -339,7 +338,45 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 6164
+      "body_length": 6858
+    },
+    {
+      "id": "policyengine-api-access",
+      "kind": "skill",
+      "name": "policyengine-api-access",
+      "description": "Load before writing or reviewing code that reaches the PolicyEngine Public API\n(api.policyengine.org) from a dashboard, tool, backend, Modal app, Vercel function or CI\njob. The Public API serves only PolicyEngine's servers: pages call www.policyengine.org's\ndashboard API through @policyengine/api-client, and servers send their own Auth0\nclient-credentials token. Covers the rules, the four dashboard operations, polling, allowed\norigins, cached server tokens, getting a client, local development and previews, asking for a\nnew operation, and 401/403/429/503.\nTriggers: api.policyengine.org, Public API, dashboard API, @policyengine/api-client, household\ncalculate from the browser, economy comparison polling, NEXT_PUBLIC_API_URL, VITE_API_URL,\nAuth0 client credentials, server token, PUBLIC_API_SERVER_CLIENT_IDS, Authentication is\nrequired, CORS error from the API.\nNOT for: Python analysis (policyengine skill) or the Public API's own endpoints and code\n(policyengine-api).",
+      "category": "apps",
+      "path": "skills/policyengine-api-access/SKILL.md",
+      "tools": [],
+      "model": null,
+      "triggers": [],
+      "bundles": [
+        "analysis-tools",
+        "api-development",
+        "app-development",
+        "complete",
+        "dashboard-builder"
+      ],
+      "target_repos": [
+        "policyengine-app-v2",
+        "policyengine-canada",
+        "policyengine-api",
+        "policyengine-app",
+        "policyengine-us"
+      ],
+      "functional_role": null,
+      "functional_summary": null,
+      "functional_scope": [],
+      "functional_supersedes": [],
+      "registry_status": "recommended",
+      "registry_owner": "Frontend & product",
+      "recommended_for": [
+        "Load this skill for work involving: Load before writing or reviewing code that reaches the PolicyEngine Public API\n(api.policyengine.org) from a dashboard, tool, backend, Modal app, Vercel function or CI\njob. The Public API serves only PolicyEngine's servers: pages call www.policyengine.org's\ndashboard API through @policyengine/api-client, and servers send their own Auth0\nclient-credentials token. Covers the rules, the four dashboard operations, polling, allowed\norigins, cached server tokens, getting a client, local development and previews, asking for a\nnew operation, and 401/403/429/503.\nTriggers: api.policyengine.org, Public API, dashboard API, @policyengine/api-client, household\ncalculate from the browser, economy comparison polling, NEXT_PUBLIC_API_URL, VITE_API_URL,\nAuth0 client credentials, server token, PUBLIC_API_SERVER_CLIENT_IDS, Authentication is\nrequired, CORS error from the API.\nNOT for: Python analysis (policyengine skill) or the Public API's own endpoints and code\n(policyengine-api)."
+      ],
+      "use_instead": [],
+      "registry_notes": "Recommended for the listed scope.",
+      "references": {},
+      "body_length": 27201
     },
     {
       "id": "policyengine-app",
@@ -362,7 +399,6 @@
         "policyengine-app-v2",
         "policyengine-api",
         "policyengine-app",
-        "policyengine-us",
         "policyengine-canada"
       ],
       "functional_role": "apps:app-v2",
@@ -383,7 +419,7 @@
       ],
       "registry_notes": "A newer artifact explicitly supersedes this one. Prefer the replacement.",
       "references": {},
-      "body_length": 6776
+      "body_length": 8065
     },
     {
       "id": "policyengine-calibration-diagnostics",
@@ -1001,7 +1037,7 @@
       "id": "policyengine-tools",
       "kind": "skill",
       "name": "policyengine-tools",
-      "description": "Load when building a standalone PolicyEngine interactive tool, calculator, or dashboard\nthat deploys to Vercel and embeds into policyengine.org as a Next.js multizone.\nCovers the required stack (Next App Router + Tailwind v4 + @policyengine/ui-kit + bun),\nmultizone zone config (basePath/assetPrefix, host rewrites, apps.json), Modal backends\n(gateway + worker + polling), chart patterns, and the dual-mode SEO strategy.\nTriggers: new tool, standalone calculator, dashboard, embed in policyengine.org, multizone,\nbasePath, assetPrefix, appZoneRoutes, Modal backend, scale to zero, vercel --scope\npolicy-engine, ui-kit theme.css, recharts colors.\nNOT for: developing policyengine.org itself (use policyengine-app) or token values\n(policyengine-design).",
+      "description": "Load when building a standalone PolicyEngine interactive tool, calculator, or dashboard\nthat deploys to Vercel and embeds into policyengine.org as a Next.js multizone.\nCovers the required stack (Next App Router + Tailwind v4 + @policyengine/ui-kit + bun),\nmultizone zone config (basePath/assetPrefix, host rewrites, apps.json), Modal backends\n(gateway + worker + polling), chart patterns, and the dual-mode SEO strategy.\nTriggers: new tool, standalone calculator, dashboard, embed in policyengine.org, multizone,\nbasePath, assetPrefix, appZoneRoutes, Modal backend, scale to zero, vercel --scope\npolicy-engine, ui-kit theme.css, recharts colors.\nNOT for: developing policyengine.org itself (use policyengine-app), token values\n(policyengine-design), or how a page or backend reaches api.policyengine.org\n(policyengine-api-access).",
       "category": "apps",
       "path": "skills/policyengine-tools/SKILL.md",
       "tools": [],
@@ -1014,6 +1050,7 @@
       ],
       "target_repos": [
         "policyengine-app-v2",
+        "policyengine-api",
         "policyengine-app",
         "policyengine.py",
         "marriage",
@@ -1043,7 +1080,7 @@
       "use_instead": [],
       "registry_notes": "Recommended for the listed scope.",
       "references": {},
-      "body_length": 14937
+      "body_length": 19807
     },
     {
       "id": "policyengine-uk",
@@ -2142,6 +2179,7 @@
       "references": {
         "skill": [
           "policyengine-api",
+          "policyengine-api-access",
           "policyengine-cloud-costs",
           "policyengine-tools",
           "policyengine-uk",
@@ -2151,7 +2189,7 @@
           "deploy-dashboard"
         ]
       },
-      "body_length": 22032
+      "body_length": 25832
     },
     {
       "id": "dashboard-architecture-validator",
@@ -2297,11 +2335,12 @@
         ],
         "skill": [
           "policyengine-api",
+          "policyengine-api-access",
           "policyengine-design",
           "policyengine-tools"
         ]
       },
-      "body_length": 6350
+      "body_length": 13926
     },
     {
       "id": "dashboard-plan-validator",
@@ -2398,6 +2437,7 @@
         ],
         "skill": [
           "policyengine-api",
+          "policyengine-api-access",
           "policyengine-app",
           "policyengine-cloud-costs",
           "policyengine-design",
@@ -2410,7 +2450,7 @@
           "analyze-policy"
         ]
       },
-      "body_length": 24586
+      "body_length": 27584
     },
     {
       "id": "dashboard-scaffold",
@@ -2456,8 +2496,12 @@
       "use_instead": [],
       "registry_notes": "Agents are usually implementation details of commands; call directly only when maintaining or debugging the workflow.",
       "references": {
+        "agent": [
+          "backend-builder"
+        ],
         "skill": [
           "policyengine-api",
+          "policyengine-api-access",
           "policyengine-app",
           "policyengine-cloud-costs",
           "policyengine-design",
@@ -2468,7 +2512,7 @@
           "deploy-dashboard"
         ]
       },
-      "body_length": 25960
+      "body_length": 26646
     },
     {
       "id": "frontend-builder",
@@ -3422,6 +3466,7 @@
       "target_repos": [
         "south-carolina-2026-tax-changes",
         "poverty-dashboard",
+        "policyengine-api",
         "policyengine-us",
         "CRM",
         "policyengine-app"
@@ -3451,6 +3496,8 @@
           "frontend-builder"
         ],
         "skill": [
+          "policyengine-api",
+          "policyengine-api-access",
           "policyengine-us"
         ],
         "command": [
@@ -3460,7 +3507,7 @@
           "new-tool"
         ]
       },
-      "body_length": 21926
+      "body_length": 22374
     },
     {
       "id": "create-new-component",
@@ -3818,11 +3865,8 @@
         "complete"
       ],
       "target_repos": [
-        "policyengine-api-v2",
         "policyengine-api",
         "marriage",
-        "policyengine-us",
-        "policyengine-uk",
         "policyengine-app"
       ],
       "functional_role": "workflow:new-tool",
@@ -3841,6 +3885,7 @@
       "references": {
         "skill": [
           "policyengine-api",
+          "policyengine-api-access",
           "policyengine-app",
           "policyengine-cloud-costs",
           "policyengine-design",
@@ -3851,7 +3896,7 @@
           "new-tool"
         ]
       },
-      "body_length": 15206
+      "body_length": 17056
     },
     {
       "id": "prior-analysis",
@@ -4135,7 +4180,7 @@
       "use_instead": [],
       "registry_notes": "Bundle install profile.",
       "references": {},
-      "body_length": 2135
+      "body_length": 2175
     },
     {
       "id": "api-development",
@@ -4161,7 +4206,7 @@
       "use_instead": [],
       "registry_notes": "Bundle install profile.",
       "references": {},
-      "body_length": 1054
+      "body_length": 1094
     },
     {
       "id": "app-development",
@@ -4187,7 +4232,7 @@
       "use_instead": [],
       "registry_notes": "Bundle install profile.",
       "references": {},
-      "body_length": 1461
+      "body_length": 1501
     },
     {
       "id": "complete",
@@ -4213,7 +4258,7 @@
       "use_instead": [],
       "registry_notes": "Bundle install profile.",
       "references": {},
-      "body_length": 3730
+      "body_length": 3770
     },
     {
       "id": "country-models",
@@ -4265,7 +4310,7 @@
       "use_instead": [],
       "registry_notes": "Bundle install profile.",
       "references": {},
-      "body_length": 1326
+      "body_length": 1366
     },
     {
       "id": "data-science",
@@ -4661,6 +4706,18 @@
       "source_kind": "command",
       "source": "create-dashboard",
       "target_kind": "skill",
+      "target": "policyengine-api"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "skill",
+      "target": "policyengine-api-access"
+    },
+    {
+      "source_kind": "command",
+      "source": "create-dashboard",
+      "target_kind": "skill",
       "target": "policyengine-us"
     },
     {
@@ -4985,6 +5042,12 @@
       "source_kind": "command",
       "source": "new-tool",
       "target_kind": "skill",
+      "target": "policyengine-api-access"
+    },
+    {
+      "source_kind": "command",
+      "source": "new-tool",
+      "target_kind": "skill",
       "target": "policyengine-app"
     },
     {
@@ -5165,6 +5228,12 @@
       "source_kind": "agent",
       "source": "backend-builder",
       "target_kind": "skill",
+      "target": "policyengine-api-access"
+    },
+    {
+      "source_kind": "agent",
+      "source": "backend-builder",
+      "target_kind": "skill",
       "target": "policyengine-cloud-costs"
     },
     {
@@ -5297,6 +5366,12 @@
       "source_kind": "agent",
       "source": "dashboard-integrator",
       "target_kind": "skill",
+      "target": "policyengine-api-access"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-integrator",
+      "target_kind": "skill",
       "target": "policyengine-design"
     },
     {
@@ -5334,6 +5409,12 @@
       "source": "dashboard-planner",
       "target_kind": "skill",
       "target": "policyengine-api"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-planner",
+      "target_kind": "skill",
+      "target": "policyengine-api-access"
     },
     {
       "source_kind": "agent",
@@ -5380,8 +5461,20 @@
     {
       "source_kind": "agent",
       "source": "dashboard-scaffold",
+      "target_kind": "agent",
+      "target": "backend-builder"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-scaffold",
       "target_kind": "skill",
       "target": "policyengine-api"
+    },
+    {
+      "source_kind": "agent",
+      "source": "dashboard-scaffold",
+      "target_kind": "skill",
+      "target": "policyengine-api-access"
     },
     {
       "source_kind": "agent",
@@ -6113,6 +6206,12 @@
       "source_kind": "bundle",
       "source": "analysis-tools",
       "target_kind": "skill",
+      "target": "policyengine-api-access"
+    },
+    {
+      "source_kind": "bundle",
+      "source": "analysis-tools",
+      "target_kind": "skill",
       "target": "policyengine-calibration-diagnostics"
     },
     {
@@ -6269,6 +6368,12 @@
       "source_kind": "bundle",
       "source": "api-development",
       "target_kind": "skill",
+      "target": "policyengine-api-access"
+    },
+    {
+      "source_kind": "bundle",
+      "source": "api-development",
+      "target_kind": "skill",
       "target": "policyengine-cloud-costs"
     },
     {
@@ -6366,6 +6471,12 @@
       "source": "app-development",
       "target_kind": "skill",
       "target": "fix-pr"
+    },
+    {
+      "source_kind": "bundle",
+      "source": "app-development",
+      "target_kind": "skill",
+      "target": "policyengine-api-access"
     },
     {
       "source_kind": "bundle",
@@ -6696,6 +6807,12 @@
       "source": "complete",
       "target_kind": "skill",
       "target": "policyengine-api"
+    },
+    {
+      "source_kind": "bundle",
+      "source": "complete",
+      "target_kind": "skill",
+      "target": "policyengine-api-access"
     },
     {
       "source_kind": "bundle",
@@ -7163,6 +7280,12 @@
       "source_kind": "bundle",
       "source": "dashboard-builder",
       "target_kind": "skill",
+      "target": "policyengine-api-access"
+    },
+    {
+      "source_kind": "bundle",
+      "source": "dashboard-builder",
+      "target_kind": "skill",
       "target": "policyengine-app"
     },
     {
@@ -7308,7 +7431,7 @@
         "kind": "skill",
         "id": "fix-pr"
       },
-      "score": 0.5008,
+      "score": 0.5013,
       "shared_terms": [
         "review",
         "claude",
@@ -7329,7 +7452,7 @@
         "kind": "skill",
         "id": "policyengine-plugin-maintenance"
       },
-      "score": 0.1859,
+      "score": 0.1867,
       "shared_terms": [
         "claude",
         "codex",
@@ -7350,7 +7473,7 @@
         "kind": "skill",
         "id": "review-program"
       },
-      "score": 0.5882,
+      "score": 0.5881,
       "shared_terms": [
         "review",
         "canonical",
@@ -7371,7 +7494,7 @@
         "kind": "agent",
         "id": "ci-fixer"
       },
-      "score": 0.2148,
+      "score": 0.2156,
       "shared_terms": [
         "review",
         "contract",
@@ -7392,10 +7515,10 @@
         "kind": "agent",
         "id": "edge-case-generator"
       },
-      "score": 0.1693,
+      "score": 0.1705,
       "shared_terms": [
-        "review",
         "tests",
+        "review",
         "test",
         "program",
         "cases",
@@ -7413,16 +7536,16 @@
         "kind": "agent",
         "id": "implementation-validator"
       },
-      "score": 0.2545,
+      "score": 0.2537,
       "shared_terms": [
         "review",
         "fix",
         "program",
         "encode",
-        "structural",
         "read",
-        "code",
-        "mode"
+        "structural",
+        "mode",
+        "worktree"
       ]
     },
     {
@@ -7434,7 +7557,7 @@
         "kind": "agent",
         "id": "model-worker"
       },
-      "score": 0.3504,
+      "score": 0.3507,
       "shared_terms": [
         "encode",
         "coordinator",
@@ -7442,8 +7565,8 @@
         "delegation",
         "canonical",
         "owned",
-        "own",
-        "tests"
+        "tests",
+        "own"
       ]
     },
     {
@@ -7455,7 +7578,7 @@
         "kind": "agent",
         "id": "pr-pusher"
       },
-      "score": 0.2268,
+      "score": 0.2276,
       "shared_terms": [
         "review",
         "push",
@@ -7476,7 +7599,7 @@
         "kind": "agent",
         "id": "program-reviewer"
       },
-      "score": 0.2132,
+      "score": 0.2141,
       "shared_terms": [
         "review",
         "program",
@@ -7497,7 +7620,7 @@
         "kind": "agent",
         "id": "review-worker"
       },
-      "score": 0.3603,
+      "score": 0.3604,
       "shared_terms": [
         "review",
         "canonical",
@@ -7518,7 +7641,7 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.1795,
+      "score": 0.1809,
       "shared_terms": [
         "tests",
         "test",
@@ -7539,7 +7662,7 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.2106,
+      "score": 0.212,
       "shared_terms": [
         "program",
         "review",
@@ -7560,7 +7683,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.1642,
+      "score": 0.1659,
       "shared_terms": [
         "tests",
         "test",
@@ -7602,7 +7725,7 @@
         "kind": "skill",
         "id": "review-program"
       },
-      "score": 0.5659,
+      "score": 0.5668,
       "shared_terms": [
         "review",
         "canonical",
@@ -7623,7 +7746,7 @@
         "kind": "agent",
         "id": "ci-fixer"
       },
-      "score": 0.2221,
+      "score": 0.2222,
       "shared_terms": [
         "fix",
         "failures",
@@ -7644,12 +7767,12 @@
         "kind": "agent",
         "id": "implementation-validator"
       },
-      "score": 0.3379,
+      "score": 0.3385,
       "shared_terms": [
         "fix",
         "review",
-        "mode",
         "read",
+        "mode",
         "role",
         "code",
         "only",
@@ -7665,16 +7788,16 @@
         "kind": "agent",
         "id": "model-worker"
       },
-      "score": 0.1573,
+      "score": 0.1589,
       "shared_terms": [
         "role",
         "canonical",
         "delegation",
         "workflow",
         "assigned",
-        "references",
         "read",
-        "task"
+        "references",
+        "worker"
       ]
     },
     {
@@ -7693,8 +7816,8 @@
         "push",
         "workflow",
         "pusher",
-        "local",
         "files",
+        "local",
         "never"
       ]
     },
@@ -7707,7 +7830,7 @@
         "kind": "agent",
         "id": "review-worker"
       },
-      "score": 0.2959,
+      "score": 0.2978,
       "shared_terms": [
         "review",
         "canonical",
@@ -7715,8 +7838,8 @@
         "delegation",
         "workflow",
         "assigned",
-        "code",
-        "read"
+        "read",
+        "code"
       ]
     },
     {
@@ -7728,7 +7851,7 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.1885,
+      "score": 0.1893,
       "shared_terms": [
         "review",
         "files",
@@ -7749,16 +7872,16 @@
         "kind": "skill",
         "id": "policyengine-api"
       },
-      "score": 0.2463,
+      "score": 0.2236,
       "shared_terms": [
         "household",
         "api",
         "country",
         "rest",
         "runs",
+        "server",
         "python",
-        "model",
-        "result"
+        "analysis"
       ]
     },
     {
@@ -7770,7 +7893,7 @@
         "kind": "skill",
         "id": "policyengine-canada"
       },
-      "score": 0.1716,
+      "score": 0.1725,
       "shared_terms": [
         "household",
         "microsimulation",
@@ -7791,16 +7914,16 @@
         "kind": "skill",
         "id": "policyengine-model-development"
       },
-      "score": 0.1746,
+      "score": 0.1729,
       "shared_terms": [
-        "model",
         "household",
+        "model",
         "analysis",
         "microsimulation",
         "variables",
         "reform",
-        "parameters",
-        "run"
+        "run",
+        "parameters"
       ]
     },
     {
@@ -7812,7 +7935,7 @@
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.4099,
+      "score": 0.4089,
       "shared_terms": [
         "household",
         "unit",
@@ -7833,15 +7956,15 @@
         "kind": "skill",
         "id": "policyengine-us"
       },
-      "score": 0.3336,
+      "score": 0.3338,
       "shared_terms": [
         "unit",
         "tax",
         "household",
         "income",
         "poverty",
-        "model",
         "eitc",
+        "model",
         "snap"
       ]
     },
@@ -7875,12 +7998,12 @@
         "kind": "agent",
         "id": "calibration-diagnostics"
       },
-      "score": 0.1531,
+      "score": 0.1521,
       "shared_terms": [
         "state",
         "microcosm",
-        "unit",
         "tax",
+        "unit",
         "dataset",
         "income",
         "poverty",
@@ -7896,7 +8019,7 @@
         "kind": "agent",
         "id": "dashboard-integrator"
       },
-      "score": 0.1524,
+      "score": 0.1673,
       "shared_terms": [
         "household",
         "api",
@@ -7917,13 +8040,13 @@
         "kind": "agent",
         "id": "microsim-runner"
       },
-      "score": 0.2376,
+      "score": 0.234,
       "shared_terms": [
         "dataset",
         "runs",
         "api",
-        "bundle",
         "microsimulation",
+        "bundle",
         "country",
         "result",
         "data"
@@ -7938,7 +8061,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1911,
+      "score": 0.1905,
       "shared_terms": [
         "tax",
         "income",
@@ -7957,9 +8080,30 @@
       },
       "b": {
         "kind": "command",
+        "id": "create-dashboard"
+      },
+      "score": 0.157,
+      "shared_terms": [
+        "household",
+        "scenarios",
+        "poverty",
+        "reform",
+        "analysis",
+        "ctc",
+        "page",
+        "tax"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine"
+      },
+      "b": {
+        "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.2603,
+      "score": 0.2604,
       "shared_terms": [
         "household",
         "microsimulation",
@@ -7978,81 +8122,39 @@
       },
       "b": {
         "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "score": 0.5715,
+      "shared_terms": [
+        "api",
+        "client",
+        "public",
+        "server",
+        "dashboard",
+        "org",
+        "credential",
+        "household"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api"
+      },
+      "b": {
+        "kind": "skill",
         "id": "policyengine-app"
       },
-      "score": 0.1652,
+      "score": 0.162,
       "shared_terms": [
         "api",
-        "app",
-        "economy",
+        "server",
         "org",
-        "metadata",
+        "economy",
+        "client",
         "calc",
         "household",
-        "client"
-      ]
-    },
-    {
-      "a": {
-        "kind": "skill",
-        "id": "policyengine-api"
-      },
-      "b": {
-        "kind": "skill",
-        "id": "policyengine-model-development"
-      },
-      "score": 0.1593,
-      "shared_terms": [
-        "api",
-        "household",
-        "period",
-        "over",
-        "rest",
-        "country",
-        "metadata",
-        "year"
-      ]
-    },
-    {
-      "a": {
-        "kind": "skill",
-        "id": "policyengine-api"
-      },
-      "b": {
-        "kind": "skill",
-        "id": "policyengine-uk"
-      },
-      "score": 0.1522,
-      "shared_terms": [
-        "household",
-        "country",
-        "python",
-        "region",
-        "poverty",
-        "model",
-        "data",
-        "surface"
-      ]
-    },
-    {
-      "a": {
-        "kind": "skill",
-        "id": "policyengine-api"
-      },
-      "b": {
-        "kind": "skill",
-        "id": "policyengine-user-guide"
-      },
-      "score": 0.1506,
-      "shared_terms": [
-        "household",
-        "impact",
-        "org",
-        "reform",
-        "app",
-        "society",
-        "post",
-        "region"
+        "page"
       ]
     },
     {
@@ -8064,16 +8166,16 @@
         "kind": "agent",
         "id": "backend-builder"
       },
-      "score": 0.2159,
+      "score": 0.3242,
       "shared_terms": [
         "api",
-        "data",
+        "public",
         "client",
-        "json",
-        "org",
-        "simulation",
-        "endpoint",
-        "household"
+        "dashboard",
+        "economy",
+        "data",
+        "country",
+        "access"
       ]
     },
     {
@@ -8085,16 +8187,58 @@
         "kind": "agent",
         "id": "dashboard-integrator"
       },
-      "score": 0.2714,
+      "score": 0.3658,
       "shared_terms": [
         "api",
         "household",
         "client",
         "data",
         "error",
-        "frontend",
-        "values",
-        "year"
+        "year",
+        "dashboard",
+        "request"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api"
+      },
+      "b": {
+        "kind": "agent",
+        "id": "dashboard-planner"
+      },
+      "score": 0.1782,
+      "shared_terms": [
+        "api",
+        "dashboard",
+        "data",
+        "server",
+        "rest",
+        "credential",
+        "endpoint",
+        "household"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api"
+      },
+      "b": {
+        "kind": "agent",
+        "id": "dashboard-scaffold"
+      },
+      "score": 0.2028,
+      "shared_terms": [
+        "api",
+        "client",
+        "dashboard",
+        "alpha",
+        "org",
+        "data",
+        "household",
+        "public"
       ]
     },
     {
@@ -8106,16 +8250,16 @@
         "kind": "agent",
         "id": "microsim-runner"
       },
-      "score": 0.4171,
+      "score": 0.3584,
       "shared_terms": [
         "api",
         "country",
         "economy",
-        "dataset",
         "region",
         "baseline",
+        "org",
         "version",
-        "bundle"
+        "dataset"
       ]
     },
     {
@@ -8127,16 +8271,16 @@
         "kind": "command",
         "id": "analyze-policy"
       },
-      "score": 0.2327,
+      "score": 0.2041,
       "shared_terms": [
         "api",
         "window",
         "economy",
         "year",
-        "budget",
         "years",
-        "dataset",
-        "endpoint"
+        "budget",
+        "endpoint",
+        "server"
       ]
     },
     {
@@ -8148,16 +8292,247 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.1986,
+      "score": 0.1697,
       "shared_terms": [
         "household",
         "api",
         "get",
         "country",
-        "version",
         "baseline",
         "reform",
-        "calc"
+        "calc",
+        "version"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api"
+      },
+      "b": {
+        "kind": "command",
+        "id": "new-tool"
+      },
+      "score": 0.2186,
+      "shared_terms": [
+        "api",
+        "window",
+        "public",
+        "dashboard",
+        "client",
+        "org",
+        "calc",
+        "country"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "skill",
+        "id": "policyengine-app"
+      },
+      "score": 0.2341,
+      "shared_terms": [
+        "api",
+        "app",
+        "server",
+        "vite",
+        "client",
+        "page",
+        "org",
+        "next"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "skill",
+        "id": "policyengine-tools"
+      },
+      "score": 0.2207,
+      "shared_terms": [
+        "api",
+        "public",
+        "org",
+        "dashboard",
+        "backend",
+        "app",
+        "vercel",
+        "next"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "agent",
+        "id": "backend-builder"
+      },
+      "score": 0.4853,
+      "shared_terms": [
+        "api",
+        "dashboard",
+        "public",
+        "backend",
+        "client",
+        "modal",
+        "pattern",
+        "four"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "agent",
+        "id": "dashboard-integrator"
+      },
+      "score": 0.423,
+      "shared_terms": [
+        "api",
+        "client",
+        "backend",
+        "dashboard",
+        "household",
+        "pattern",
+        "request",
+        "through"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "agent",
+        "id": "dashboard-planner"
+      },
+      "score": 0.2457,
+      "shared_terms": [
+        "dashboard",
+        "api",
+        "public",
+        "credential",
+        "server",
+        "pages",
+        "backend",
+        "modal"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "agent",
+        "id": "dashboard-scaffold"
+      },
+      "score": 0.3391,
+      "shared_terms": [
+        "api",
+        "dashboard",
+        "client",
+        "backend",
+        "public",
+        "page",
+        "org",
+        "pattern"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "agent",
+        "id": "microsim-runner"
+      },
+      "score": 0.1945,
+      "shared_terms": [
+        "api",
+        "org",
+        "country",
+        "runs",
+        "local",
+        "economy",
+        "call",
+        "run"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "command",
+        "id": "create-dashboard"
+      },
+      "score": 0.2084,
+      "shared_terms": [
+        "dashboard",
+        "page",
+        "api",
+        "household",
+        "backend",
+        "pages",
+        "ctc",
+        "analysis"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "command",
+        "id": "deploy-dashboard"
+      },
+      "score": 0.1784,
+      "shared_terms": [
+        "dashboard",
+        "modal",
+        "app",
+        "api",
+        "public",
+        "backend",
+        "authentication",
+        "token"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-api-access"
+      },
+      "b": {
+        "kind": "command",
+        "id": "new-tool"
+      },
+      "score": 0.2965,
+      "shared_terms": [
+        "api",
+        "dashboard",
+        "public",
+        "client",
+        "page",
+        "app",
+        "org",
+        "const"
       ]
     },
     {
@@ -8169,7 +8544,7 @@
         "kind": "skill",
         "id": "policyengine-design"
       },
-      "score": 0.1659,
+      "score": 0.1664,
       "shared_terms": [
         "app",
         "tailwindcss",
@@ -8190,7 +8565,7 @@
         "kind": "skill",
         "id": "policyengine-tools"
       },
-      "score": 0.4684,
+      "score": 0.474,
       "shared_terms": [
         "app",
         "next",
@@ -8211,7 +8586,7 @@
         "kind": "agent",
         "id": "multizone-validator"
       },
-      "score": 0.2299,
+      "score": 0.2266,
       "shared_terms": [
         "app",
         "host",
@@ -8220,7 +8595,7 @@
         "website",
         "zone",
         "rewrites",
-        "server"
+        "served"
       ]
     },
     {
@@ -8232,7 +8607,7 @@
         "kind": "agent",
         "id": "dashboard-architecture-validator"
       },
-      "score": 0.28,
+      "score": 0.283,
       "shared_terms": [
         "app",
         "router",
@@ -8253,7 +8628,7 @@
         "kind": "agent",
         "id": "dashboard-design-validator"
       },
-      "score": 0.1614,
+      "score": 0.1631,
       "shared_terms": [
         "app",
         "tsx",
@@ -8272,17 +8647,38 @@
       },
       "b": {
         "kind": "agent",
+        "id": "dashboard-scaffold"
+      },
+      "score": 0.1628,
+      "shared_terms": [
+        "api",
+        "app",
+        "page",
+        "tsx",
+        "design",
+        "next",
+        "router",
+        "kit"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-app"
+      },
+      "b": {
+        "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.2573,
+      "score": 0.2613,
       "shared_terms": [
         "app",
         "kit",
         "design",
         "component",
         "react",
-        "tokens",
         "frontend",
+        "tokens",
         "next"
       ]
     },
@@ -8295,13 +8691,13 @@
         "kind": "command",
         "id": "audit-multizone"
       },
-      "score": 0.2419,
+      "score": 0.241,
       "shared_terms": [
         "app",
         "host",
         "next",
-        "website",
         "multizone",
+        "website",
         "rewrites",
         "zone",
         "vercel"
@@ -8316,7 +8712,7 @@
         "kind": "command",
         "id": "create-new-component"
       },
-      "score": 0.2501,
+      "score": 0.2526,
       "shared_terms": [
         "app",
         "component",
@@ -8337,14 +8733,14 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.2293,
+      "score": 0.2336,
       "shared_terms": [
         "app",
         "host",
         "rewrites",
         "website",
-        "vercel",
         "workspace",
+        "vercel",
         "bun",
         "next"
       ]
@@ -8358,16 +8754,16 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.2719,
+      "score": 0.2835,
       "shared_terms": [
         "app",
         "calculator",
-        "params",
-        "countryid",
+        "api",
         "bun",
-        "next",
+        "page",
         "kit",
-        "page"
+        "next",
+        "react"
       ]
     },
     {
@@ -8379,16 +8775,16 @@
         "kind": "skill",
         "id": "policyengine-data"
       },
-      "score": 0.3187,
+      "score": 0.318,
       "shared_terms": [
         "microcosm",
         "calibration",
         "target",
         "diagnostics",
         "calibrate",
-        "fit",
         "weights",
-        "release"
+        "fit",
+        "mismatch"
       ]
     },
     {
@@ -8400,7 +8796,7 @@
         "kind": "agent",
         "id": "calibration-diagnostics"
       },
-      "score": 0.517,
+      "score": 0.5191,
       "shared_terms": [
         "calibration",
         "microcosm",
@@ -8421,7 +8817,7 @@
         "kind": "agent",
         "id": "model-corroborator"
       },
-      "score": 0.2092,
+      "score": 0.2097,
       "shared_terms": [
         "calibration",
         "reform",
@@ -8442,12 +8838,12 @@
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.2781,
+      "score": 0.2784,
       "shared_terms": [
         "household",
         "canada",
-        "credit",
         "income",
+        "credit",
         "benefit",
         "tax",
         "poverty",
@@ -8463,14 +8859,14 @@
         "kind": "skill",
         "id": "policyengine-us"
       },
-      "score": 0.1795,
+      "score": 0.1808,
       "shared_terms": [
         "tax",
         "household",
         "income",
         "credit",
-        "net",
         "benefit",
+        "net",
         "child",
         "poverty"
       ]
@@ -8484,7 +8880,7 @@
         "kind": "skill",
         "id": "policyengine-user-guide"
       },
-      "score": 0.1632,
+      "score": 0.1637,
       "shared_terms": [
         "household",
         "income",
@@ -8505,13 +8901,13 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.2305,
+      "score": 0.2317,
       "shared_terms": [
         "household",
         "canada",
         "benefit",
-        "income",
         "level",
+        "income",
         "population",
         "net",
         "microsimulation"
@@ -8526,16 +8922,16 @@
         "kind": "agent",
         "id": "backend-builder"
       },
-      "score": 0.1553,
+      "score": 0.1988,
       "shared_terms": [
         "modal",
         "backend",
         "containers",
+        "dashboard",
         "api",
         "plan",
-        "dashboard",
         "cloud",
-        "declare"
+        "reason"
       ]
     },
     {
@@ -8547,7 +8943,7 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.2388,
+      "score": 0.235,
       "shared_terms": [
         "modal",
         "deploy",
@@ -8568,7 +8964,7 @@
         "kind": "skill",
         "id": "policyengine-design"
       },
-      "score": 0.289,
+      "score": 0.2879,
       "shared_terms": [
         "theme",
         "teal",
@@ -8589,15 +8985,15 @@
         "kind": "skill",
         "id": "policyengine-research-lookup"
       },
-      "score": 0.1522,
+      "score": 0.1556,
       "shared_terms": [
         "post",
         "blog",
         "image",
         "published",
-        "live",
         "app",
         "tone",
+        "live",
         "research"
       ]
     },
@@ -8610,7 +9006,7 @@
         "kind": "skill",
         "id": "policyengine-writing"
       },
-      "score": 0.2051,
+      "score": 0.2052,
       "shared_terms": [
         "social",
         "post",
@@ -8631,7 +9027,7 @@
         "kind": "agent",
         "id": "content-orchestrator"
       },
-      "score": 0.54,
+      "score": 0.5381,
       "shared_terms": [
         "social",
         "content",
@@ -8652,7 +9048,7 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.1829,
+      "score": 0.1823,
       "shared_terms": [
         "kit",
         "teal",
@@ -8673,7 +9069,7 @@
         "kind": "command",
         "id": "generate-content"
       },
-      "score": 0.6295,
+      "score": 0.6299,
       "shared_terms": [
         "social",
         "content",
@@ -8688,13 +9084,34 @@
     {
       "a": {
         "kind": "skill",
+        "id": "policyengine-content"
+      },
+      "b": {
+        "kind": "command",
+        "id": "new-tool"
+      },
+      "score": 0.1512,
+      "shared_terms": [
+        "kit",
+        "css",
+        "theme",
+        "var",
+        "import",
+        "color",
+        "teal",
+        "copy"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
         "id": "policyengine-data"
       },
       "b": {
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.1517,
+      "score": 0.1513,
       "shared_terms": [
         "microcosm",
         "data",
@@ -8715,7 +9132,7 @@
         "kind": "agent",
         "id": "calibration-diagnostics"
       },
-      "score": 0.2795,
+      "score": 0.2797,
       "shared_terms": [
         "microcosm",
         "calibration",
@@ -8736,15 +9153,15 @@
         "kind": "agent",
         "id": "microsim-runner"
       },
-      "score": 0.1761,
+      "score": 0.1746,
       "shared_terms": [
         "microcosm",
         "dataset",
         "local",
         "data",
         "populace",
-        "runs",
         "default",
+        "runs",
         "acs"
       ]
     },
@@ -8757,13 +9174,13 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1585,
+      "score": 0.1572,
       "shared_terms": [
         "microcosm",
         "data",
         "local",
-        "dataset",
         "microdata",
+        "dataset",
         "calibration",
         "frs",
         "aware"
@@ -8778,7 +9195,7 @@
         "kind": "skill",
         "id": "policyengine-tools"
       },
-      "score": 0.3079,
+      "score": 0.3036,
       "shared_terms": [
         "css",
         "theme",
@@ -8799,7 +9216,7 @@
         "kind": "agent",
         "id": "dashboard-architecture-validator"
       },
-      "score": 0.2708,
+      "score": 0.2715,
       "shared_terms": [
         "css",
         "postcss",
@@ -8820,7 +9237,7 @@
         "kind": "agent",
         "id": "dashboard-design-validator"
       },
-      "score": 0.1558,
+      "score": 0.1556,
       "shared_terms": [
         "kit",
         "css",
@@ -8841,7 +9258,7 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.3827,
+      "score": 0.3831,
       "shared_terms": [
         "kit",
         "chart",
@@ -8862,7 +9279,7 @@
         "kind": "command",
         "id": "create-new-component"
       },
-      "score": 0.2103,
+      "score": 0.2094,
       "shared_terms": [
         "kit",
         "design",
@@ -8883,7 +9300,7 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.2682,
+      "score": 0.2846,
       "shared_terms": [
         "css",
         "theme",
@@ -8904,7 +9321,7 @@
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.2221,
+      "score": 0.2272,
       "shared_terms": [
         "household",
         "income",
@@ -8925,7 +9342,7 @@
         "kind": "skill",
         "id": "policyengine-us"
       },
-      "score": 0.3112,
+      "score": 0.3185,
       "shared_terms": [
         "unit",
         "tax",
@@ -8946,11 +9363,11 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.172,
+      "score": 0.1751,
       "shared_terms": [
         "household",
-        "net",
         "income",
+        "net",
         "reform",
         "benefits",
         "tax",
@@ -8967,7 +9384,7 @@
         "kind": "skill",
         "id": "policyengine-uk"
       },
-      "score": 0.157,
+      "score": 0.1566,
       "shared_terms": [
         "household",
         "entity",
@@ -8976,7 +9393,7 @@
         "age",
         "income",
         "person",
-        "canada"
+        "variables"
       ]
     },
     {
@@ -8988,7 +9405,7 @@
         "kind": "skill",
         "id": "policyengine-us"
       },
-      "score": 0.1516,
+      "score": 0.1513,
       "shared_terms": [
         "entity",
         "household",
@@ -9009,7 +9426,7 @@
         "kind": "agent",
         "id": "edge-case-generator"
       },
-      "score": 0.1939,
+      "score": 0.1956,
       "shared_terms": [
         "tests",
         "test",
@@ -9030,7 +9447,7 @@
         "kind": "agent",
         "id": "pr-pusher"
       },
-      "score": 0.1507,
+      "score": 0.1515,
       "shared_terms": [
         "changelog",
         "tests",
@@ -9051,7 +9468,7 @@
         "kind": "agent",
         "id": "structural-implementer"
       },
-      "score": 0.1516,
+      "score": 0.1513,
       "shared_terms": [
         "tests",
         "parameter",
@@ -9072,7 +9489,7 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.3056,
+      "score": 0.3082,
       "shared_terms": [
         "tests",
         "variable",
@@ -9093,7 +9510,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.202,
+      "score": 0.1987,
       "shared_terms": [
         "gov",
         "parameter",
@@ -9114,7 +9531,7 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.185,
+      "score": 0.1846,
       "shared_terms": [
         "formula",
         "contrib",
@@ -9135,16 +9552,16 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.1738,
+      "score": 0.1762,
       "shared_terms": [
         "tests",
         "test",
-        "pytest",
         "write",
+        "pytest",
         "run",
         "repo",
         "path",
-        "conventions"
+        "references"
       ]
     },
     {
@@ -9156,7 +9573,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.195,
+      "score": 0.1966,
       "shared_terms": [
         "test",
         "tests",
@@ -9177,15 +9594,15 @@
         "kind": "agent",
         "id": "model-corroborator"
       },
-      "score": 0.258,
+      "score": 0.2606,
       "shared_terms": [
         "reform",
-        "scores",
         "external",
+        "scores",
         "published",
         "scored",
-        "shape",
         "benchmark",
+        "shape",
         "stage"
       ]
     },
@@ -9198,14 +9615,14 @@
         "kind": "agent",
         "id": "prior-scores-finder"
       },
-      "score": 0.4754,
+      "score": 0.479,
       "shared_terms": [
         "prior",
         "tier",
         "scores",
         "scripts",
-        "reform",
         "scored",
+        "reform",
         "python3",
         "external"
       ]
@@ -9219,7 +9636,7 @@
         "kind": "agent",
         "id": "reform-comparator"
       },
-      "score": 0.2508,
+      "score": 0.2534,
       "shared_terms": [
         "prior",
         "anchor",
@@ -9240,7 +9657,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.1845,
+      "score": 0.1819,
       "shared_terms": [
         "reform",
         "preset",
@@ -9261,7 +9678,7 @@
         "kind": "command",
         "id": "prior-analysis"
       },
-      "score": 0.248,
+      "score": 0.2492,
       "shared_terms": [
         "prior",
         "scripts",
@@ -9282,7 +9699,7 @@
         "kind": "command",
         "id": "prior-scores"
       },
-      "score": 0.6,
+      "score": 0.5996,
       "shared_terms": [
         "scorekeepers",
         "scores",
@@ -9290,8 +9707,8 @@
         "prior",
         "presets",
         "scored",
-        "reform",
-        "published"
+        "published",
+        "reform"
       ]
     },
     {
@@ -9303,7 +9720,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.2535,
+      "score": 0.2506,
       "shared_terms": [
         "reform",
         "preset",
@@ -9324,7 +9741,7 @@
         "kind": "skill",
         "id": "policyengine-writing"
       },
-      "score": 0.2227,
+      "score": 0.2231,
       "shared_terms": [
         "posts",
         "blog",
@@ -9345,7 +9762,7 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1962,
+      "score": 0.1967,
       "shared_terms": [
         "posts",
         "articles",
@@ -9360,13 +9777,34 @@
     {
       "a": {
         "kind": "skill",
+        "id": "policyengine-research-lookup"
+      },
+      "b": {
+        "kind": "command",
+        "id": "generate-content"
+      },
+      "score": 0.1502,
+      "shared_terms": [
+        "posts",
+        "blog",
+        "post",
+        "image",
+        "research",
+        "title",
+        "png",
+        "tone"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
         "id": "policyengine-standards"
       },
       "b": {
         "kind": "agent",
         "id": "issue-manager"
       },
-      "score": 0.1615,
+      "score": 0.1628,
       "shared_terms": [
         "repo",
         "number",
@@ -9387,7 +9825,7 @@
         "kind": "agent",
         "id": "pr-pusher"
       },
-      "score": 0.2874,
+      "score": 0.2886,
       "shared_terms": [
         "changelog",
         "repo",
@@ -9396,7 +9834,7 @@
         "linting",
         "towncrier",
         "ruff",
-        "never"
+        "committing"
       ]
     },
     {
@@ -9408,7 +9846,7 @@
         "kind": "agent",
         "id": "structural-implementer"
       },
-      "score": 0.1541,
+      "score": 0.1544,
       "shared_terms": [
         "draft",
         "changelog",
@@ -9417,7 +9855,7 @@
         "ready",
         "issue",
         "committing",
-        "version"
+        "body"
       ]
     },
     {
@@ -9429,7 +9867,7 @@
         "kind": "command",
         "id": "create-pr"
       },
-      "score": 0.4031,
+      "score": 0.4055,
       "shared_terms": [
         "echo",
         "wait",
@@ -9450,7 +9888,7 @@
         "kind": "agent",
         "id": "multizone-validator"
       },
-      "score": 0.4105,
+      "score": 0.4052,
       "shared_terms": [
         "zone",
         "basepath",
@@ -9469,9 +9907,30 @@
       },
       "b": {
         "kind": "agent",
+        "id": "backend-builder"
+      },
+      "score": 0.1748,
+      "shared_terms": [
+        "modal",
+        "backend",
+        "api",
+        "dashboard",
+        "public",
+        "custom",
+        "pattern",
+        "required"
+      ]
+    },
+    {
+      "a": {
+        "kind": "skill",
+        "id": "policyengine-tools"
+      },
+      "b": {
+        "kind": "agent",
         "id": "dashboard-architecture-validator"
       },
-      "score": 0.4247,
+      "score": 0.4273,
       "shared_terms": [
         "app",
         "postcss",
@@ -9480,7 +9939,7 @@
         "kit",
         "tailwind",
         "tailwindcss",
-        "next"
+        "backend"
       ]
     },
     {
@@ -9492,7 +9951,7 @@
         "kind": "agent",
         "id": "dashboard-design-validator"
       },
-      "score": 0.1904,
+      "score": 0.1878,
       "shared_terms": [
         "kit",
         "app",
@@ -9513,16 +9972,16 @@
         "kind": "agent",
         "id": "dashboard-scaffold"
       },
-      "score": 0.2424,
+      "score": 0.2573,
       "shared_terms": [
         "dashboard",
+        "api",
         "kit",
         "css",
-        "config",
         "basepath",
+        "backend",
         "next",
-        "modal",
-        "app"
+        "modal"
       ]
     },
     {
@@ -9534,7 +9993,7 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.2792,
+      "score": 0.2785,
       "shared_terms": [
         "kit",
         "app",
@@ -9543,7 +10002,7 @@
         "design",
         "next",
         "chart",
-        "components"
+        "import"
       ]
     },
     {
@@ -9555,7 +10014,7 @@
         "kind": "command",
         "id": "audit-multizone"
       },
-      "score": 0.346,
+      "score": 0.3411,
       "shared_terms": [
         "zone",
         "next",
@@ -9576,13 +10035,13 @@
         "kind": "command",
         "id": "audit-seo"
       },
-      "score": 0.1927,
+      "score": 0.192,
       "shared_terms": [
         "vercel",
         "seo",
         "zone",
-        "bun",
         "org",
+        "bun",
         "standalone",
         "url",
         "app"
@@ -9597,7 +10056,7 @@
         "kind": "command",
         "id": "create-new-component"
       },
-      "score": 0.2167,
+      "score": 0.2145,
       "shared_terms": [
         "kit",
         "app",
@@ -9618,12 +10077,12 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.3273,
+      "score": 0.3244,
       "shared_terms": [
         "modal",
         "host",
-        "vercel",
         "app",
+        "vercel",
         "dashboard",
         "config",
         "next",
@@ -9639,7 +10098,7 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.3069,
+      "score": 0.3504,
       "shared_terms": [
         "kit",
         "css",
@@ -9647,8 +10106,8 @@
         "tailwind",
         "next",
         "bun",
-        "calculator",
-        "import"
+        "api",
+        "calculator"
       ]
     },
     {
@@ -9660,7 +10119,7 @@
         "kind": "skill",
         "id": "policyengine-us"
       },
-      "score": 0.53,
+      "score": 0.5313,
       "shared_terms": [
         "unit",
         "tax",
@@ -9681,7 +10140,7 @@
         "kind": "skill",
         "id": "policyengine-user-guide"
       },
-      "score": 0.2782,
+      "score": 0.2785,
       "shared_terms": [
         "household",
         "income",
@@ -9702,16 +10161,16 @@
         "kind": "agent",
         "id": "calibration-diagnostics"
       },
-      "score": 0.1533,
+      "score": 0.1536,
       "shared_terms": [
         "microcosm",
         "unit",
         "income",
         "tax",
         "poverty",
-        "dataset",
         "spm",
-        "age"
+        "age",
+        "dataset"
       ]
     },
     {
@@ -9723,16 +10182,16 @@
         "kind": "agent",
         "id": "dashboard-integrator"
       },
-      "score": 0.1518,
+      "score": 0.1564,
       "shared_terms": [
         "household",
         "income",
-        "person",
         "unit",
         "data",
         "tax",
+        "year",
         "age",
-        "year"
+        "person"
       ]
     },
     {
@@ -9744,7 +10203,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1877,
+      "score": 0.1878,
       "shared_terms": [
         "income",
         "tax",
@@ -9752,8 +10211,8 @@
         "model",
         "canada",
         "personal",
-        "gov",
-        "household"
+        "household",
+        "gov"
       ]
     },
     {
@@ -9765,7 +10224,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.2967,
+      "score": 0.2978,
       "shared_terms": [
         "household",
         "income",
@@ -9786,7 +10245,7 @@
         "kind": "skill",
         "id": "policyengine-user-guide"
       },
-      "score": 0.2236,
+      "score": 0.2238,
       "shared_terms": [
         "household",
         "tax",
@@ -9807,7 +10266,7 @@
         "kind": "agent",
         "id": "calibration-diagnostics"
       },
-      "score": 0.1804,
+      "score": 0.1814,
       "shared_terms": [
         "unit",
         "tax",
@@ -9828,15 +10287,15 @@
         "kind": "agent",
         "id": "dashboard-integrator"
       },
-      "score": 0.1686,
+      "score": 0.1744,
       "shared_terms": [
         "household",
         "unit",
         "tax",
+        "year",
         "income",
         "spm",
-        "person",
-        "year",
+        "head",
         "state"
       ]
     },
@@ -9849,7 +10308,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.3056,
+      "score": 0.3053,
       "shared_terms": [
         "tax",
         "income",
@@ -9870,7 +10329,7 @@
         "kind": "command",
         "id": "audit-state-tax"
       },
-      "score": 0.2104,
+      "score": 0.2107,
       "shared_terms": [
         "tax",
         "state",
@@ -9891,7 +10350,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.261,
+      "score": 0.2622,
       "shared_terms": [
         "household",
         "tax",
@@ -9912,7 +10371,7 @@
         "kind": "agent",
         "id": "microsim-runner"
       },
-      "score": 0.1681,
+      "score": 0.17,
       "shared_terms": [
         "reform",
         "impact",
@@ -9933,7 +10392,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1913,
+      "score": 0.191,
       "shared_terms": [
         "reform",
         "income",
@@ -9954,7 +10413,7 @@
         "kind": "command",
         "id": "create-dashboard"
       },
-      "score": 0.1925,
+      "score": 0.1946,
       "shared_terms": [
         "reform",
         "calculator",
@@ -9975,7 +10434,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.3317,
+      "score": 0.3298,
       "shared_terms": [
         "household",
         "reform",
@@ -9996,7 +10455,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.1708,
+      "score": 0.1687,
       "shared_terms": [
         "reform",
         "impact",
@@ -10017,7 +10476,7 @@
         "kind": "agent",
         "id": "content-orchestrator"
       },
-      "score": 0.1691,
+      "score": 0.1692,
       "shared_terms": [
         "social",
         "blog",
@@ -10038,7 +10497,7 @@
         "kind": "agent",
         "id": "reform-describer"
       },
-      "score": 0.1796,
+      "score": 0.1797,
       "shared_terms": [
         "sentence",
         "blog",
@@ -10059,7 +10518,7 @@
         "kind": "agent",
         "id": "neutrality-reviewer"
       },
-      "score": 0.2117,
+      "score": 0.2118,
       "shared_terms": [
         "neutral",
         "blog",
@@ -10080,7 +10539,7 @@
         "kind": "command",
         "id": "generate-content"
       },
-      "score": 0.2218,
+      "score": 0.2213,
       "shared_terms": [
         "social",
         "blog",
@@ -10101,7 +10560,7 @@
         "kind": "agent",
         "id": "ci-fixer"
       },
-      "score": 0.2082,
+      "score": 0.2085,
       "shared_terms": [
         "root",
         "review",
@@ -10109,8 +10568,8 @@
         "workflow",
         "run",
         "test",
-        "local",
-        "read"
+        "read",
+        "local"
       ]
     },
     {
@@ -10122,12 +10581,12 @@
         "kind": "agent",
         "id": "implementation-validator"
       },
-      "score": 0.2707,
+      "score": 0.2718,
       "shared_terms": [
         "review",
         "root",
-        "program",
         "read",
+        "program",
         "prefix",
         "pdf",
         "only",
@@ -10143,7 +10602,7 @@
         "kind": "agent",
         "id": "model-worker"
       },
-      "score": 0.2526,
+      "score": 0.2504,
       "shared_terms": [
         "canonical",
         "delegation",
@@ -10164,7 +10623,7 @@
         "kind": "agent",
         "id": "program-reviewer"
       },
-      "score": 0.2104,
+      "score": 0.2105,
       "shared_terms": [
         "review",
         "program",
@@ -10185,7 +10644,7 @@
         "kind": "agent",
         "id": "review-worker"
       },
-      "score": 0.4811,
+      "score": 0.4805,
       "shared_terms": [
         "review",
         "canonical",
@@ -10206,7 +10665,7 @@
         "kind": "agent",
         "id": "reference-validator"
       },
-      "score": 0.1611,
+      "score": 0.162,
       "shared_terms": [
         "pdf",
         "review",
@@ -10227,7 +10686,7 @@
         "kind": "command",
         "id": "audit-state-tax"
       },
-      "score": 0.181,
+      "score": 0.1807,
       "shared_terms": [
         "pdf",
         "audit",
@@ -10248,14 +10707,14 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.2525,
+      "score": 0.2543,
       "shared_terms": [
         "review",
         "program",
         "root",
         "prefix",
-        "pdf",
         "read",
+        "pdf",
         "workflow",
         "phase"
       ]
@@ -10269,7 +10728,7 @@
         "kind": "agent",
         "id": "edge-case-generator"
       },
-      "score": 0.1894,
+      "score": 0.1935,
       "shared_terms": [
         "test",
         "tests",
@@ -10290,7 +10749,7 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.2332,
+      "score": 0.2379,
       "shared_terms": [
         "test",
         "tests",
@@ -10299,7 +10758,7 @@
         "comprehensive",
         "descriptive",
         "integration",
-        "cover"
+        "names"
       ]
     },
     {
@@ -10311,7 +10770,7 @@
         "kind": "agent",
         "id": "dashboard-architecture-validator"
       },
-      "score": 0.1655,
+      "score": 0.1674,
       "shared_terms": [
         "test",
         "app",
@@ -10332,7 +10791,7 @@
         "kind": "agent",
         "id": "dashboard-design-validator"
       },
-      "score": 0.1943,
+      "score": 0.1927,
       "shared_terms": [
         "tsx",
         "components",
@@ -10353,7 +10812,7 @@
         "kind": "agent",
         "id": "dashboard-plan-validator"
       },
-      "score": 0.1537,
+      "score": 0.153,
       "shared_terms": [
         "component",
         "tsx",
@@ -10374,7 +10833,7 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.2277,
+      "score": 0.2267,
       "shared_terms": [
         "component",
         "button",
@@ -10395,7 +10854,7 @@
         "kind": "command",
         "id": "create-new-component"
       },
-      "score": 0.3305,
+      "score": 0.3289,
       "shared_terms": [
         "component",
         "tsx",
@@ -10416,7 +10875,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.3771,
+      "score": 0.3842,
       "shared_terms": [
         "test",
         "tests",
@@ -10437,7 +10896,7 @@
         "kind": "agent",
         "id": "dashboard-plan-validator"
       },
-      "score": 0.2192,
+      "score": 0.2204,
       "shared_terms": [
         "zone",
         "path",
@@ -10446,7 +10905,7 @@
         "fail",
         "name",
         "kebab",
-        "pass"
+        "multi"
       ]
     },
     {
@@ -10458,7 +10917,7 @@
         "kind": "command",
         "id": "audit-multizone"
       },
-      "score": 0.5806,
+      "score": 0.5812,
       "shared_terms": [
         "zone",
         "path",
@@ -10500,13 +10959,13 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.2195,
+      "score": 0.221,
       "shared_terms": [
         "host",
         "zone",
         "app",
-        "modal",
         "path",
+        "modal",
         "next",
         "config",
         "rewrites"
@@ -10521,7 +10980,7 @@
         "kind": "agent",
         "id": "microsim-runner"
       },
-      "score": 0.1806,
+      "score": 0.1789,
       "shared_terms": [
         "dataset",
         "microcosm",
@@ -10542,7 +11001,7 @@
         "kind": "agent",
         "id": "model-corroborator"
       },
-      "score": 0.1671,
+      "score": 0.168,
       "shared_terms": [
         "calibration",
         "reform",
@@ -10563,7 +11022,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1724,
+      "score": 0.175,
       "shared_terms": [
         "state",
         "income",
@@ -10584,7 +11043,7 @@
         "kind": "agent",
         "id": "reform-comparator"
       },
-      "score": 0.1988,
+      "score": 0.1962,
       "shared_terms": [
         "dataset",
         "microsim",
@@ -10605,16 +11064,16 @@
         "kind": "command",
         "id": "analyze-policy"
       },
-      "score": 0.1725,
+      "score": 0.1714,
       "shared_terms": [
         "calibration",
         "microsim",
-        "dataset",
         "microcosm",
+        "dataset",
         "hypothesis",
         "cost",
         "prior",
-        "frs"
+        "default"
       ]
     },
     {
@@ -10626,7 +11085,7 @@
         "kind": "command",
         "id": "generate-content"
       },
-      "score": 0.6326,
+      "score": 0.6314,
       "shared_terms": [
         "social",
         "content",
@@ -10635,7 +11094,7 @@
         "image",
         "blog",
         "generate",
-        "copy"
+        "announcement"
       ]
     },
     {
@@ -10647,7 +11106,7 @@
         "kind": "agent",
         "id": "edge-case-generator"
       },
-      "score": 0.2333,
+      "score": 0.2358,
       "shared_terms": [
         "test",
         "files",
@@ -10668,15 +11127,15 @@
         "kind": "agent",
         "id": "implementation-validator"
       },
-      "score": 0.3458,
+      "score": 0.3471,
       "shared_terms": [
         "fix",
         "root",
         "worktree",
         "run",
         "prefix",
-        "review",
         "read",
+        "review",
         "fixes"
       ]
     },
@@ -10689,7 +11148,7 @@
         "kind": "agent",
         "id": "model-worker"
       },
-      "score": 0.2032,
+      "score": 0.2064,
       "shared_terms": [
         "test",
         "root",
@@ -10710,7 +11169,7 @@
         "kind": "agent",
         "id": "pr-pusher"
       },
-      "score": 0.2605,
+      "score": 0.2599,
       "shared_terms": [
         "caller",
         "fix",
@@ -10731,15 +11190,15 @@
         "kind": "agent",
         "id": "review-worker"
       },
-      "score": 0.1604,
+      "score": 0.1626,
       "shared_terms": [
         "test",
         "review",
         "blocked",
         "root",
         "role",
-        "evidence",
         "read",
+        "evidence",
         "program"
       ]
     },
@@ -10752,7 +11211,7 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.2711,
+      "score": 0.2739,
       "shared_terms": [
         "test",
         "tests",
@@ -10773,7 +11232,7 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.2731,
+      "score": 0.2748,
       "shared_terms": [
         "worktree",
         "root",
@@ -10792,9 +11251,30 @@
       },
       "b": {
         "kind": "command",
+        "id": "encode-reform"
+      },
+      "score": 0.151,
+      "shared_terms": [
+        "prefix",
+        "test",
+        "fixer",
+        "files",
+        "orchestrator",
+        "spec",
+        "encode",
+        "impl"
+      ]
+    },
+    {
+      "a": {
+        "kind": "agent",
+        "id": "ci-fixer"
+      },
+      "b": {
+        "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.2593,
+      "score": 0.2628,
       "shared_terms": [
         "test",
         "tests",
@@ -10815,7 +11295,7 @@
         "kind": "agent",
         "id": "program-reviewer"
       },
-      "score": 0.2311,
+      "score": 0.2316,
       "shared_terms": [
         "implementations",
         "regulations",
@@ -10836,7 +11316,7 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.1627,
+      "score": 0.1624,
       "shared_terms": [
         "month",
         "months",
@@ -10857,13 +11337,13 @@
         "kind": "agent",
         "id": "reference-validator"
       },
-      "score": 0.1804,
+      "score": 0.1797,
       "shared_terms": [
         "pdf",
         "citation",
         "text",
-        "page",
         "source",
+        "page",
         "doc",
         "authoritative",
         "references"
@@ -10878,7 +11358,7 @@
         "kind": "command",
         "id": "audit-state-tax"
       },
-      "score": 0.204,
+      "score": 0.2044,
       "shared_terms": [
         "pdf",
         "state",
@@ -10899,14 +11379,14 @@
         "kind": "agent",
         "id": "implementation-validator"
       },
-      "score": 0.2889,
+      "score": 0.2896,
       "shared_terms": [
         "mode",
         "review",
         "fix",
         "read",
-        "only",
         "program",
+        "only",
         "test",
         "audit"
       ]
@@ -10920,15 +11400,15 @@
         "kind": "agent",
         "id": "program-reviewer"
       },
-      "score": 0.2213,
+      "score": 0.2226,
       "shared_terms": [
         "income",
         "tests",
         "test",
         "edge",
         "program",
-        "review",
         "mode",
+        "review",
         "cases"
       ]
     },
@@ -10941,7 +11421,7 @@
         "kind": "agent",
         "id": "review-worker"
       },
-      "score": 0.1588,
+      "score": 0.1602,
       "shared_terms": [
         "test",
         "review",
@@ -10962,7 +11442,7 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.4648,
+      "score": 0.468,
       "shared_terms": [
         "test",
         "tests",
@@ -10983,7 +11463,7 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.1647,
+      "score": 0.1651,
       "shared_terms": [
         "files",
         "program",
@@ -11004,15 +11484,15 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.3697,
+      "score": 0.3743,
       "shared_terms": [
         "test",
         "tests",
         "edge",
         "files",
         "cases",
-        "existing",
         "file",
+        "existing",
         "write"
       ]
     },
@@ -11025,15 +11505,15 @@
         "kind": "agent",
         "id": "pr-pusher"
       },
-      "score": 0.1647,
+      "score": 0.1651,
       "shared_terms": [
         "fix",
         "review",
         "run",
         "only",
         "git",
-        "caller",
         "issues",
+        "caller",
         "program"
       ]
     },
@@ -11046,7 +11526,7 @@
         "kind": "agent",
         "id": "program-reviewer"
       },
-      "score": 0.2139,
+      "score": 0.2137,
       "shared_terms": [
         "mode",
         "program",
@@ -11067,7 +11547,7 @@
         "kind": "agent",
         "id": "review-worker"
       },
-      "score": 0.2025,
+      "score": 0.2036,
       "shared_terms": [
         "review",
         "program",
@@ -11088,15 +11568,15 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.1636,
+      "score": 0.1638,
       "shared_terms": [
         "fix",
         "program",
         "test",
         "read",
         "not",
-        "only",
         "findings",
+        "only",
         "variable"
       ]
     },
@@ -11109,7 +11589,7 @@
         "kind": "agent",
         "id": "reference-validator"
       },
-      "score": 0.157,
+      "score": 0.1575,
       "shared_terms": [
         "reference",
         "pdf",
@@ -11130,7 +11610,7 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.2996,
+      "score": 0.3015,
       "shared_terms": [
         "program",
         "worktree",
@@ -11151,7 +11631,7 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.177,
+      "score": 0.1724,
       "shared_terms": [
         "structural",
         "mode",
@@ -11172,12 +11652,12 @@
         "kind": "agent",
         "id": "pr-pusher"
       },
-      "score": 0.3172,
+      "score": 0.3155,
       "shared_terms": [
         "repo",
         "branch",
-        "head",
         "push",
+        "head",
         "issue",
         "number",
         "base",
@@ -11193,7 +11673,7 @@
         "kind": "agent",
         "id": "structural-implementer"
       },
-      "score": 0.1905,
+      "score": 0.1914,
       "shared_terms": [
         "issue",
         "repo",
@@ -11214,7 +11694,7 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1951,
+      "score": 0.1961,
       "shared_terms": [
         "issue",
         "repo",
@@ -11235,7 +11715,7 @@
         "kind": "command",
         "id": "audit-seo"
       },
-      "score": 0.1822,
+      "score": 0.1819,
       "shared_terms": [
         "url",
         "repo",
@@ -11256,7 +11736,7 @@
         "kind": "command",
         "id": "audit-state-tax"
       },
-      "score": 0.1513,
+      "score": 0.1533,
       "shared_terms": [
         "state",
         "number",
@@ -11277,7 +11757,7 @@
         "kind": "command",
         "id": "create-pr"
       },
-      "score": 0.2618,
+      "score": 0.2621,
       "shared_terms": [
         "branch",
         "number",
@@ -11298,7 +11778,7 @@
         "kind": "agent",
         "id": "review-worker"
       },
-      "score": 0.6226,
+      "score": 0.6196,
       "shared_terms": [
         "your",
         "assigned",
@@ -11319,13 +11799,13 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.1767,
+      "score": 0.1793,
       "shared_terms": [
         "test",
         "tests",
         "assigned",
-        "model",
         "contract",
+        "model",
         "cases",
         "owned",
         "actual"
@@ -11340,7 +11820,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.1671,
+      "score": 0.1701,
       "shared_terms": [
         "test",
         "tests",
@@ -11361,7 +11841,7 @@
         "kind": "agent",
         "id": "structural-implementer"
       },
-      "score": 0.1964,
+      "score": 0.198,
       "shared_terms": [
         "changelog",
         "issue",
@@ -11382,11 +11862,11 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.1609,
+      "score": 0.1614,
       "shared_terms": [
         "tests",
-        "caller",
         "commit",
+        "caller",
         "pusher",
         "files",
         "fix",
@@ -11403,15 +11883,15 @@
         "kind": "command",
         "id": "create-pr"
       },
-      "score": 0.2466,
+      "score": 0.2475,
       "shared_terms": [
         "branch",
         "git",
         "draft",
         "commit",
         "number",
-        "head",
         "create",
+        "head",
         "base"
       ]
     },
@@ -11424,7 +11904,7 @@
         "kind": "agent",
         "id": "review-worker"
       },
-      "score": 0.2206,
+      "score": 0.2211,
       "shared_terms": [
         "review",
         "program",
@@ -11445,7 +11925,7 @@
         "kind": "agent",
         "id": "rules-engineer"
       },
-      "score": 0.1811,
+      "score": 0.1835,
       "shared_terms": [
         "program",
         "tanf",
@@ -11466,7 +11946,7 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.2438,
+      "score": 0.2453,
       "shared_terms": [
         "tests",
         "test",
@@ -11487,7 +11967,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1733,
+      "score": 0.1742,
       "shared_terms": [
         "income",
         "state",
@@ -11508,7 +11988,7 @@
         "kind": "agent",
         "id": "reference-validator"
       },
-      "score": 0.1971,
+      "score": 0.1982,
       "shared_terms": [
         "requirements",
         "program",
@@ -11529,7 +12009,7 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.1771,
+      "score": 0.178,
       "shared_terms": [
         "program",
         "review",
@@ -11550,15 +12030,15 @@
         "kind": "agent",
         "id": "test-creator"
       },
-      "score": 0.1563,
+      "score": 0.1576,
       "shared_terms": [
         "test",
         "assigned",
         "program",
         "model",
-        "actual",
-        "needed",
         "read",
+        "needed",
+        "actual",
         "development"
       ]
     },
@@ -11571,16 +12051,16 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.1659,
+      "score": 0.1675,
       "shared_terms": [
         "program",
         "review",
         "read",
         "root",
-        "only",
         "workflow",
+        "only",
         "role",
-        "you"
+        "task"
       ]
     },
     {
@@ -11592,10 +12072,10 @@
         "kind": "agent",
         "id": "reference-validator"
       },
-      "score": 0.369,
+      "score": 0.3645,
       "shared_terms": [
-        "page",
         "href",
+        "page",
         "title",
         "section",
         "pdf",
@@ -11613,7 +12093,7 @@
         "kind": "command",
         "id": "audit-state-tax"
       },
-      "score": 0.185,
+      "score": 0.1825,
       "shared_terms": [
         "pdf",
         "oregon",
@@ -11634,10 +12114,10 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.1847,
+      "score": 0.179,
       "shared_terms": [
-        "page",
         "program",
+        "page",
         "tanf",
         "files",
         "href",
@@ -11655,13 +12135,13 @@
         "kind": "agent",
         "id": "policy-text-researcher"
       },
-      "score": 0.1659,
+      "score": 0.1655,
       "shared_terms": [
         "enacted",
         "effective",
-        "structural",
         "draft",
         "bill",
+        "structural",
         "gov",
         "date",
         "enrolled"
@@ -11676,7 +12156,7 @@
         "kind": "agent",
         "id": "reform-classifier"
       },
-      "score": 0.2023,
+      "score": 0.1941,
       "shared_terms": [
         "structural",
         "backlog",
@@ -11697,12 +12177,12 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.2043,
+      "score": 0.2029,
       "shared_terms": [
         "issue",
         "draft",
-        "structural",
         "repo",
+        "structural",
         "country",
         "verdict",
         "report",
@@ -11718,7 +12198,7 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.6539,
+      "score": 0.6504,
       "shared_terms": [
         "structural",
         "backlog",
@@ -11739,7 +12219,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.3893,
+      "score": 0.3952,
       "shared_terms": [
         "test",
         "tests",
@@ -11748,7 +12228,7 @@
         "cases",
         "file",
         "unit",
-        "cover"
+        "fix"
       ]
     },
     {
@@ -11760,16 +12240,16 @@
         "kind": "agent",
         "id": "dashboard-architecture-validator"
       },
-      "score": 0.1961,
+      "score": 0.2093,
       "shared_terms": [
-        "backend",
         "modal",
-        "json",
+        "backend",
         "custom",
-        "test",
-        "data",
         "dashboard",
-        "pattern"
+        "package",
+        "pattern",
+        "json",
+        "data"
       ]
     },
     {
@@ -11781,16 +12261,16 @@
         "kind": "agent",
         "id": "dashboard-integrator"
       },
-      "score": 0.4056,
+      "score": 0.4004,
       "shared_terms": [
         "api",
-        "data",
-        "client",
         "backend",
-        "step",
-        "types",
-        "hooks",
-        "pattern"
+        "data",
+        "pattern",
+        "client",
+        "dashboard",
+        "builder",
+        "plan"
       ]
     },
     {
@@ -11802,16 +12282,16 @@
         "kind": "agent",
         "id": "dashboard-plan-validator"
       },
-      "score": 0.2461,
+      "score": 0.2101,
       "shared_terms": [
         "plan",
         "api",
-        "data",
         "dashboard",
-        "lib",
+        "data",
+        "include",
         "yaml",
-        "client",
-        "types"
+        "contract",
+        "client"
       ]
     },
     {
@@ -11823,16 +12303,16 @@
         "kind": "agent",
         "id": "dashboard-planner"
       },
-      "score": 0.2788,
+      "score": 0.3376,
       "shared_terms": [
-        "data",
         "dashboard",
-        "plan",
         "api",
+        "plan",
+        "data",
         "modal",
         "custom",
         "pattern",
-        "step"
+        "backend"
       ]
     },
     {
@@ -11844,16 +12324,16 @@
         "kind": "agent",
         "id": "dashboard-scaffold"
       },
-      "score": 0.4424,
+      "score": 0.5143,
       "shared_terms": [
-        "plan",
-        "custom",
+        "api",
         "dashboard",
-        "data",
-        "modal",
+        "custom",
+        "plan",
         "backend",
+        "modal",
         "pattern",
-        "api"
+        "data"
       ]
     },
     {
@@ -11865,16 +12345,16 @@
         "kind": "agent",
         "id": "microsim-runner"
       },
-      "score": 0.1514,
+      "score": 0.1858,
       "shared_terms": [
         "api",
         "data",
-        "json",
-        "step",
+        "dataset",
         "reform",
-        "org",
-        "parameter",
-        "results"
+        "economy",
+        "country",
+        "release",
+        "parameter"
       ]
     },
     {
@@ -11886,16 +12366,16 @@
         "kind": "command",
         "id": "create-dashboard"
       },
-      "score": 0.1768,
+      "score": 0.203,
       "shared_terms": [
         "dashboard",
         "plan",
-        "create",
-        "json",
+        "reform",
         "api",
-        "precomputed",
+        "page",
         "backend",
-        "step"
+        "precomputed",
+        "json"
       ]
     },
     {
@@ -11907,15 +12387,15 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.3168,
+      "score": 0.3927,
       "shared_terms": [
         "modal",
         "dashboard",
         "custom",
         "pattern",
-        "precomputed",
-        "step",
         "backend",
+        "precomputed",
+        "plan",
         "data"
       ]
     },
@@ -11928,37 +12408,16 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.1636,
+      "score": 0.2207,
       "shared_terms": [
         "api",
         "dashboard",
-        "create",
-        "precomputed",
-        "function",
+        "public",
         "modal",
-        "export",
-        "step"
-      ]
-    },
-    {
-      "a": {
-        "kind": "agent",
-        "id": "backend-builder"
-      },
-      "b": {
-        "kind": "command",
-        "id": "write-tests"
-      },
-      "score": 0.164,
-      "shared_terms": [
-        "test",
-        "tests",
-        "step",
-        "files",
+        "custom",
         "client",
-        "api",
-        "json",
-        "lib"
+        "precomputed",
+        "page"
       ]
     },
     {
@@ -11970,7 +12429,7 @@
         "kind": "agent",
         "id": "dashboard-design-validator"
       },
-      "score": 0.4094,
+      "score": 0.4117,
       "shared_terms": [
         "grep",
         "app",
@@ -11991,14 +12450,14 @@
         "kind": "agent",
         "id": "dashboard-plan-validator"
       },
-      "score": 0.2751,
+      "score": 0.2755,
       "shared_terms": [
         "grep",
         "app",
         "fail",
         "include",
-        "components",
         "tsx",
+        "components",
         "test",
         "node"
       ]
@@ -12012,16 +12471,16 @@
         "kind": "agent",
         "id": "dashboard-scaffold"
       },
-      "score": 0.2532,
+      "score": 0.2281,
       "shared_terms": [
-        "css",
         "backend",
-        "config",
-        "modal",
-        "custom",
-        "tsx",
+        "css",
         "dashboard",
-        "app"
+        "custom",
+        "modal",
+        "app",
+        "kit",
+        "tsx"
       ]
     },
     {
@@ -12033,7 +12492,7 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.2581,
+      "score": 0.2578,
       "shared_terms": [
         "app",
         "kit",
@@ -12054,7 +12513,7 @@
         "kind": "command",
         "id": "audit-multizone"
       },
-      "score": 0.1805,
+      "score": 0.1799,
       "shared_terms": [
         "app",
         "config",
@@ -12075,14 +12534,14 @@
         "kind": "command",
         "id": "create-new-component"
       },
-      "score": 0.2102,
+      "score": 0.2105,
       "shared_terms": [
         "app",
         "kit",
         "grep",
         "tailwind",
-        "components",
         "tsx",
+        "components",
         "css",
         "design"
       ]
@@ -12096,7 +12555,7 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.2181,
+      "score": 0.2152,
       "shared_terms": [
         "modal",
         "app",
@@ -12117,15 +12576,15 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.232,
+      "score": 0.2586,
       "shared_terms": [
         "css",
         "app",
         "tailwind",
         "kit",
         "import",
+        "package",
         "bash",
-        "function",
         "globals"
       ]
     },
@@ -12138,7 +12597,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.1709,
+      "score": 0.1728,
       "shared_terms": [
         "test",
         "app",
@@ -12159,7 +12618,7 @@
         "kind": "agent",
         "id": "dashboard-plan-validator"
       },
-      "score": 0.4611,
+      "score": 0.4587,
       "shared_terms": [
         "grep",
         "components",
@@ -12180,10 +12639,10 @@
         "kind": "agent",
         "id": "dashboard-scaffold"
       },
-      "score": 0.168,
+      "score": 0.1591,
       "shared_terms": [
-        "tsx",
         "components",
+        "tsx",
         "dashboard",
         "kit",
         "design",
@@ -12201,7 +12660,7 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.3538,
+      "score": 0.3516,
       "shared_terms": [
         "kit",
         "components",
@@ -12222,7 +12681,7 @@
         "kind": "command",
         "id": "create-new-component"
       },
-      "score": 0.3484,
+      "score": 0.3462,
       "shared_terms": [
         "components",
         "kit",
@@ -12237,22 +12696,64 @@
     {
       "a": {
         "kind": "agent",
+        "id": "dashboard-design-validator"
+      },
+      "b": {
+        "kind": "command",
+        "id": "new-tool"
+      },
+      "score": 0.162,
+      "shared_terms": [
+        "kit",
+        "app",
+        "dashboard",
+        "css",
+        "font",
+        "node",
+        "design",
+        "modules"
+      ]
+    },
+    {
+      "a": {
+        "kind": "agent",
         "id": "dashboard-integrator"
       },
       "b": {
         "kind": "agent",
         "id": "dashboard-plan-validator"
       },
-      "score": 0.2244,
+      "score": 0.222,
       "shared_terms": [
         "api",
         "components",
         "plan",
         "data",
         "loading",
+        "lib",
         "component",
-        "chart",
-        "lib"
+        "error"
+      ]
+    },
+    {
+      "a": {
+        "kind": "agent",
+        "id": "dashboard-integrator"
+      },
+      "b": {
+        "kind": "agent",
+        "id": "dashboard-planner"
+      },
+      "score": 0.1887,
+      "shared_terms": [
+        "api",
+        "data",
+        "dashboard",
+        "step",
+        "plan",
+        "backend",
+        "input",
+        "components"
       ]
     },
     {
@@ -12264,16 +12765,16 @@
         "kind": "agent",
         "id": "dashboard-scaffold"
       },
-      "score": 0.2326,
+      "score": 0.3195,
       "shared_terms": [
         "api",
-        "components",
-        "data",
         "client",
-        "plan",
         "backend",
-        "structure",
-        "dashboard"
+        "dashboard",
+        "data",
+        "components",
+        "plan",
+        "structure"
       ]
     },
     {
@@ -12285,16 +12786,16 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.1842,
+      "score": 0.1764,
       "shared_terms": [
         "components",
-        "frontend",
-        "component",
-        "api",
         "builder",
+        "frontend",
+        "api",
+        "component",
         "design",
         "step",
-        "chart"
+        "client"
       ]
     },
     {
@@ -12306,16 +12807,58 @@
         "kind": "agent",
         "id": "microsim-runner"
       },
-      "score": 0.195,
+      "score": 0.2167,
       "shared_terms": [
         "api",
+        "data",
         "request",
         "response",
-        "data",
-        "state",
         "year",
+        "state",
         "spm",
-        "step"
+        "result"
+      ]
+    },
+    {
+      "a": {
+        "kind": "agent",
+        "id": "dashboard-integrator"
+      },
+      "b": {
+        "kind": "agent",
+        "id": "parameter-locator"
+      },
+      "score": 0.1504,
+      "shared_terms": [
+        "api",
+        "state",
+        "income",
+        "values",
+        "tax",
+        "states",
+        "step",
+        "household"
+      ]
+    },
+    {
+      "a": {
+        "kind": "agent",
+        "id": "dashboard-integrator"
+      },
+      "b": {
+        "kind": "command",
+        "id": "household-calc"
+      },
+      "score": 0.1502,
+      "shared_terms": [
+        "household",
+        "api",
+        "income",
+        "values",
+        "year",
+        "tax",
+        "net",
+        "pattern"
       ]
     },
     {
@@ -12327,16 +12870,16 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.1566,
+      "score": 0.1777,
       "shared_terms": [
         "api",
-        "const",
-        "function",
+        "client",
+        "dashboard",
         "import",
-        "countryid",
-        "return",
-        "export",
-        "create"
+        "head",
+        "function",
+        "step",
+        "return"
       ]
     },
     {
@@ -12348,12 +12891,12 @@
         "kind": "agent",
         "id": "dashboard-planner"
       },
-      "score": 0.2058,
+      "score": 0.2117,
       "shared_terms": [
         "plan",
         "dashboard",
-        "data",
         "api",
+        "data",
         "implementation",
         "embedding",
         "yaml",
@@ -12369,16 +12912,16 @@
         "kind": "agent",
         "id": "dashboard-scaffold"
       },
-      "score": 0.3308,
+      "score": 0.3176,
       "shared_terms": [
         "plan",
         "dashboard",
-        "tsx",
-        "components",
-        "yaml",
-        "embedding",
         "api",
-        "zone"
+        "components",
+        "tsx",
+        "yaml",
+        "zone",
+        "embedding"
       ]
     },
     {
@@ -12390,7 +12933,7 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.2567,
+      "score": 0.2543,
       "shared_terms": [
         "component",
         "plan",
@@ -12411,7 +12954,7 @@
         "kind": "command",
         "id": "audit-multizone"
       },
-      "score": 0.239,
+      "score": 0.2391,
       "shared_terms": [
         "zone",
         "path",
@@ -12420,28 +12963,7 @@
         "app",
         "fail",
         "validator",
-        "dashboard"
-      ]
-    },
-    {
-      "a": {
-        "kind": "agent",
-        "id": "dashboard-plan-validator"
-      },
-      "b": {
-        "kind": "command",
-        "id": "create-dashboard"
-      },
-      "score": 0.151,
-      "shared_terms": [
-        "dashboard",
-        "plan",
-        "multi",
-        "fail",
-        "path",
-        "api",
-        "name",
-        "validates"
+        "report"
       ]
     },
     {
@@ -12453,7 +12975,7 @@
         "kind": "command",
         "id": "create-new-component"
       },
-      "score": 0.216,
+      "score": 0.2142,
       "shared_terms": [
         "component",
         "components",
@@ -12468,22 +12990,22 @@
     {
       "a": {
         "kind": "agent",
-        "id": "dashboard-planner"
+        "id": "dashboard-plan-validator"
       },
       "b": {
-        "kind": "agent",
-        "id": "dashboard-scaffold"
+        "kind": "command",
+        "id": "new-tool"
       },
-      "score": 0.2938,
+      "score": 0.1531,
       "shared_terms": [
         "dashboard",
-        "plan",
-        "data",
-        "custom",
-        "costs",
-        "design",
         "api",
-        "step"
+        "embedding",
+        "app",
+        "plan",
+        "multi",
+        "node",
+        "chart"
       ]
     },
     {
@@ -12493,18 +13015,18 @@
       },
       "b": {
         "kind": "agent",
-        "id": "reform-describer"
+        "id": "dashboard-scaffold"
       },
-      "score": 0.1596,
+      "score": 0.3288,
       "shared_terms": [
         "dashboard",
-        "reform",
-        "description",
-        "explanation",
-        "parameter",
-        "structured",
-        "language",
-        "ctc"
+        "plan",
+        "api",
+        "data",
+        "custom",
+        "costs",
+        "design",
+        "step"
       ]
     },
     {
@@ -12516,16 +13038,16 @@
         "kind": "command",
         "id": "create-dashboard"
       },
-      "score": 0.3677,
+      "score": 0.3506,
       "shared_terms": [
         "dashboard",
         "planner",
-        "reform",
         "plan",
-        "page",
-        "validation",
+        "reform",
         "tabs",
-        "natural"
+        "page",
+        "natural",
+        "plans"
       ]
     },
     {
@@ -12537,7 +13059,7 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.1868,
+      "score": 0.189,
       "shared_terms": [
         "dashboard",
         "modal",
@@ -12546,7 +13068,28 @@
         "custom",
         "pattern",
         "data",
-        "cloud"
+        "needs"
+      ]
+    },
+    {
+      "a": {
+        "kind": "agent",
+        "id": "dashboard-planner"
+      },
+      "b": {
+        "kind": "command",
+        "id": "new-tool"
+      },
+      "score": 0.1645,
+      "shared_terms": [
+        "dashboard",
+        "api",
+        "description",
+        "step",
+        "design",
+        "plan",
+        "page",
+        "embedding"
       ]
     },
     {
@@ -12558,16 +13101,16 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.1746,
+      "score": 0.1561,
       "shared_terms": [
-        "reform",
         "natural",
         "description",
         "language",
+        "api",
+        "reform",
         "provision",
         "bill",
-        "analyze",
-        "api"
+        "analyze"
       ]
     },
     {
@@ -12579,37 +13122,16 @@
         "kind": "agent",
         "id": "frontend-builder"
       },
-      "score": 0.2556,
+      "score": 0.2529,
       "shared_terms": [
-        "plan",
         "kit",
+        "plan",
         "design",
         "components",
         "css",
         "app",
         "component",
-        "tsx"
-      ]
-    },
-    {
-      "a": {
-        "kind": "agent",
-        "id": "dashboard-scaffold"
-      },
-      "b": {
-        "kind": "command",
-        "id": "audit-multizone"
-      },
-      "score": 0.1555,
-      "shared_terms": [
-        "zone",
-        "dashboard",
-        "config",
-        "directory",
-        "next",
-        "working",
-        "host",
-        "repo"
+        "api"
       ]
     },
     {
@@ -12621,16 +13143,16 @@
         "kind": "command",
         "id": "create-dashboard"
       },
-      "score": 0.2841,
+      "score": 0.296,
       "shared_terms": [
         "dashboard",
         "plan",
         "page",
         "scaffold",
         "repo",
+        "api",
         "init",
-        "directory",
-        "create"
+        "directory"
       ]
     },
     {
@@ -12642,13 +13164,13 @@
         "kind": "command",
         "id": "create-new-component"
       },
-      "score": 0.166,
+      "score": 0.1619,
       "shared_terms": [
         "kit",
-        "tsx",
-        "design",
         "dashboard",
+        "design",
         "components",
+        "tsx",
         "component",
         "app",
         "step"
@@ -12663,16 +13185,16 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.3084,
+      "score": 0.3113,
       "shared_terms": [
         "dashboard",
         "modal",
         "custom",
         "plan",
         "pattern",
+        "main",
         "host",
-        "step",
-        "main"
+        "step"
       ]
     },
     {
@@ -12684,16 +13206,16 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.2585,
+      "score": 0.3408,
       "shared_terms": [
-        "project",
         "dashboard",
+        "api",
+        "project",
         "scaffold",
         "kit",
         "css",
-        "plan",
         "page",
-        "import"
+        "plan"
       ]
     },
     {
@@ -12705,7 +13227,7 @@
         "kind": "command",
         "id": "create-new-component"
       },
-      "score": 0.4597,
+      "score": 0.4584,
       "shared_terms": [
         "component",
         "kit",
@@ -12714,7 +13236,7 @@
         "components",
         "classes",
         "tailwind",
-        "tokens"
+        "text"
       ]
     },
     {
@@ -12726,7 +13248,7 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.2755,
+      "score": 0.2938,
       "shared_terms": [
         "kit",
         "tailwind",
@@ -12747,15 +13269,15 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1734,
+      "score": 0.1744,
       "shared_terms": [
         "api",
         "state",
         "reform",
         "path",
-        "country",
         "dict",
         "parameter",
+        "country",
         "tracker"
       ]
     },
@@ -12768,16 +13290,16 @@
         "kind": "agent",
         "id": "prior-scores-finder"
       },
-      "score": 0.1515,
+      "score": 0.1508,
       "shared_terms": [
+        "year",
         "dataset",
         "reform",
-        "year",
         "legislative",
         "country",
         "local",
-        "returns",
-        "tracker"
+        "tracker",
+        "returns"
       ]
     },
     {
@@ -12789,14 +13311,14 @@
         "kind": "agent",
         "id": "reform-comparator"
       },
-      "score": 0.2875,
+      "score": 0.2806,
       "shared_terms": [
         "dataset",
         "year",
         "baseline",
         "version",
-        "result",
         "microsim",
+        "result",
         "run",
         "law"
       ]
@@ -12810,7 +13332,7 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.2012,
+      "score": 0.1976,
       "shared_terms": [
         "dataset",
         "local",
@@ -12831,16 +13353,16 @@
         "kind": "command",
         "id": "analyze-policy"
       },
-      "score": 0.3025,
+      "score": 0.2989,
       "shared_terms": [
         "dataset",
         "api",
         "year",
-        "region",
         "default",
+        "region",
         "baseline",
-        "local",
-        "microsim"
+        "microsim",
+        "local"
       ]
     },
     {
@@ -12852,16 +13374,16 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.1804,
+      "score": 0.1823,
       "shared_terms": [
         "reform",
         "baseline",
+        "level",
         "dict",
         "api",
-        "level",
-        "version",
         "current",
-        "country"
+        "microsimulation",
+        "version"
       ]
     },
     {
@@ -12873,14 +13395,14 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.1784,
+      "score": 0.1793,
       "shared_terms": [
         "reform",
         "dict",
         "api",
         "runs",
-        "country",
         "url",
+        "country",
         "microsim",
         "baseline"
       ]
@@ -12894,7 +13416,7 @@
         "kind": "agent",
         "id": "parameter-locator"
       },
-      "score": 0.1759,
+      "score": 0.1763,
       "shared_terms": [
         "reform",
         "parameter",
@@ -12915,10 +13437,10 @@
         "kind": "agent",
         "id": "prior-scores-finder"
       },
-      "score": 0.2316,
+      "score": 0.2337,
       "shared_terms": [
-        "reform",
         "external",
+        "reform",
         "comparator",
         "scores",
         "source",
@@ -12936,7 +13458,7 @@
         "kind": "agent",
         "id": "reform-classifier"
       },
-      "score": 0.1614,
+      "score": 0.1616,
       "shared_terms": [
         "reform",
         "parameter",
@@ -12957,7 +13479,7 @@
         "kind": "agent",
         "id": "reform-comparator"
       },
-      "score": 0.2357,
+      "score": 0.2368,
       "shared_terms": [
         "our",
         "microsim",
@@ -12978,7 +13500,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.1871,
+      "score": 0.1867,
       "shared_terms": [
         "reform",
         "dict",
@@ -12999,7 +13521,7 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.1567,
+      "score": 0.1584,
       "shared_terms": [
         "reform",
         "original",
@@ -13008,7 +13530,7 @@
         "law",
         "baseline",
         "phase",
-        "analyze"
+        "exact"
       ]
     },
     {
@@ -13020,7 +13542,7 @@
         "kind": "command",
         "id": "prior-scores"
       },
-      "score": 0.2849,
+      "score": 0.2836,
       "shared_terms": [
         "shape",
         "external",
@@ -13041,7 +13563,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.2643,
+      "score": 0.2633,
       "shared_terms": [
         "reform",
         "dict",
@@ -13050,7 +13572,7 @@
         "analyze",
         "microsim",
         "external",
-        "family"
+        "parameter"
       ]
     },
     {
@@ -13062,7 +13584,7 @@
         "kind": "agent",
         "id": "prior-scores-finder"
       },
-      "score": 0.1922,
+      "score": 0.1916,
       "shared_terms": [
         "analyses",
         "comparator",
@@ -13071,7 +13593,7 @@
         "scores",
         "blind",
         "magnitude",
-        "you"
+        "provisions"
       ]
     },
     {
@@ -13083,7 +13605,7 @@
         "kind": "agent",
         "id": "policy-text-researcher"
       },
-      "score": 0.2603,
+      "score": 0.2556,
       "shared_terms": [
         "gov",
         "state",
@@ -13104,16 +13626,16 @@
         "kind": "agent",
         "id": "reform-classifier"
       },
-      "score": 0.4524,
+      "score": 0.4488,
       "shared_terms": [
-        "gov",
         "parameter",
+        "gov",
         "deployed",
         "reform",
         "provision",
-        "credits",
         "lag",
-        "irs"
+        "credits",
+        "parametric"
       ]
     },
     {
@@ -13125,7 +13647,7 @@
         "kind": "agent",
         "id": "reform-describer"
       },
-      "score": 0.3472,
+      "score": 0.3446,
       "shared_terms": [
         "parameter",
         "reform",
@@ -13134,7 +13656,7 @@
         "state",
         "tax",
         "credits",
-        "amount"
+        "mechanical"
       ]
     },
     {
@@ -13146,7 +13668,7 @@
         "kind": "command",
         "id": "audit-state-tax"
       },
-      "score": 0.2951,
+      "score": 0.2959,
       "shared_terms": [
         "state",
         "tax",
@@ -13167,7 +13689,7 @@
         "kind": "command",
         "id": "encode-reform"
       },
-      "score": 0.1704,
+      "score": 0.169,
       "shared_terms": [
         "reform",
         "gov",
@@ -13188,15 +13710,15 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.2196,
+      "score": 0.2188,
       "shared_terms": [
         "reform",
         "income",
         "tax",
         "rate",
         "dict",
-        "household",
         "state",
+        "household",
         "api"
       ]
     },
@@ -13209,15 +13731,15 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.2049,
+      "score": 0.2035,
       "shared_terms": [
         "gov",
         "reform",
         "states",
         "rate",
-        "structural",
         "deployed",
         "phase",
+        "structural",
         "change"
       ]
     },
@@ -13230,7 +13752,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.2933,
+      "score": 0.294,
       "shared_terms": [
         "reform",
         "dict",
@@ -13251,7 +13773,7 @@
         "kind": "agent",
         "id": "reform-classifier"
       },
-      "score": 0.1543,
+      "score": 0.1506,
       "shared_terms": [
         "gov",
         "ctc",
@@ -13272,14 +13794,14 @@
         "kind": "agent",
         "id": "reform-describer"
       },
-      "score": 0.3068,
+      "score": 0.3058,
       "shared_terms": [
         "ctc",
         "provisions",
-        "gov",
-        "reform",
         "federal",
         "ages",
+        "reform",
+        "gov",
         "description",
         "text"
       ]
@@ -13293,7 +13815,7 @@
         "kind": "command",
         "id": "analyze-policy"
       },
-      "score": 0.1527,
+      "score": 0.1535,
       "shared_terms": [
         "bill",
         "year",
@@ -13302,7 +13824,7 @@
         "ctc",
         "reform",
         "phase",
-        "description"
+        "number"
       ]
     },
     {
@@ -13314,7 +13836,7 @@
         "kind": "command",
         "id": "encode-reform"
       },
-      "score": 0.33,
+      "score": 0.3301,
       "shared_terms": [
         "bill",
         "reform",
@@ -13335,10 +13857,10 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.167,
+      "score": 0.1654,
       "shared_terms": [
-        "gov",
         "enacted",
+        "gov",
         "structural",
         "effective",
         "bill",
@@ -13356,7 +13878,7 @@
         "kind": "command",
         "id": "reform-pipeline"
       },
-      "score": 0.274,
+      "score": 0.2736,
       "shared_terms": [
         "bill",
         "reform",
@@ -13377,7 +13899,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.3529,
+      "score": 0.3537,
       "shared_terms": [
         "bill",
         "reform",
@@ -13386,7 +13908,7 @@
         "text",
         "federal",
         "natural",
-        "url"
+        "arpa"
       ]
     },
     {
@@ -13398,7 +13920,7 @@
         "kind": "agent",
         "id": "reform-comparator"
       },
-      "score": 0.2813,
+      "score": 0.2828,
       "shared_terms": [
         "year",
         "prior",
@@ -13419,7 +13941,7 @@
         "kind": "agent",
         "id": "report-logger"
       },
-      "score": 0.1526,
+      "score": 0.1518,
       "shared_terms": [
         "analyses",
         "archive",
@@ -13440,15 +13962,15 @@
         "kind": "command",
         "id": "analyze-policy"
       },
-      "score": 0.1748,
+      "score": 0.1755,
       "shared_terms": [
         "year",
         "microsim",
         "prior",
         "archive",
         "horizon",
-        "reform",
         "scores",
+        "reform",
         "single"
       ]
     },
@@ -13461,7 +13983,7 @@
         "kind": "command",
         "id": "prior-analysis"
       },
-      "score": 0.3987,
+      "score": 0.399,
       "shared_terms": [
         "analyses",
         "prior",
@@ -13482,7 +14004,7 @@
         "kind": "command",
         "id": "prior-scores"
       },
-      "score": 0.3998,
+      "score": 0.4006,
       "shared_terms": [
         "tier",
         "prior",
@@ -13503,15 +14025,15 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.1571,
+      "score": 0.1567,
       "shared_terms": [
         "reform",
         "microsim",
         "prior",
         "bill",
-        "scores",
         "reforms",
-        "same",
+        "scores",
+        "external",
         "not"
       ]
     },
@@ -13524,14 +14046,14 @@
         "kind": "command",
         "id": "audit-state-tax"
       },
-      "score": 0.2405,
+      "score": 0.2398,
       "shared_terms": [
         "pdf",
         "reference",
-        "page",
         "source",
         "number",
         "full",
+        "page",
         "parameter",
         "audit"
       ]
@@ -13545,11 +14067,11 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.1597,
+      "score": 0.1571,
       "shared_terms": [
-        "page",
         "reference",
         "pdf",
+        "page",
         "program",
         "review",
         "href",
@@ -13566,7 +14088,7 @@
         "kind": "agent",
         "id": "reform-describer"
       },
-      "score": 0.3095,
+      "score": 0.3083,
       "shared_terms": [
         "provisions",
         "parameter",
@@ -13587,13 +14109,13 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.2782,
+      "score": 0.2683,
       "shared_terms": [
         "structural",
         "backlog",
         "reform",
-        "gov",
         "model",
+        "gov",
         "deployed",
         "formula",
         "verdict"
@@ -13608,7 +14130,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.3716,
+      "score": 0.371,
       "shared_terms": [
         "reform",
         "provision",
@@ -13629,7 +14151,7 @@
         "kind": "command",
         "id": "analyze-policy"
       },
-      "score": 0.3608,
+      "score": 0.3632,
       "shared_terms": [
         "year",
         "microsim",
@@ -13650,7 +14172,7 @@
         "kind": "command",
         "id": "prior-scores"
       },
-      "score": 0.1877,
+      "score": 0.1883,
       "shared_terms": [
         "microsim",
         "prior",
@@ -13671,7 +14193,7 @@
         "kind": "command",
         "id": "create-dashboard"
       },
-      "score": 0.1658,
+      "score": 0.1642,
       "shared_terms": [
         "dashboard",
         "reform",
@@ -13692,13 +14214,13 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.166,
+      "score": 0.1648,
       "shared_terms": [
         "reform",
         "description",
         "baseline",
-        "ctc",
         "tax",
+        "ctc",
         "dict",
         "specific",
         "income"
@@ -13734,15 +14256,15 @@
         "kind": "command",
         "id": "analyze-policy"
       },
-      "score": 0.2927,
+      "score": 0.2919,
       "shared_terms": [
         "log",
         "archive",
         "frs",
         "analyst",
+        "auto",
         "dataset",
         "data",
-        "auto",
         "local"
       ]
     },
@@ -13755,13 +14277,13 @@
         "kind": "command",
         "id": "audit-seo"
       },
-      "score": 0.1507,
+      "score": 0.1514,
       "shared_terms": [
         "issue",
         "repo",
         "github",
-        "local",
         "open",
+        "local",
         "report",
         "app",
         "step"
@@ -13776,14 +14298,14 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.2043,
+      "score": 0.2033,
       "shared_terms": [
         "issue",
         "structural",
         "draft",
         "verdict",
-        "country",
         "run",
+        "country",
         "archive",
         "report"
       ]
@@ -13797,7 +14319,7 @@
         "kind": "command",
         "id": "prior-analysis"
       },
-      "score": 0.2481,
+      "score": 0.2477,
       "shared_terms": [
         "archive",
         "analyses",
@@ -13818,7 +14340,7 @@
         "kind": "command",
         "id": "create-dashboard"
       },
-      "score": 0.1646,
+      "score": 0.1682,
       "shared_terms": [
         "auto",
         "horizon",
@@ -13839,7 +14361,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.1622,
+      "score": 0.1623,
       "shared_terms": [
         "single",
         "year",
@@ -13860,7 +14382,7 @@
         "kind": "command",
         "id": "reform-pipeline"
       },
-      "score": 0.2208,
+      "score": 0.2224,
       "shared_terms": [
         "bill",
         "auto",
@@ -13881,7 +14403,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.2202,
+      "score": 0.2204,
       "shared_terms": [
         "microsim",
         "bill",
@@ -13902,13 +14424,13 @@
         "kind": "command",
         "id": "audit-seo"
       },
-      "score": 0.2888,
+      "score": 0.2894,
       "shared_terms": [
         "audit",
         "zone",
         "repo",
-        "target",
         "path",
+        "target",
         "multi",
         "vercel",
         "host"
@@ -13923,7 +14445,7 @@
         "kind": "command",
         "id": "create-dashboard"
       },
-      "score": 0.1851,
+      "score": 0.1865,
       "shared_terms": [
         "repo",
         "multi",
@@ -13944,7 +14466,7 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.3245,
+      "score": 0.3263,
       "shared_terms": [
         "host",
         "zone",
@@ -13952,8 +14474,8 @@
         "path",
         "dashboard",
         "git",
-        "modal",
-        "config"
+        "config",
+        "modal"
       ]
     },
     {
@@ -13965,7 +14487,7 @@
         "kind": "command",
         "id": "write-tests"
       },
-      "score": 0.1554,
+      "score": 0.1547,
       "shared_terms": [
         "path",
         "target",
@@ -13986,14 +14508,14 @@
         "kind": "command",
         "id": "audit-state-tax"
       },
-      "score": 0.1834,
+      "score": 0.1825,
       "shared_terms": [
         "audit",
         "url",
         "github",
         "body",
-        "local",
         "step",
+        "local",
         "state",
         "findings"
       ]
@@ -14007,7 +14529,7 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.1559,
+      "score": 0.1565,
       "shared_terms": [
         "vercel",
         "deploy",
@@ -14016,7 +14538,7 @@
         "zone",
         "host",
         "app",
-        "check"
+        "repo"
       ]
     },
     {
@@ -14028,7 +14550,7 @@
         "kind": "command",
         "id": "backdate-program"
       },
-      "score": 0.1942,
+      "score": 0.1945,
       "shared_terms": [
         "pdf",
         "state",
@@ -14036,8 +14558,8 @@
         "phase",
         "arguments",
         "files",
-        "page",
-        "only"
+        "only",
+        "page"
       ]
     },
     {
@@ -14049,7 +14571,7 @@
         "kind": "command",
         "id": "encode-reform"
       },
-      "score": 0.1773,
+      "score": 0.1764,
       "shared_terms": [
         "pdf",
         "state",
@@ -14058,7 +14580,7 @@
         "tax",
         "full",
         "phase",
-        "page"
+        "audit"
       ]
     },
     {
@@ -14070,16 +14592,16 @@
         "kind": "command",
         "id": "encode-reform"
       },
-      "score": 0.2539,
+      "score": 0.2536,
       "shared_terms": [
         "prefix",
         "arguments",
         "short",
         "orchestrator",
-        "page",
         "files",
         "agents",
-        "review"
+        "review",
+        "page"
       ]
     },
     {
@@ -14091,7 +14613,7 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.1985,
+      "score": 0.1945,
       "shared_terms": [
         "dashboard",
         "repo",
@@ -14112,7 +14634,7 @@
         "kind": "command",
         "id": "encode-reform"
       },
-      "score": 0.1578,
+      "score": 0.1544,
       "shared_terms": [
         "reform",
         "page",
@@ -14133,7 +14655,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.1666,
+      "score": 0.1678,
       "shared_terms": [
         "reform",
         "household",
@@ -14142,7 +14664,7 @@
         "income",
         "arguments",
         "preset",
-        "ctc"
+        "under"
       ]
     },
     {
@@ -14154,7 +14676,7 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.2482,
+      "score": 0.3098,
       "shared_terms": [
         "dashboard",
         "create",
@@ -14175,7 +14697,7 @@
         "kind": "command",
         "id": "reform-pipeline"
       },
-      "score": 0.2229,
+      "score": 0.2227,
       "shared_terms": [
         "dashboard",
         "reform",
@@ -14196,14 +14718,14 @@
         "kind": "command",
         "id": "new-tool"
       },
-      "score": 0.2087,
+      "score": 0.2141,
       "shared_terms": [
         "kit",
         "app",
-        "const",
         "tailwind",
-        "design",
         "export",
+        "design",
+        "dashboard",
         "src",
         "import"
       ]
@@ -14217,16 +14739,37 @@
         "kind": "command",
         "id": "deploy-dashboard"
       },
-      "score": 0.1833,
+      "score": 0.1849,
       "shared_terms": [
         "branch",
         "git",
         "main",
         "check",
-        "bash",
         "step",
-        "feature",
-        "json"
+        "bash",
+        "json",
+        "feature"
+      ]
+    },
+    {
+      "a": {
+        "kind": "command",
+        "id": "deploy-dashboard"
+      },
+      "b": {
+        "kind": "command",
+        "id": "new-tool"
+      },
+      "score": 0.1545,
+      "shared_terms": [
+        "dashboard",
+        "app",
+        "modal",
+        "step",
+        "bash",
+        "embedding",
+        "bun",
+        "multi"
       ]
     },
     {
@@ -14238,7 +14781,7 @@
         "kind": "command",
         "id": "household-calc"
       },
-      "score": 0.1515,
+      "score": 0.1513,
       "shared_terms": [
         "reform",
         "level",
@@ -14259,7 +14802,7 @@
         "kind": "command",
         "id": "implement-structural"
       },
-      "score": 0.1814,
+      "score": 0.1805,
       "shared_terms": [
         "reform",
         "contrib",
@@ -14280,7 +14823,7 @@
         "kind": "command",
         "id": "reform-pipeline"
       },
-      "score": 0.316,
+      "score": 0.3156,
       "shared_terms": [
         "bill",
         "reform",
@@ -14301,7 +14844,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.314,
+      "score": 0.3149,
       "shared_terms": [
         "bill",
         "reform",
@@ -14322,16 +14865,16 @@
         "kind": "command",
         "id": "prior-scores"
       },
-      "score": 0.1536,
+      "score": 0.1525,
       "shared_terms": [
         "reform",
         "analyze",
         "consult",
         "scores",
-        "presets",
-        "prior",
         "external",
-        "benchmark"
+        "prior",
+        "benchmark",
+        "microsim"
       ]
     },
     {
@@ -14343,7 +14886,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.2872,
+      "score": 0.2845,
       "shared_terms": [
         "reform",
         "dict",
@@ -14351,8 +14894,8 @@
         "analyze",
         "description",
         "entry",
-        "api",
-        "microsim"
+        "microsim",
+        "api"
       ]
     },
     {
@@ -14364,7 +14907,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.1792,
+      "score": 0.1766,
       "shared_terms": [
         "reform",
         "structural",
@@ -14385,7 +14928,7 @@
         "kind": "command",
         "id": "prior-scores"
       },
-      "score": 0.2165,
+      "score": 0.2166,
       "shared_terms": [
         "analyses",
         "prior",
@@ -14393,8 +14936,8 @@
         "scripts",
         "archive",
         "change",
-        "runs",
-        "archived"
+        "archived",
+        "scores"
       ]
     },
     {
@@ -14406,7 +14949,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.2568,
+      "score": 0.2538,
       "shared_terms": [
         "reform",
         "scorekeepers",
@@ -14415,7 +14958,7 @@
         "presets",
         "bill",
         "consult",
-        "runs"
+        "scores"
       ]
     },
     {
@@ -14427,7 +14970,7 @@
         "kind": "command",
         "id": "text-to-reform"
       },
-      "score": 0.2777,
+      "score": 0.2762,
       "shared_terms": [
         "bill",
         "reform",
@@ -14498,6 +15041,10 @@
         "path": "skills/policyengine-api/SKILL.md"
       },
       {
+        "id": "policyengine-api-access",
+        "path": "skills/policyengine-api-access/SKILL.md"
+      },
+      {
         "id": "policyengine-app",
         "path": "skills/policyengine-app/SKILL.md"
       },
@@ -14540,7 +15087,7 @@
       "name": "analysis-tools",
       "description": "Policy analysis and research - impact studies, dashboards, notebooks, and visualizations",
       "category": "analysis",
-      "version": "4.1.1",
+      "version": "4.2.0",
       "keywords": [
         "analysis",
         "research",
@@ -14563,6 +15110,7 @@
         "./skills/policyengine-canada",
         "./skills/policyengine-healthcare",
         "./skills/policyengine-user-guide",
+        "./skills/policyengine-api-access",
         "./skills/policyengine-design",
         "./skills/policyengine-writing",
         "./skills/policyengine-research-lookup",
@@ -14607,7 +15155,7 @@
       "name": "api-development",
       "description": "API development - Flask endpoints, caching, services, and integration patterns",
       "category": "development",
-      "version": "4.1.1",
+      "version": "4.2.0",
       "keywords": [
         "api",
         "flask",
@@ -14623,6 +15171,7 @@
       "hooks": null,
       "skills": [
         "./skills/policyengine-api",
+        "./skills/policyengine-api-access",
         "./skills/policyengine-model-development",
         "./skills/policyengine-us",
         "./skills/policyengine-uk",
@@ -14647,7 +15196,7 @@
       "name": "app-development",
       "description": "React app development - app-v2, standalone tools, Vercel deployment, and PolicyEngine-specific patterns",
       "category": "development",
-      "version": "4.1.1",
+      "version": "4.2.0",
       "keywords": [
         "react",
         "frontend",
@@ -14666,6 +15215,7 @@
       "skills": [
         "./skills/policyengine-app",
         "./skills/policyengine-tools",
+        "./skills/policyengine-api-access",
         "./skills/policyengine-model-development",
         "./skills/policyengine-us",
         "./skills/policyengine-uk",
@@ -14698,7 +15248,7 @@
       "name": "complete",
       "description": "Complete PolicyEngine knowledge base - all agents, commands, and skills for users, analysts, and contributors",
       "category": "complete",
-      "version": "4.1.1",
+      "version": "4.2.0",
       "keywords": [
         "complete",
         "all",
@@ -14721,6 +15271,7 @@
         "./skills/policyengine-tools",
         "./skills/policyengine-app",
         "./skills/policyengine-api",
+        "./skills/policyengine-api-access",
         "./skills/policyengine-design",
         "./skills/policyengine-standards",
         "./skills/policyengine-cloud-costs",
@@ -14801,7 +15352,7 @@
       "name": "country-models",
       "description": "Complete multi-agent workflow for implementing government benefit programs in PolicyEngine country packages",
       "category": "development",
-      "version": "4.1.1",
+      "version": "4.2.0",
       "keywords": [
         "tax",
         "benefits",
@@ -14855,7 +15406,7 @@
       "name": "dashboard-builder",
       "description": "Orchestrated AI workflow for creating PolicyEngine dashboards from natural-language descriptions",
       "category": "development",
-      "version": "4.1.1",
+      "version": "4.2.0",
       "keywords": [
         "dashboard",
         "calculator",
@@ -14874,6 +15425,7 @@
       "skills": [
         "./skills/policyengine-tools",
         "./skills/policyengine-api",
+        "./skills/policyengine-api-access",
         "./skills/policyengine-app",
         "./skills/policyengine-us",
         "./skills/policyengine-uk",
@@ -14901,7 +15453,7 @@
       "name": "data-science",
       "description": "Data analysis, survey enhancement, imputation, calibration, and microdata utilities",
       "category": "data",
-      "version": "4.1.1",
+      "version": "4.2.0",
       "keywords": [
         "data",
         "microdata",
@@ -14935,7 +15487,7 @@
       "name": "essential",
       "description": "Essential PolicyEngine knowledge for all users - understanding the platform, using the web app, and basic concepts",
       "category": "getting-started",
-      "version": "4.1.1",
+      "version": "4.2.0",
       "keywords": [
         "beginner",
         "users",
@@ -16824,12 +17376,11 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-28T03:05:57Z",
       "skills": [
-        "policyengine-api",
         "policyengine-app"
       ],
       "agents": [],
       "commands": [],
-      "total": 2
+      "total": 1
     },
     {
       "name": "ri-ctc-calculator-webinar",
@@ -17427,10 +17978,8 @@
         "dashboard-architecture-validator",
         "microsim-runner"
       ],
-      "commands": [
-        "new-tool"
-      ],
-      "total": 5
+      "commands": [],
+      "total": 4
     },
     {
       "name": "policyengine-app-v2",
@@ -17441,6 +17990,7 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-05-28T13:10:20Z",
       "skills": [
+        "policyengine-api-access",
         "policyengine-app",
         "policyengine-research-lookup",
         "policyengine-tools",
@@ -17459,7 +18009,7 @@
         "deploy-dashboard",
         "write-tests"
       ],
-      "total": 13
+      "total": 14
     },
     {
       "name": "policyengine-canada",
@@ -17470,6 +18020,7 @@
       "visibility": "PUBLIC",
       "pushed_at": "2026-04-28T00:35:24Z",
       "skills": [
+        "policyengine-api-access",
         "policyengine-app",
         "policyengine-calibration-diagnostics",
         "policyengine-canada",
@@ -17500,7 +18051,7 @@
         "prior-scores",
         "reform-pipeline"
       ],
-      "total": 25
+      "total": 26
     },
     {
       "name": "policyengine-claude",
@@ -18031,8 +18582,10 @@
       "skills": [
         "policyengine",
         "policyengine-api",
+        "policyengine-api-access",
         "policyengine-app",
-        "policyengine-model-development"
+        "policyengine-model-development",
+        "policyengine-tools"
       ],
       "agents": [
         "backend-builder",
@@ -18043,11 +18596,12 @@
         "microsim-runner"
       ],
       "commands": [
+        "create-dashboard",
         "create-pr",
         "deploy-dashboard",
         "new-tool"
       ],
-      "total": 13
+      "total": 16
     },
     {
       "name": "policyengine-app",
@@ -18059,6 +18613,7 @@
       "pushed_at": "2026-05-25T16:00:28Z",
       "skills": [
         "policyengine-api",
+        "policyengine-api-access",
         "policyengine-app",
         "policyengine-design",
         "policyengine-plugin-maintenance",
@@ -18096,7 +18651,7 @@
         "text-to-reform",
         "write-tests"
       ],
-      "total": 33
+      "total": 34
     },
     {
       "name": "policyengine.dev",
@@ -18293,14 +18848,13 @@
         "generate-content",
         "household-calc",
         "implement-structural",
-        "new-tool",
         "prior-analysis",
         "prior-scores",
         "reform-pipeline",
         "text-to-reform",
         "write-tests"
       ],
-      "total": 32
+      "total": 31
     },
     {
       "name": "policyengine-us",
@@ -18315,7 +18869,7 @@
         "fix-pr",
         "policyengine",
         "policyengine-api",
-        "policyengine-app",
+        "policyengine-api-access",
         "policyengine-calibration-diagnostics",
         "policyengine-canada",
         "policyengine-cloud-costs",
@@ -18381,14 +18935,13 @@
         "generate-content",
         "household-calc",
         "implement-structural",
-        "new-tool",
         "prior-analysis",
         "reform-pipeline",
         "setup-verbs",
         "text-to-reform",
         "write-tests"
       ],
-      "total": 72
+      "total": 71
     },
     {
       "name": "policyengine-ve",
