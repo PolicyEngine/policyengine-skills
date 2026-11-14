@@ -11,7 +11,7 @@ The Microsimulation guard is kept narrow on purpose so prose that merely
 
 The product-name guard is span-based: frozen dataset IDs and machine surfaces
 are explicitly allowlisted without exempting stale prose elsewhere on the same
-line. Dated analyses and the dataset-naming regression corpus remain verbatim.
+line. Dated analyses remain verbatim.
 
 Caught: same-line imports, paren-wrapped multiline imports, backslash
 continuations occurring after ``import``, and same-line module-qualified
@@ -53,8 +53,8 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
     ),
     (
         re.compile(r"(states|districts)/[A-Z]{2}(-\d+)?\.h5"),
-        "per-state/district H5 files were removed; filter one national dataset "
-        "by geography columns",
+        "policyengine.py's bundle serves no per-state or per-district H5 file; "
+        "filter one national dataset by geography columns",
     ),
     (
         re.compile(r"@mantine/|Mantine"),
@@ -74,7 +74,7 @@ FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
     ),
     (
         re.compile(r"\benhanced_cps_2024\b|\benhanced_frs_2023_24\b"),
-        "superseded by Microcosm datasets (populace_us_2024 / populace_uk_2023); "
+        "superseded by Microcosm datasets (populace_us_2024 / microcosm_uk_2024_25); "
         "mark deliberate history notes with <!-- stale-ok -->",
     ),
     (
@@ -146,11 +146,6 @@ FROZEN_PRODUCT_SPANS = (
     re.compile(r"--ledger-[a-z0-9-]+(?![A-Za-z0-9_-])"),
     re.compile(r"\bledger_(?:[A-Za-z0-9_]+|\*)(?![A-Za-z0-9_*-])"),
     re.compile(r"#populace(?:-(?:us|uk))?(?![A-Za-z0-9_-])"),
-    re.compile(r"Microcosm \(formerly Populace\)"),
-    re.compile(
-        r"(?:https://calibration-diagnostics\.vercel\.app)?"
-        r"/calibration/dashboard/(?:api/)?populace(?![A-Za-z0-9_-])"
-    ),
     re.compile(r"\bpopulace-data\b`?(?:==|\s+)0\.1\.0(?![A-Za-z0-9_.-])"),
     re.compile(
         r"data_package\.name\s*=\s*[\"']populace-data[\"']"
@@ -163,7 +158,6 @@ PRODUCT_SCAN_ROOT_FILES = ["README.md"]
 PRODUCT_SCAN_EXCLUDED = {
     "analyses",  # dated records are frozen verbatim
     "dashboard/src/data/manifest.json",  # generated from the source files
-    "tests/pipeline/test_dataset_naming.py",  # frozen dataset-name pins
     "tests/test_no_stale_references.py",  # guard patterns and corpus
 }
 
@@ -192,20 +186,13 @@ PATH_GENERIC_LEDGER_SPANS: dict[str, tuple[re.Pattern[str], ...]] = {
 # Exact compatibility/search literals that are machine surfaces but do not
 # belong to a broader frozen identifier family.
 PATH_FROZEN_PRODUCT_SPANS: dict[str, tuple[re.Pattern[str], ...]] = {
-    "scripts/functional_tags.json": (
-        re.compile(r"data:populace(?![A-Za-z0-9_-])"),
-    ),
     "skills/policyengine-data/SKILL.md": (
         re.compile(r"[\"']populace[\"']\s+in\s+DEFAULT_DATASET"),
+        # The one mapping line for frozen release ids (Max, 2026-11-06).
+        re.compile(r"`populace-\*` ids name Microcosm releases\."),
     ),
     "skills/policyengine/SKILL.md": (
         re.compile(r"\.startswith\([\"']populace_us[\"']\)"),
-    ),
-    "skills/policyengine-uk/SKILL.md": (
-        re.compile(r"\bpopulace_uk(?![A-Za-z0-9_-])"),
-    ),
-    "targets/claude/agents/microsim-runner.md": (
-        re.compile(r"[\"']populace[\"']\s+in\s+data_version"),
     ),
 }
 
@@ -315,6 +302,25 @@ def test_no_stale_product_names() -> None:
     assert not violations, "Stale product names found:\n" + "\n".join(violations)
 
 
+MAPPING_LINE = "`populace-*` ids name Microcosm releases."
+MAPPING_LINE_HOME = "skills/policyengine-data/SKILL.md"
+
+
+def test_mapping_line_appears_once() -> None:
+    """The guard allows the frozen-id mapping line once, in the data skill only (Max, 2026-11-06).
+
+    The product-name guard allows the line anywhere in its home file, so this test pins the count:
+    a second copy there, or a copy in any other file the guard scans, fails here.
+    """
+    counts: dict[str, int] = {}
+    for path in iter_product_scan_files():
+        rel = path.relative_to(REPO_ROOT).as_posix()
+        n = path.read_text(encoding="utf-8", errors="replace").count(MAPPING_LINE)
+        if n:
+            counts[rel] = n
+    assert counts == {MAPPING_LINE_HOME: 1}, f"mapping line counts: {counts}"
+
+
 # --- Corpus for the product-name guard --------------------------------------
 
 STALE_PRODUCT_BANNED_SAMPLES = [
@@ -336,6 +342,10 @@ STALE_PRODUCT_BANNED_SAMPLES = [
     ("--ledger-facts_extra is not a frozen CLI flag.", 1),
     ("/calibration/dashboard/api/populace2 is not a live route.", 1),
     ("/calibration/dashboard/populace-old is not a live route.", 1),
+    ("Microcosm (formerly Populace) repeats the old name.", 1),
+    ("`populace-*` ids name Microcosm releases.", 1),
+    ("https://calibration-diagnostics.vercel.app/calibration/dashboard/api/populace", 1),
+    ("/calibration/dashboard/populace is the old UI route.", 1),
     ("POPULACE_TOKEN-extra is not a frozen environment token.", 1),
     ("ledger_facts-extra is not a frozen field name.", 1),
 ]
@@ -353,10 +363,21 @@ STALE_PRODUCT_PATH_BANNED_SAMPLES = [
         "skills/policyengine-uk/SKILL.md",
         "populace_uk-old",
     ),
+    (
+        "scripts/functional_tags.json",
+        '"role": "data:populace"',
+    ),
+    (
+        "skills/policyengine-uk/SKILL.md",
+        "Triggers: populace_uk",
+    ),
+    (
+        "targets/claude/agents/microsim-runner.md",
+        '"populace" in data_version',
+    ),
 ]
 
 STALE_PRODUCT_ALLOWED_SAMPLES = [
-    ("README.md", "Microcosm (formerly Populace)"),
     ("README.md", "populace_us_2024_acs_local"),
     ("README.md", "populace_uk_2023"),
     ("README.md", "populace-us-2024-<sha>-<ts>"),
@@ -371,11 +392,6 @@ STALE_PRODUCT_ALLOWED_SAMPLES = [
     ("README.md", "ledger_facts"),
     ("README.md", "ledger_*"),
     ("README.md", "#populace #populace-us #populace-uk"),
-    (
-        "README.md",
-        "https://calibration-diagnostics.vercel.app/calibration/dashboard/api/populace",
-    ),
-    ("README.md", "/calibration/dashboard/populace"),
     ("README.md", "populace-data==0.1.0"),
     ("README.md", "`populace-data` 0.1.0"),
     ("README.md", 'data_package.name="populace-data"'),
@@ -392,19 +408,17 @@ STALE_PRODUCT_ALLOWED_SAMPLES = [
         "targets/claude/agents/calibration-diagnostics.md",
         "the packet includes ledger metadata",
     ),
-    ("scripts/functional_tags.json", '"role": "data:populace"'),
     (
         "skills/policyengine-data/SKILL.md",
         '`test_microsim.py` asserts `"populace" in DEFAULT_DATASET`',
     ),
     (
+        "skills/policyengine-data/SKILL.md",
+        "package. `populace-*` ids name Microcosm releases. Checked on",
+    ),
+    (
         "skills/policyengine/SKILL.md",
         'assert value.startswith("populace_us")',
-    ),
-    ("skills/policyengine-uk/SKILL.md", "Triggers: populace_uk"),
-    (
-        "targets/claude/agents/microsim-runner.md",
-        '"populace" in data_version',
     ),
 ]
 

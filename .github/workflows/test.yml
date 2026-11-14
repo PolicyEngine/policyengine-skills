@@ -16,11 +16,48 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      # The differential tests in tests/pipeline/test_country_routing.py run
+      # report-logger's bash under zsh too, the shell Claude Code gives the
+      # agent on a Mac. ubuntu-latest has no zsh, and in CI a missing zsh fails
+      # those tests rather than skipping them.
+      - name: Install zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+
       - name: Run tests
         run: uv run pytest --ignore=tests/test_skill_examples.py
 
       - name: Smoke build Claude wrapper
         run: python3 scripts/build_claude_wrapper.py --source-root . --output-root build/policyengine-claude
+
+  manifest:
+    # The dashboard reads dashboard/src/data/manifest.json, which
+    # scripts/build_manifest.py builds from the skills, agents, commands,
+    # bundles and analyses. This job rebuilds it on Linux, under the oldest
+    # and newest Python the repo supports, and fails when the committed copy
+    # differs anywhere but generated_at. So the manifest can't fall behind
+    # its sources, and a build on a laptop has to match a build here. When a
+    # new Python ships, move the second entry up to it.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.15"]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.1.0
+      - name: Set up Python
+        run: uv python install ${{ matrix.python }}
+
+      - name: Install the builder's dependencies
+        run: uv sync --python ${{ matrix.python }} --no-dev
+
+      - name: Check the committed manifest matches a fresh build
+        run: |
+          uv run --python ${{ matrix.python }} --no-dev python scripts/build_manifest.py --check || {
+            echo "::error file=dashboard/src/data/manifest.json::The manifest check failed, and the log above says why. If it lists sections that differ, run 'uv run python scripts/build_manifest.py' and commit the result."
+            exit 1
+          }
 
   skill-examples:
     # Executes every fast `<!-- verify -->` example in skills/ against the

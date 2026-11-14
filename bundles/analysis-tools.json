@@ -2,7 +2,7 @@
   "name": "analysis-tools",
   "description": "Policy analysis and research - impact studies, dashboards, notebooks, and visualizations",
   "category": "analysis",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "keywords": [
     "analysis",
     "research",
@@ -25,6 +25,7 @@
     "./skills/policyengine-canada",
     "./skills/policyengine-healthcare",
     "./skills/policyengine-user-guide",
+    "./skills/policyengine-api-access",
     "./skills/policyengine-design",
     "./skills/policyengine-writing",
     "./skills/policyengine-research-lookup",

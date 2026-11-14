@@ -79,7 +79,7 @@ reform_dict = preset["reform_dict"]
 
 1. Copy a nearby preset file, edit values.
 2. Add a `published_scores` block if any external source has scored this shape — this is what makes Stage 5.5 corroboration turn-key.
-3. Rebuild the manifest: `python3 scripts/build_manifest.py`. Presets show up in the dashboard `Catalog` tab.
+3. Rebuild the manifest: `uv run python scripts/build_manifest.py`. Presets show up in the dashboard `Catalog` tab.
 4. When you use the preset in an analysis, cite it in the archive frontmatter: `preset: arpa-ctc-restoration`.
 
 ## Seed presets

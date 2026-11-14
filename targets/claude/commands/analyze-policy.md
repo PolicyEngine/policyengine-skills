@@ -14,16 +14,17 @@ The structured analogue of `/encode-policy-v2` for the analyst persona: less abo
 Flags:
 - `--country {us|uk|ca}` (default `us`)
 - `--horizon <spec>` — time horizon for the microsim. When omitted, the pipeline prompts the analyst at the start of Phase 4. Accepts:
-  - `1` — single-year (default entry: current year), fastest, ~6-10 min. Uses `/economy/{policy}/over/{baseline}?time_period=YYYY`.
-  - `10` — full 10-year (year 2026-2035 for US), ~15-25 min wall clock. Uses the native `/economy/{policy}/over/{baseline}/budget-window?start_year=YYYY&window_size=N` endpoint.
+  - `1` — single-year (default entry: current year), fastest, one API call. Uses `/economy/{policy}/over/{baseline}?time_period=YYYY`.
+  - `10` — full 10-year (2026-2035 for the US; a UK window ends by 2032, the last year `/uk/metadata` lists). Uses the native `/economy/{policy}/over/{baseline}/budget-window?start_year=YYYY&window_size=N` endpoint, and microsim-runner falls back to single-year calls if the batch fails or keeps computing past 45 minutes.
   - `custom:YYYY[,YYYY...]` — specific years (e.g. `custom:2026,2029,2030,2035`) — submitted as N single-year calls.
   - `custom:YYYY-YYYY` — year range (e.g. `custom:2026-2028`) — mapped to `budget-window` with `start_year`+`window_size`.
 - `--year YYYY` (only used with `--horizon 1`; default current year)
 - `--mode {api|local}` (default `api` for microsim execution)
+- `--dataset <name>`: run on a named dataset from policyengine.py's bundle, such as `populace_us_2024_acs_local` or `enhanced_frs_2024_25`. The API selects data by region and takes no dataset override, so microsim-runner takes the local path for any explicitly named dataset whatever `--mode` says. Omit the flag to let the API select the region's data.
 - `--skip-microsim` (process-test mode — stops at Stage 5, predicts from prior anchor)
 - `--auto-investigate` (if Stage 5 returns INVESTIGATE, auto-run top calibration hypothesis)
 - `--write-report PATH` (default `/tmp/analyze-policy-{policy_id}.md`)
-- `--log-to <dest>[,<dest>...]` (override auto-routing; see Phase 8). Examples: `--log-to archive`, `--log-to "archive,issue:policyengine-{country}-data"` (country auto-substituted from `--country`; US data issues route to `PolicyEngine/microcosm`), `--log-to draft:policyengine-app-v2/app/src/data/posts/articles/arpa-ctc.md`
+- `--log-to <dest>[,<dest>...]` (override auto-routing; see Phase 8). Examples: `--log-to archive`, `--log-to "archive,issue:microcosm"`, `--log-to draft:policyengine-app-v2/app/src/data/posts/articles/arpa-ctc.md`. Without it, report-logger files US and UK data issues in `PolicyEngine/microcosm`, or a UK run's in `PolicyEngine/policyengine-uk-data` when the run named an Enhanced FRS or FRS file.
 - `--no-log` (skip Phase 8 entirely — write the `/tmp` report only)
 - `--auto-confirm` (skip confirmation prompts before opening GitHub issues; only honor in non-interactive contexts)
 
@@ -34,8 +35,8 @@ Before Phase 4 (microsim), if the analyst didn't pass `--horizon`, prompt:
 ```
 How many years should the microsim cover?
 
-[x] Single year — fastest, one API call (~6-10 min), yields yr-1 cost only.
-[ ] Full 10 years — native budget-window endpoint, server-side queued (~15-25 min wall clock), yields real 10yr cost.
+[x] Single year — fastest, one API call, yields yr-1 cost only.
+[ ] Full 10 years — native budget-window endpoint, server-side queued, yields real 10yr cost.
 [ ] Custom — comma-separated years or a range (e.g. "2026,2029,2030,2035" or "2026-2028").
 
 Choice (default = single year):
@@ -45,7 +46,7 @@ The prompt is skipped in headless / `--auto-confirm` contexts (default = single 
 
 **Critical:** with `--horizon 1`, the archive reports yr-1 cost only. **Do NOT compute a naive `yr1 × 10` 10-year cost.** Naive extrapolation across regime shifts (2030 OBBBA snap-backs, inflation-indexed baselines, phase-out threshold changes) is misleading — the analyst asked for one year, give them one year. A 10-year cost is only valid when the microsim actually ran all 10 years.
 
-With `--horizon 10` (or a custom multi-year list), the microsim-runner submits all years in parallel and the report shows the actual per-year cost table plus the summed multi-year cost.
+With `--horizon 10` or a custom year range, microsim-runner scores the years in one budget-window batch, or in single-year calls if the batch fails or stalls. A custom list of separate years gets one single-year call per year. The report shows the actual per-year cost table plus the summed multi-year cost.
 
 ## Workflow
 
@@ -148,7 +149,7 @@ reform-classifier
 
 Branch on `classification`:
 - **`not-possible`** — write `/tmp/{policy_id}-not-modelable.md` with rationale. EXIT.
-- **`structural`** — write `/tmp/{policy_id}-structural-backlog.md` with the model-change estimate. Optionally open a GitHub issue against `policyengine-{country}` if `--open-issue`. EXIT — and surface the unblock path: `/implement-structural <issue>` implements the model extension (baseline change for enacted law, gov/contrib for proposals) and records the re-run that completes this analysis.
+- **`structural`** — write `/tmp/{policy_id}-structural-backlog.md` with the model-change estimate. Optionally open a GitHub issue in the country's model repo (`PolicyEngine/policyengine-us`, `-uk` or `-canada`) if `--open-issue`. EXIT — and surface the unblock path: `/implement-structural <issue>` implements the model extension (baseline change for enacted law, gov/contrib for proposals) and records the re-run that completes this analysis.
 - **`parametric`** — proceed.
 
 Capture `reform_dict` from the classifier output.
@@ -257,6 +258,7 @@ microsim-runner
   jurisdiction=<jurisdiction>
   year=<year>
   mode=<mode>
+  dataset=<--dataset value, or omitted for the certified default>
 ```
 
 Returns `result`. If `mode=local`, this may take 5-10 minutes per run.
@@ -307,7 +309,7 @@ for the variables the reform touches, using the live Microcosm calibration
 dashboard API (no auth, reads the current release from Hugging Face):
 
 ```
-BASE = https://calibration-diagnostics.vercel.app/calibration/dashboard/api/populace
+BASE = https://calibration-diagnostics.vercel.app/calibration/dashboard/api/microcosm
 GET {BASE}/target-diagnostics?source=<source>            # per-target fit
 GET {BASE}/target-investigation?target=<id>              # drill one bad target
 ```
@@ -408,6 +410,7 @@ calibration-diagnostics
   reform=<provisions+reform_dict>
   jurisdiction=<jurisdiction>
   anchor=<chosen anchor>
+  dataset=<microsim result's dataset>
 ```
 
 Returns ranked hypothesis list + recommended next test.
@@ -431,6 +434,8 @@ The `frontmatter` metadata must include the publication inputs `description`
 (reform-describer's 1-paragraph summary) and `reform_dict` (the exact validated
 JSON from Phase 2, omitted for structural/not-possible verdicts) — downstream
 automation (the CRM publication router) parses these from the archived report.
+It also carries `dataset_at_run`, the `dataset` from microsim-runner's result:
+report-logger reads it to pick the repo for a UK data issue.
 
 **Destination routing.** `report-logger` owns the runtime prompt, the pre-selected defaults by verdict, the context-aware shortlist (which options to surface based on which repo the analyst is in), the body preview flow, and archive path resolution. See `report-logger.md` sections "Routing — runtime prompt, context-aware" and "Path resolution" for the source of truth. This document only summarizes the outputs the analyst sees:
 
@@ -498,7 +503,7 @@ recommendation>
 ## Methodology
 - Microsim mode: api
 - Year: 2026
-- Dataset: Enhanced CPS
+- Dataset: <the microsim result's dataset and data_version>
 - Static analysis (no behavioral response)
 ```
 

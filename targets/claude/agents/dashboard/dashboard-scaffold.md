@@ -22,6 +22,7 @@ Generates complete project structure from an approved `plan.yaml` into the curre
 - **policyengine-tools** - Mandatory framework and styling requirements (Next.js, Tailwind v4, ui-kit), scaffolding patterns, embedding boilerplate, Vercel configuration
 - **policyengine-design** - Design tokens, CSS setup
 - **policyengine-standards** - CI/CD, Git workflow
+- **policyengine-cloud-costs** - Cost checks in CI and the README's running costs (custom backend only)
 
 ## First: Load Required Skills
 
@@ -30,6 +31,8 @@ Generates complete project structure from an approved `plan.yaml` into the curre
 1. `Skill: policyengine-tools`
 2. `Skill: policyengine-design`
 3. `Skill: policyengine-standards`
+4. `Skill: policyengine-api-access` (if `data_pattern: policyengine-api`, or a custom backend that calls the Public API)
+5. `Skill: policyengine-cloud-costs` (if custom backend)
 
 **CRITICAL: The `policyengine-tools` skill's "Required stack" defines the project structure, framework, and styling approach. Follow its specifications for project scaffolding. Where this document conflicts with the spec, THE SPEC WINS.**
 
@@ -63,8 +66,8 @@ Extract key values:
 **Verify data pattern choice:** If the plan specifies `custom-modal`, confirm it includes a `reason` explaining why simpler patterns are insufficient. The preferred order is:
 
 1. `precomputed` / `precomputed-csv` — if parameter space is finite
-2. `policyengine-api` — if household-level calculations suffice (prefer this for standard household tools)
-3. `custom-modal` — only if microsimulation or custom reforms are needed
+2. `policyengine-api` — if the dashboard API suffices (prefer this for standard household tools): the page calls www.policyengine.org's dashboard API through `@policyengine/api-client`, never api.policyengine.org (policyengine-api-access skill)
+3. `custom-modal` — only if other microsimulation output or structural reforms are needed
 
 If the plan uses `custom-modal` without a clear justification, flag this to the user before proceeding.
 
@@ -162,6 +165,10 @@ make test
 ```bash
 make build
 ```
+
+## Cloud costs (custom backend only)
+- Load the policyengine-cloud-costs skill before changing `backend/` decorators, deploy commands or workflows.
+- Defaults: `min_containers=0`, `max_containers` set, CPU and memory from a measured run. Anything else gets a `# cost-ok: <rule> <reason>; until <date>` comment and a row in the README's "Running costs".
 
 ## Design standards
 - Uses Tailwind CSS v4 with @policyengine/ui-kit/theme.css (single import for all tokens)
@@ -322,11 +329,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 #### API Client Stubs
 
-Generate `lib/api/types.ts` with TypeScript interfaces matching the plan's endpoint inputs/outputs.
+Generate `lib/api/types.ts` with TypeScript types matching the plan's endpoint inputs/outputs. Declare anything passed to `@policyengine/api-client` as a `type` alias, not an `interface`: the client takes `Record<string, unknown>`, which an interface is not assignable to.
 
 Generate `lib/api/fixtures.ts` with mock data from `plan.yaml`'s `stub_fixtures`.
 
-**For `policyengine-api` or API v2 alpha patterns**, generate `lib/api/client.ts` with synchronous fetch stubs that return fixture data.
+**For `policyengine-api` or API v2 alpha patterns**, generate `lib/api/client.ts` with synchronous fetch stubs that return fixture data. For `policyengine-api`, add `@policyengine/api-client` to the dependencies; the backend-builder replaces the stubs with calls through it (policyengine-api-access skill). Never generate a stub or constant that names api.policyengine.org.
 
 **For `custom-modal` pattern**, generate `lib/api/client.ts` with the gateway polling pattern:
 
@@ -440,6 +447,23 @@ jobs:
       - run: bunx vitest run
       - run: bun run build
 ```
+
+For the custom backend pattern, add this step after checkout (policyengine-cloud-costs skill). Replace `CHECKER_COMMIT_SHA` with the output of `gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha`:
+
+```yaml
+      - name: Check deploy settings for cost
+        env:
+          # A policyengine-skills commit; move it forward on purpose (policyengine-cloud-costs skill, section 4)
+          CHECKER_COMMIT: CHECKER_COMMIT_SHA
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/${CHECKER_COMMIT}/skills/policyengine-cloud-costs/scripts/check_deploy_config.py" -o /tmp/check_deploy_config.py
+          python3 /tmp/check_deploy_config.py .
+```
+
+Also for the custom backend pattern:
+- add the "Running costs" section from the policyengine-cloud-costs skill's `templates/running-costs.md` to `README.md`, filled from the plan's `cost_plan`;
+- if the plan uses PR preview apps, add `templates/stop-preview-app.yml` as `.github/workflows/stop-preview-app.yml`;
+- make sure `.gitignore` lists `.env`.
 
 #### Makefile
 
@@ -686,7 +710,8 @@ If either fails, fix before proceeding.
 - [ ] If custom-modal: worker image uses `.add_local_file()` for `simulation.py` (not auto-mounted since it's imported inside function bodies)
 - [ ] If custom-modal: gateway is lightweight (no policyengine in its Modal image)
 - [ ] If custom-modal: gateway image explicitly includes `pydantic`
-- [ ] If custom-modal: workers have `cpu=8.0`, `memory=32768`, `timeout >= 3600`
+- [ ] If custom-modal: workers use the plan's `timeout`, `cpu`, `memory` and `max_containers`, keep `min_containers=0`, and population workers keep their memory `# cost-ok: RS1 TODO` declaration until a measured run replaces it
+- [ ] If custom-modal: CI runs the cost check, and `README.md` has the "Running costs" section filled from the plan's `cost_plan`
 - [ ] If custom-modal: frontend uses polling (`refetchInterval`), not synchronous await
 - [ ] If custom-modal: `/status` endpoint returns `{status, result, message}`
 - [ ] Build passes on the scaffold

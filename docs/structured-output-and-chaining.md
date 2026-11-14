@@ -67,8 +67,10 @@ analyses/2026-07-01-us-standard-deduction-plus-1k.json      # NEW
     "ten_year_actual_state_billion": -2.36,
     "gini_pct_change_per_year": { "2026": -0.026, "...": "..." },
     "poverty_pct_change_per_year": { "...": "..." },
-    "dataset_backing": "populace-us-2024",
-    "model_version": "1.745.0"
+    "dataset": null,
+    "data_version": null,
+    "dataset_matches_default": null,
+    "model_version": null
   },
   "comparison": {
     "external_sources_in_agreement": 1,
@@ -139,7 +141,7 @@ Verdict → follow-up mapping:
 |---|---|
 | `PASS` | `/generate-content` → blog post draft |
 | `PASS-WITH-NOTES` / `PASS-WITH-CORROBORATION` | `/generate-content` → blog post draft (with notes/caveats section) |
-| `INVESTIGATE` | already handled: GH issue in the country's data repo (`us` → `PolicyEngine/microcosm`; others → `policyengine-{country}-data`) |
+| `INVESTIGATE` | already handled: GH issue in the repo that builds the run's dataset (`us` and `uk` → `PolicyEngine/microcosm`; a `uk` run on a named Enhanced FRS or FRS file → `PolicyEngine/policyengine-uk-data`; none for `ca`, which has no microdata) |
 | `structural` | `/encode-policy-v2` → scaffold the required model extension |
 | `not-possible` | none |
 | `deployed-model-lag` | re-run scheduled for next release (cron-style: after the next `uv pip install -U policyengine-{country}`) |

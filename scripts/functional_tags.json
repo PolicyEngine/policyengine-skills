@@ -78,7 +78,7 @@
     },
     {
       "id": "policyengine-data",
-      "role": "data:populace",
+      "role": "data:microcosm",
       "summary": "The Microcosm data stack: certified releases, dataset names, local-area filtering, fit/calibrate/L0 concepts.",
       "scope_repos": [
         "microcosm"

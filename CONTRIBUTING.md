@@ -49,6 +49,11 @@ See [skills/README.md](skills/README.md) for the full list. The load-bearing one
    Deliberate history notes — and explicitly-scoped engine-development examples of
    patterns banned for analysis — take `<!-- stale-ok -->` on the preceding line.
 4. Descriptions stay ≤1024 characters (Codex hard limit).
+5. **No browser call to the Public API**: `tests/test_public_api_browser_guidance.py` fails on a
+   TypeScript, JavaScript, HTML, Vue or Svelte example that names `api.policyengine.org` or its
+   Cloud Run addresses, and on a `NEXT_PUBLIC_*`, `VITE_*` or `REACT_APP_*` variable that holds
+   its address or a credential (see the policyengine-api-access skill). A server-side example
+   that must name it takes `<!-- server-code -->` on the line before its fence.
 
 ## Testing
 
@@ -56,11 +61,16 @@ Run:
 
 ```bash
 uv run pytest --ignore=tests/test_skill_examples.py
+uv run python scripts/build_manifest.py --check
 python3 scripts/build_claude_wrapper.py --source-root . --output-root build/policyengine-claude
 
 # Example harness (needs policyengine installed):
 uv run pytest tests/test_skill_examples.py
 ```
+
+CI runs the manifest check on Linux. When it fails, rebuild the dashboard
+manifest with `uv run python scripts/build_manifest.py` and commit
+`dashboard/src/data/manifest.json`.
 
 ## Keeping the website in sync
 

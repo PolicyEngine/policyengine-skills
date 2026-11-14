@@ -1,6 +1,6 @@
 # When to use what
 
-The PolicyEngine plugin ships 21 command files, 36 agents, and 24 skills (21 knowledge skills plus the three workflow skills, consolidated from 53 in the July 2026 rebuild). The `/encode-policy-v2`, `/review-program`, and `/fix-pr` entries are provided directly by skills: each name resolves to a skill whose `references/workflow.md` is the canonical definition, with no duplicate command stub. Most days you'll only use 3-5 entry points. This guide maps common work to the right one.
+The PolicyEngine plugin ships 21 command files, 36 agents, and 26 skills (23 knowledge skills plus the three workflow skills, consolidated from 53 in the July 2026 rebuild). The `/encode-policy-v2`, `/review-program`, and `/fix-pr` entries are provided directly by skills: each name resolves to a skill whose `references/workflow.md` is the canonical definition, with no duplicate command stub. Most days you'll only use 3-5 entry points. This guide maps common work to the right one.
 
 ## Quick decision matrix
 
@@ -96,6 +96,7 @@ These get pulled in automatically by their trigger keywords, but useful to know 
 
 **API integration**:
 - `policyengine-api` — REST endpoints (v1 production, api-v2 alpha); analysts calling from Python should use the `policyengine` skill instead
+- `policyengine-api-access` — reaching the Public API from a dashboard page (the dashboard API through `@policyengine/api-client`) or from a server (its own Auth0 client); browser code never calls api.policyengine.org
 
 ## Common workflows (recipes)
 

@@ -39,23 +39,38 @@ all of that legible in one place.
 - `targets/claude/agents/**/*.md`
 - `targets/claude/commands/*.md`
 - `bundles/*.json`
+- `analyses/*.md`
 
 It parses YAML frontmatter, extracts trigger phrases, infers references
 (commands → agents/skills, agents → skills) from body text, derives internal
 registry metadata (status, owner, recommended use, replacements), computes
 overlap pairs via TF-IDF cosine, and emits
 `dashboard/src/data/manifest.json` — the single file the React app reads.
+The manifest lists overlap pairs in artifact order, so an edit to one skill
+rewrites only the scores it moves; the Duplicates view and the artifact
+drawer sort pairs by score themselves.
 
-The script has **zero third-party dependencies** so it runs on plain
-`python3`. It is automatically invoked as a `predev` / `prebuild` hook in
-`package.json`, so the manifest is always fresh when you start the app.
+The script needs PyYAML, which the repo's `pyproject.toml` lists, so run it
+through [uv](https://docs.astral.sh/uv/):
+`uv run python scripts/build_manifest.py`. Without PyYAML the script stops
+with an error and leaves the manifest as it was. Frontmatter that isn't a
+valid YAML mapping stops it the same way, and the error names the file.
+
+The `predev` and `prebuild` hooks in `package.json` run the same uv command
+whenever you start or build the app:
+
+- `npm run dev` needs uv. Without uv, or when the build fails, `predev`
+  stops with the error.
+- `npm run build` keeps the committed manifest when it can't run the build:
+  on a host that builds `dashboard/` without the rest of the repo, on a
+  machine without uv, or when the build fails.
 
 ## Running locally
 
 ```bash
 cd dashboard
 npm install
-npm run dev      # http://localhost:5180
+npm run dev      # http://localhost:5180; rebuilds the manifest through uv first
 ```
 
 Build for static hosting:
@@ -69,11 +84,28 @@ The output in `dist/` is a fully static site — drop it behind any web host.
 ## Updating the manifest manually
 
 ```bash
-python3 scripts/build_manifest.py
+uv run python scripts/build_manifest.py
 ```
 
 Run that whenever you add or rename artifacts and you want to refresh the
 dashboard without restarting the dev server.
+
+A rebuild with no content change rewrites only `generated_at`, on macOS or
+Linux, in any locale and under any Python from 3.11 on, so a manifest diff
+shows real changes. Pass `--output PATH` to write the manifest somewhere else.
+
+CI rebuilds the manifest on Linux and fails when the committed copy differs
+anywhere but `generated_at`. So commit the rebuilt manifest with any change
+to what it reads: the files listed above, `scripts/functional_tags.json`,
+`scripts/policyengine_repos.json` and the script itself. To run CI's check
+locally:
+
+```bash
+uv run python scripts/build_manifest.py --check
+```
+
+The check writes nothing. When the manifest is stale, it prints the sections
+that differ and the start of a diff.
 
 ## Refreshing the GitHub org inventory
 
@@ -87,7 +119,7 @@ gh repo list PolicyEngine --limit 300 \
   --json name,description,isArchived,visibility,pushedAt \
   | python3 -c "import json,sys; d=[{'name':r['name'],'description':r['description'] or '','visibility':r['visibility'],'pushed_at':r['pushedAt']} for r in json.load(sys.stdin) if not r['isArchived']]; print(json.dumps(d, indent=2))" \
   > scripts/policyengine_repos.json
-python3 scripts/build_manifest.py
+uv run python scripts/build_manifest.py
 ```
 
 Each repo is auto-classified (country-model, platform, library,

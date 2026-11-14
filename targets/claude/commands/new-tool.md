@@ -18,8 +18,8 @@ Ask the user for:
 2. **Countries** (us, uk, or both)
 3. **Data pattern** — how the tool gets model results:
    - **A) Precomputed** — Static JSON or CSV shipped with the app (best for finite parameter spaces)
-   - **B) PolicyEngine API** — Direct calls to `api.policyengine.org/us/calculate` (best for household calculators)
-   - **C) Custom Modal API** — Python serverless function with the top-level `policyengine[us]` / `policyengine[uk]` package (best when main API doesn't support needed variables/reforms)
+   - **B) Dashboard API** — The page calls www.policyengine.org's dashboard API through `@policyengine/api-client` (best for household calculators). Never call `api.policyengine.org` from the page: the Public API is becoming callable only by PolicyEngine's servers (policyengine-api-access skill)
+   - **C) Custom Modal API** — Python serverless function with the top-level `policyengine[us]` / `policyengine[uk]` package (only when the dashboard API doesn't cover it and precomputing can't: microsimulation output beyond its economy comparison, a dataset the Public API doesn't serve, or a newer model release while the `policyengine` package's model bundle isn't updated weekly; a structural reform goes into the country package as a contributed reform instead)
 4. **Brief description** of what the tool calculates
 
 ## Step 2: Create the project
@@ -156,27 +156,30 @@ export default function Home() {
 
 ## Step 4: Data pattern boilerplate
 
-> **Prefer Pattern B** (PolicyEngine API) unless the tool needs microsimulation,
-> custom reforms, or variables not in the API. Pattern C is significantly more complex
-> and should be the last resort.
+> **Prefer Pattern B** (the dashboard API) unless the tool needs outputs the dashboard API
+> can't give and precomputing can't cover. A structural reform goes into the country package
+> as a contributed reform rather than into a Pattern C backend, rate limits are not reasons
+> for Pattern C, and the Public API's model version is one only while the `policyengine`
+> package's model bundle isn't updated weekly (policyengine-tools, "Data and backend
+> patterns"). Pattern C is significantly more complex and should be the last resort.
 
 Based on the user's choice, add the appropriate data fetching code.
 
-**For Pattern B (PolicyEngine API):** Create `lib/api.js`:
+**For Pattern B (the dashboard API):** run `bun add @policyengine/api-client`, then create `lib/api.js`:
 
 ```js
-const API_BASE = "https://api.policyengine.org";
+import { createPolicyEngineApiClient } from "@policyengine/api-client";
 
-export async function calculate(countryId, household) {
-  const res = await fetch(`${API_BASE}/${countryId}/calculate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ household }),
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+// www.policyengine.org's dashboard API; its server adds PolicyEngine's credential.
+const policyengine = createPolicyEngineApiClient();
+
+export function calculate(countryId, household, signal) {
+  // Resolves with the calculated household; throws PolicyEngineApiError on a refusal.
+  return policyengine.calculateHousehold({ country: countryId, household }, { signal });
 }
 ```
+
+The dashboard API answers pages on the tool's www.policyengine.org path, on `localhost`, on the team's Vercel previews and on the tool's own `*.vercel.app` host once its rewrite is in `appZoneRoutes.ts`. The tool's `<project>-policy-engine.vercel.app` host is one of the team's Vercel hosts, so it is allowed from the first deploy, before the rewrite exists. A tool served from any other host, such as a Modal URL or a custom domain, needs an exact entry for that host in the allow list in `website/src/lib/dashboardApi/cors.ts` (PolicyEngine/policyengine-app-v2), deployed before its pages call the dashboard API; until then they get 403, which the browser shows as a CORS error. The policyengine-api-access skill has the other operations (policies, economy comparisons with polling, metadata) and the errors.
 
 **For Pattern C (Custom Modal API — gateway + polling):**
 
@@ -232,7 +235,7 @@ from pathlib import Path
 from _image_setup import snapshot_models
 
 _BACKEND_DIR = Path(__file__).parent
-app = modal.App("TOOL_NAME-workers")
+app = modal.App("TOOL_NAME-workers", tags={"project": "TOOL_NAME"})  # tag every app of the tool, so its bill adds up in one query
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install("policyengine[us]==LATEST_VERSION", "pydantic")  # pins country model + certified data bundle
@@ -240,7 +243,9 @@ image = (
     .add_local_file(str(_BACKEND_DIR / "simulation.py"), remote_path="/root/simulation.py")
 )
 
-@app.function(image=image, cpu=8.0, memory=32768, timeout=3600)
+# Household-scale default: a US household calculation peaked at 1.4 GB. For a population
+# run, size from a measured run and declare it (policyengine-cloud-costs skill, rule RS1).
+@app.function(image=image, cpu=1.0, memory=2048, timeout=600, max_containers=10, min_containers=0)
 def compute(params: dict) -> dict:
     from simulation import run_compute
     return run_compute(params)
@@ -254,7 +259,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-app = modal.App("TOOL_NAME")
+app = modal.App("TOOL_NAME", tags={"project": "TOOL_NAME"})
 gateway_image = modal.Image.debian_slim(python_version="3.11").pip_install("fastapi", "pydantic")
 WORKER_APP = "TOOL_NAME-workers"
 FUNCTION_MAP = {"calculate": "compute"}
@@ -338,7 +343,8 @@ vercel link --scope policy-engine
 vercel --prod --yes
 ```
 
-If using Pattern C (Modal gateway + worker):
+If using Pattern C (Modal gateway + worker), first add the "Running costs" section from the
+policyengine-cloud-costs skill's `templates/running-costs.md` to the README, then:
 ```bash
 unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET
 # Deploy worker first (includes image snapshot — first build takes ~5 min)
@@ -352,7 +358,7 @@ vercel --prod --force --yes --scope policy-engine
 
 ## Step 6: Add pull-request CI
 
-Create `.github/workflows/ci.yml` so every new tool gets build validation before deploy:
+Create `.github/workflows/ci.yml` so every new tool gets build validation before deploy. Replace `CHECKER_COMMIT_SHA` with the output of `gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha`, so the cost checker's rules change only when the tool's maintainers move that commit:
 
 ```yaml
 name: CI
@@ -372,6 +378,13 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/scripts/audit_next_migration.py -o /tmp/audit_next_migration.py
           python3 /tmp/audit_next_migration.py --root .
+      - name: Check deploy settings for cost
+        env:
+          # A policyengine-skills commit; move it forward on purpose (policyengine-cloud-costs skill, section 4)
+          CHECKER_COMMIT: CHECKER_COMMIT_SHA
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/${CHECKER_COMMIT}/skills/policyengine-cloud-costs/scripts/check_deploy_config.py" -o /tmp/check_deploy_config.py
+          python3 /tmp/check_deploy_config.py .
       - run: bun install --frozen-lockfile
       - name: Run lint
         run: |
@@ -390,7 +403,7 @@ jobs:
       - run: bun run build
 ```
 
-Every embeddable tool should have migration guardrails plus at least install + build on pull requests. If the repo has `lint` or `test` scripts, wire them into CI immediately rather than leaving the repo deploy-only.
+Every embeddable tool should have migration guardrails and the cost check, plus at least install + build on pull requests. If the repo has `lint` or `test` scripts, wire them into CI immediately rather than leaving the repo deploy-only.
 
 ## Step 7: Register in apps.json
 
@@ -415,6 +428,9 @@ bun run build
 # Run migration guardrails locally
 curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/scripts/audit_next_migration.py | python3 - --root .
 
+# Check deploy settings for cost
+curl -fsSL https://raw.githubusercontent.com/PolicyEngine/policyengine-skills/main/skills/policyengine-cloud-costs/scripts/check_deploy_config.py | python3 - .
+
 # Run lint/tests when the repo defines them
 if jq -e '.scripts.lint' package.json >/dev/null; then bun run lint; fi
 if jq -e '.scripts.test' package.json >/dev/null; then bun run test; fi
@@ -424,4 +440,6 @@ if jq -e '.scripts.test' package.json >/dev/null; then bun run test; fi
 
 See these skills for detailed guidance:
 - `policyengine-tools` — Embedding, hash sync, country detection, Vercel deployment patterns
+- `policyengine-api-access` — The dashboard API for Pattern B, and server credentials for a backend that calls the Public API
 - `policyengine-design` — Token reference
+- `policyengine-cloud-costs` — Backend defaults, declared exceptions, the README's running costs, and the cost checks

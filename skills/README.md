@@ -51,8 +51,10 @@ lints the whole tree against the failure modes that rotted the previous catalog
 |---|---|
 | **policyengine-app** | Developing policyengine-app-v2 (policyengine.org) |
 | **policyengine-tools** | Building standalone tools/dashboards: Next.js + Tailwind v4 + ui-kit spec, multizone, Modal backends, Vercel |
+| **policyengine-cloud-costs** | Deploying your own tool without idle spend: defaults, declared exceptions, a README cost plan, a pre-merge config checker and a bill check |
 | **policyengine-design** | Design tokens, `@policyengine/ui-kit` consumption, chart styling, design-system migration |
 | **policyengine-api** | The REST APIs: v1 production endpoints, api-v2 alpha status |
+| **policyengine-api-access** | Reaching the Public API from dashboards and servers: the dashboard API through `@policyengine/api-client`, server Auth0 client credentials and their token cache, errors |
 
 ### Process
 
