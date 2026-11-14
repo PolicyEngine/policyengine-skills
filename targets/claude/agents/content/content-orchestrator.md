@@ -24,6 +24,29 @@ You orchestrate the generation of marketing content from PolicyEngine blog posts
    - Extract: title, subtitle, key quotes, author, main points
    - Identify the primary announcement or finding
 
+1b. **Check comparables are fresh (required before any push)**
+   - Determine whether the source concerns a PolicyEngine analysis, whether the input is a
+     policyengine.org URL, another deployment URL or a local file. Apply this check to every
+     analysis the content promotes, including household calculators with no fixed estimates.
+   - Resolve each analysis to its scorecard record and source directory (`analysis-<country>-<slug>`) from its canonical page,
+     deployment metadata or source repository. Do not treat an unrecognized URL or an absent
+     record as an exemption. Ask for the analysis identity if the source, especially a local
+     file, does not identify it; ask for the intended push date if it is unknown.
+   - Fetch PolicyEngine/policyengine-scorecard's `origin` and use a checkout of the updated
+     `origin/main`. Run `PYTHONPATH=. uv run python -m scorecard_db.comparables fresh
+     analysis-<country>-<slug> --on <intended push date>` for each resolved record before generating assets,
+     then fetch and rerun it immediately before the posts go out using their actual push date.
+   - If the record is absent or not fresh, stop and say so: follow the
+     `policyengine-comparables-review` skill. For an absent record, create its first search as
+     `prepublish` if the analysis is not yet public, or `backfill` if it is already published.
+     For any unpublished analysis, complete the prepublish review and publication metadata
+     handoff before public promotion; do not append another `prepublish` or a `prepromotion`
+     search while `published` is null. After actual publication, append `prepromotion` only
+     if freshness needs renewal. Merge the review and metadata into scorecard main, then fetch
+     and rerun `fresh`. A pending gap blocks the push until its cause is written; never write
+     copy around it. Resolve the analysis explicitly rather than relying on automatic link
+     coverage.
+
 2. **Gather missing information**
    - Use AskUserQuestion to get any missing required info:
      - Pull quote for social image

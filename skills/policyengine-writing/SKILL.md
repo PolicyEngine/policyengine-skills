@@ -759,6 +759,13 @@ Before publishing, verify:
 - [ ] Public copy describes the policy, the result, and what the reader can do; cut production, process, and work-in-progress notes
 - [ ] Remove self-referential clauses, empty contrasts, and unintroduced names or roles
 - [ ] Check mechanism claims against the code, test, or primary source
+- [ ] Before publishing an estimate, run the comparables review and explain every gap over
+  the threshold (the `policyengine-comparables-review` skill in the analysis-tools bundle, or
+  `docs/COMPARABLES.md` in PolicyEngine/policyengine-scorecard); app-v2 CI requires its record
+- [ ] Before a newsletter, social campaign, webinar or press push features an analysis, its
+  comparables search is fresh (on the push date or within the promotion window before it,
+  against the current results, no gap pending); the newsletters repo's CI checks every
+  analysis an edition links
 
 ## Resources
 
