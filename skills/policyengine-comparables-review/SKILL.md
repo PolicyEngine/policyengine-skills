@@ -6,7 +6,7 @@ description: |
   features it: search every producer on the scorecard's list for external estimates, stage each
   in PolicyEngine/policyengine-scorecard, compare it with the analysis's own figures, and explain
   every gap over the threshold. CI in the scorecard, policyengine-app-v2 and the newsletters repo
-  checks it. Includes a brief for running the search as a background job.
+  checks parts of this procedure. Includes a brief for running the search as a background job.
   Triggers: "comparables", "comparables review", "pre-publish review", "before publishing",
   "add to apps.json", "add to posts.json", "scorecard record", "external estimates",
   "comparables gate", "analysis-uk-", "analysis-us-", "re-harvest", "newsletter",
@@ -34,9 +34,23 @@ This skill is the operating procedure.
 
 | Where | What its CI fails |
 |---|---|
-| policyengine-scorecard | A `sources/analysis-*` record that skips a listed producer, stages a value that does not parse back from what was printed, compares unlike quantities, leaves a gap over the threshold unexplained, or whose latest search did not compare the results files its estimates are read from; a stale `data/comparables/index.json`; feeds the build rewrites that are not committed |
-| policyengine-app-v2 | A research entry (an apps.json app shown with research or tagged `policy`, or any post) that is not on the list of entries live before the gate (`website/src/data/comparablesGrandfathered.json`) and has no `comparables` block naming a search the scorecard index on main lists. The search must be dated on or before the entry's date, no more than 30 days before it, and not be a backfill. On the day a change lists or re-lists an entry, the search must also be no more than 30 days old that day, have compared the results the analysis reads now, and leave no gap pending. A card a change adds to the featured banner needs a fresh search (see "Before a push"). Every page the site proxies to another deployment must be a research app's, a page live before the gate, or on the list of pages that publish no analysis |
-| PolicyEngine/newsletters | A changed edition that links an analysis whose search is not fresh (see "Before a push"), found through app-v2's route map (every path, redirect and deployment host that leads to an analysis) and the scorecard records' pages and `deployments`; `upload-newsletter` refuses the same before it touches Mailchimp |
+| policyengine-scorecard | Missing required producer rows, malformed fields, inconsistent declared identities or results pins, and unexplained over-threshold comparisons computed from those fields; a stale `data/comparables/index.json`; feeds the build rewrites that are not committed. These checks trust the submitted sources and metadata |
+| policyengine-app-v2 | A research entry (an apps.json app shown with research or tagged `policy`, or any post) that is not on the list of entries live before the gate (`website/src/data/comparablesGrandfathered.json`) and has no `comparables` block naming a search the scorecard index on main lists. The search must be dated on or before the entry's date, no more than 30 days before it, and not be a backfill. On the day a change lists or re-lists an entry, the search must also be no more than 30 days old that day, have compared the results the analysis reads now, and leave no gap pending. A card a change adds to the featured banner needs a fresh search (see "Before a push"). Evaluated rewrites classified as pages require registration or a listed exception; asset heuristics leave coverage gaps described below |
+| PolicyEngine/newsletters | A changed edition whose recognized analysis links fail freshness (see "Before a push"), using app-v2's generated route map and the scorecard records' pages and `deployments`; `upload-newsletter` refuses those failures before it touches Mailchimp. Unknown links can pass without a freshness check |
+
+The route gate currently treats any filename extension and the entire `/_zones/` prefix as
+assets. Rewrites such as `/uk/ungated-analysis.html` and `/_zones/ungated-analysis` can therefore
+serve an unregistered analysis without failing it. Audit all new page rewrites manually and
+register each analysis even when CI exempts its route. The route builder also drops absolute
+redirect destinations, including `/redirect` → `https://policyengine.org/uk/existing`.
+Newsletter checks do not follow redirects: resolve aliases to the analysis yourself, verify
+the record, and run `fresh` for the intended push date. A green link check does not prove that
+it recognized the analysis.
+
+A green scorecard validator does not establish source truth. It can accept omitted published
+estimates, a null metric that avoids comparison, invented or irrelevant cause citations,
+matching fake hashes, token negative-search queries, or a printed figure mislabeled as a chart
+reading. The reviewer checklist below is required even when every automated check passes.
 
 The order is: scorecard PR merged first, then the apps.json or posts.json entry. A post that is
 plainly not an analysis (tagged `org`, `event`, `giving`, `conferences`, `year-in-review` or
@@ -63,6 +77,11 @@ up to its first dot, lowercased, with underscores as hyphens (`UK_Two_Child_Limi
 `uk-two-child-limit`). `--today` defaults to your local date. Only the UK and US have producer
 lists so far; for another country, add its list to `data/comparables/producers.json` first. The
 skeleton's `search_log.json` lists every producer the search must log.
+
+For a bill tracker, use `--kind app --slug <state>-<bill>` to scaffold: the CLI only accepts
+`app` and `post`. Then set `analysis.json`'s `registry.kind` to `tracker` and its `url` to the
+actual tracker page. Keep `published: null` until the bill-review merge makes the score public;
+complete the date handoff under "Complete publication metadata" afterwards.
 
 ### 2. Pin the analysis's own figures (`analysis.json`)
 
@@ -92,8 +111,9 @@ published figure out is how a miss hides, so list them all. Each estimate has:
 and a `description`; reuse a slug the scorecard already uses for the same world.
 
 `deployments` lists the other https URLs the analysis is served from, such as its own Vercel
-deployment, so the newsletters check holds a link to any of them to this record, even after the
-analysis leaves policyengine.org.
+deployment. The newsletter resolver uses those hosts even after an analysis leaves the registry.
+The validator accepts an empty list, so add URLs already known and complete the publication
+metadata after first deployment; a registry entry alone does not preserve that coverage.
 
 A household calculator publishes no fixed estimate. It declares
 `"calculator": {"reason": "<what the page computes>"}`, pins no estimates, and its searches
@@ -178,7 +198,8 @@ specific to the Autumn Budget harvest (`measure_key`, `fiscal_event`) do not.
   claim names them) that is a different quantity (net of behaviour beside static, a fiscal year
   beside a calendar year) names that estimate in `nearest_estimate`, gives `pe_missing`, and
   gets an annotation with status `concept_mismatch` (or `pe_gap`) and a basis. A claim on the
-  same quantity cannot be set aside this way: the validator makes you compare it.
+  same quantity must be compared. The validator detects matches from the declared fields;
+  it cannot establish that those fields accurately describe the published quantities.
 - Any other claim gives `pe_missing`.
 
 **Never do these to keep a gap from being compared**, even when the validator cannot tell:
@@ -198,8 +219,13 @@ PYTHONPATH=. uv run python -m scorecard_db.comparables report analysis-<country>
 ```
 
 `check` lists every error, and the unexplained gaps once nothing else is wrong. `report` lists
-every gap over the threshold; it runs on a record whose only errors are unexplained gaps
-(printing those on stderr) and refuses a record with any other error. A gap over `gap_threshold` (`data/comparables/policy.json`, 25% by
+over-threshold rows for valid records and tolerates the missing-annotation error
+`no annotation explains it` (printing it on stderr). It still exits 1 with empty stdout when
+an existing annotation has `explains_gap: false` and must explain a gap. Preserve that
+annotation and the `check` diagnostics in the draft PR; assemble the gap table from the staged
+claims and estimates if `report` refuses it. Do not mark the gap explained to obtain a report.
+Other validation errors also block the report.
+A gap over `gap_threshold` (`data/comparables/policy.json`, 25% by
 default), a sign disagreement, or a nonzero estimate against a published zero needs an
 annotation with an `id`, the `claims`, a `status`, `explains_gap: true`, a `cause`, and a
 `basis`: a GitHub issue or pull, engine metadata pinned to a commit, or a document or
@@ -219,6 +245,11 @@ pending.
 
 ### 7. Land it
 
+If `check` still fails, commit the record files, diagnostics and gap table and open a draft
+scorecard PR. Defer index/database/feed generation, merge and publication until the errors
+are resolved: the index builder also refuses unexplained gaps. Keep the unexplained
+annotation intact. Once `check` passes, run:
+
 ```bash
 PYTHONPATH=. uv run python -m scorecard_db.comparables index
 rm -f data/scorecard.db && PYTHONPATH=. uv run python -m scorecard_db.build_db data/scorecard.db
@@ -230,7 +261,7 @@ PYTHONPATH=. uv run --python 3.12 --with pytest --with hypothesis --with pypdf -
 The suite runs on Python 3.12, as the scorecard's CI does (one of its tests needs a 3.12
 interpreter). Commit everything the build rewrites: `git status` must be clean afterwards, or CI's drift check
 fails. Open the scorecard PR, have it reviewed with the checklist below, and merge it on its
-gates. Then print the registry block and paste it into the apps.json or posts.json entry:
+gates. For apps and posts, print the registry block and paste it into the apps.json or posts.json entry:
 
 ```bash
 PYTHONPATH=. uv run python -m scorecard_db.comparables record analysis-<country>-<slug>
@@ -239,6 +270,9 @@ PYTHONPATH=. uv run python -m scorecard_db.comparables record analysis-<country>
 It cites the record's latest search (`--search-date` and `--search-kind` pick another). A
 revised analysis returning to the site cites the new search its results were compared in, and
 gives the entry its new listing date.
+
+For trackers, link the merged record and gap table from the bill-review PR instead of adding
+an app-v2 entry. Publication is not complete until its actual date is recorded below.
 
 ### Reviewer checklist
 
@@ -301,14 +335,60 @@ PYTHONPATH=. uv run python -m scorecard_db.comparables fresh analysis-<country>-
 ```
 
 Run it in a checkout of the scorecard's `origin/main`, which is what the newsletters check
-reads. If it is not fresh, append a search with `kind: prepromotion` and today's date that logs
-every producer, stage what is new, and explain every gap over the threshold. An analysis with no
-record gets its first search (`backfill`). A pending gap blocks the push: explain it, or leave
+reads. Resolve the analysis and record regardless of whether the source is a canonical URL,
+deployment URL, redirect, or local file, and whether it publishes fixed figures or is a
+household calculator. Ask for the analysis identity if a local source does not identify it;
+an unknown link or empty estimate list does not exempt an analysis. An analysis with no record
+gets its first search: `prepublish` if not yet public, `backfill` if already published. For an
+unpublished analysis, complete the prepublish workflow and publication metadata before public
+promotion; `prepromotion` requires a known publication date. For an already published analysis
+that is not fresh, append a search with `kind: prepromotion` and today's date that logs every
+producer, stage what is new, and explain every gap over the threshold. A pending gap blocks the push: explain it, or leave
 the analysis out. Once it is explained, the push may state the comparable beside our figure.
 The same rule holds for a card added to policyengine.org's featured research banner, which
 app-v2's gate checks on the day the change runs.
 
 ## After publishing
+
+### Complete publication metadata
+
+As soon as the production URLs and actual first-publication date are known, update the
+scorecard record's `deployments` and `published`. Keep earlier serving URLs in `deployments`
+when an analysis is delisted or moves. The prepublish review may merge with no deployment and
+`published: null`; the publication owner must land a follow-up scorecard PR with these fields,
+regenerate the index, database and exported feeds using step 7, and merge it before listing or
+promoting a new deployment. Carry this follow-up in the publication handoff until it merges.
+
+Verify every direct serving URL resolves to the merged scorecard record independently of
+the app registry. In a newsletters checkout, with the scorecard checkout on `origin/main`,
+run this completion check (substitute the index path, source and production URL):
+
+```bash
+PYTHONPATH=src uv run python - /path/to/scorecard/data/comparables/index.json analysis-uk-example https://example.vercel.app/ <<'PY'
+import json
+import sys
+from pathlib import Path
+from newsletter_uploader.comparables import Registry, Routes, linked
+
+index = json.loads(Path(sys.argv[1]).read_text())
+registry = Registry([], [], index["entry_rules"])
+routes = Routes({"paths": [], "hosts": []}, registry, index)
+targets, refused = linked(sys.argv[3], routes)
+assert not refused, refused
+assert ("record", sys.argv[2]) in targets, targets
+print("Direct URL resolves to the scorecard record")
+PY
+```
+
+This verifies recognition; separately run `fresh` for any promotion date. A newsletter CLI
+exit of 0 alone cannot prove recognition because it also accepts unknown URLs.
+
+For trackers, assign the bill-review publication owner the follow-up before dispatch. Keep
+`published: null` while the score is hidden in review, then set the actual date when the
+bill-review merge publishes it and merge the regenerated scorecard metadata. Verify
+`scorecard_db.comparables due --apps <apps.json> --posts <posts.json> --today <publication date>`
+includes the tracker; records with no `published` date are skipped. Do not substitute dispatch
+or planned publication dates for the actual date.
 
 For six months after an analysis is published, a PolicyEngine scheduled job searches again each
 week (`kind: reharvest`) once the scorecard tooling is on main. A new comparable becomes a row in
@@ -321,7 +401,8 @@ A bill scored through `/reform-pipeline`'s tracker route is reviewed before disp
 other analysis. Its record has `registry.kind: tracker` (slug `<state>-<bill>`, the tracker page
 as `url`), and its bill-review PR carries the record's link and gap table. No registry lists
 tracker bills, so app-v2 does not check them; the scorecard's re-harvest finds them by their
-record's `published` date.
+record's `published` date. Scaffold them via the app path in step 1 and finish the publication
+metadata handoff above after the bill-review PR publishes the score.
 
 ## Related
 

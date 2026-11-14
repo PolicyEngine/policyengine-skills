@@ -169,7 +169,7 @@ vercel env add NEXT_PUBLIC_API_URL production
 
 ## Before Step 4: comparables review
 
-Run `/comparables-review` now, before the frontend deploy and the host wiring, whatever `embedding.register_in_apps_json` says. Step 5b makes the dashboard public at `policyengine.org/<zone_path>`, and app-v2's CI requires every app route to belong to a research entry that carries a `comparables` block naming a complete record in PolicyEngine/policyengine-scorecard. The review searches every producer for external estimates of the dashboard's figures, records them in the scorecard and explains any gap over the threshold (`policyengine-comparables-review` skill). Merge the scorecard PR before opening the app-v2 PR in Step 5.
+Run `/comparables-review` now, before the frontend deploy and the host wiring, whatever `embedding.register_in_apps_json` says. Every dashboard needs a research entry with a `comparables` block naming a complete record in PolicyEngine/policyengine-scorecard; the listing flag does not exempt it. App-v2 checks registered entries and proxy routes it identifies as pages, with the discovery limits described in Step 5. The review searches every producer for external estimates of the dashboard's figures, records them in the scorecard and explains any gap over the threshold (`policyengine-comparables-review` skill). Merge the scorecard PR before deploying the frontend.
 
 ## Step 4: Deploy Frontend to Vercel
 
@@ -197,6 +197,12 @@ curl -s -o /dev/null -w "%{http_code}" https://VERCEL_PRODUCTION_URL/
 
 **IMPORTANT:** Use the auto-assigned Vercel production URL, not a custom alias. Custom aliases may have deployment protection issues.
 
+### Complete the scorecard publication metadata
+
+After the first public deployment, return to the scorecard record before opening the host-wiring PR or promoting the direct URL. Add each full HTTPS production URL to `analysis.json`'s `deployments`, including the path where the analysis is served, and set `published` to the actual date the analysis first became public. Preserve an existing earlier publication date and any other deployment URL that still serves the analysis.
+
+Follow **Complete publication metadata** in the `policyengine-comparables-review` skill: regenerate the comparables index, database, exported feeds and their `app/public/data` copies, run the scorecard checks, and commit and merge the follow-up PR. Run that section's explicit direct-URL recognition check against the merged scorecard index; a successful newsletter CLI check alone does not prove it recognized the URL. Repeat this metadata update when production URLs change, including while the dashboard is delisted from app-v2.
+
 ## Step 5: Wire the zone into the host (policyengine-app-v2)
 
 After the Vercel deploy in Step 4, we have a production URL. Now wire the zone into `policyengine-app-v2` so it's reachable at `policyengine.org/<zone_path>`. This is a PR to `PolicyEngine/policyengine-app-v2`.
@@ -204,7 +210,9 @@ After the Vercel deploy in Step 4, we have a production URL. Now wire the zone i
 Two parts, both required, in the same PR:
 
 1. **The zone route** in `website/src/data/appZoneRoutes.ts`, which makes the zone reachable at `policyengine.org/<zone_path>`.
-2. **The apps.json entry** with its `comparables` block. app-v2's tests fail any page the site proxies to another deployment that is not a research app's page (they read the evaluated rewrites, so a route added straight to `next.config.ts` is caught too), so the entry is not optional.
+2. **The apps.json entry** with its `comparables` block. The entry is required even when the dashboard is hidden from the research listing.
+
+App-v2 reads evaluated rewrites and checks external proxy sources it classifies as pages against research deployments and explicit exceptions. Its asset heuristic skips filename extensions, including `.html`, and the entire `/_zones/` prefix. A route such as `/uk/ungated-analysis.html` or `/_zones/ungated-analysis` can therefore pass without registration. Inspect every route that serves the dashboard and register the analysis regardless of that heuristic; a passing test does not establish complete route coverage.
 
 ### 5a. Create the PR branch
 
@@ -323,7 +331,8 @@ Present deployment summary to the user:
 > - **API endpoint:** https://policyengine--DASHBOARD_NAME-calculate.modal.run
 > - **Modal environment:** SELECTED_ENV
 > - **Running while idle:** nothing, or each declared exception with its cost (from the README's "Running costs")
-> - **Host-wiring PR:** PR_URL (adds rewrites, and apps.json entry if applicable)
+> - **Host-wiring PR:** PR_URL (adds rewrites, the apps.json entry and the route map)
+> - **Scorecard publication metadata PR:** PR_URL and merge status (production URLs and actual publication date)
 >
 > ### Verify
 > - [ ] Dashboard loads at the zone URL

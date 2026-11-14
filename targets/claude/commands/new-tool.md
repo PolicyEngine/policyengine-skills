@@ -356,6 +356,10 @@ vercel env add NEXT_PUBLIC_API_URL production
 vercel --prod --force --yes --scope policy-engine
 ```
 
+Capture the production URL after deployment. Before app-v2 registration or promotion, return to the scorecard record: add each full HTTPS production URL (including its analysis path) to `deployments` and set `published` to the actual date the analysis first became public. Preserve an earlier publication date and any other deployment URL that still serves the analysis.
+
+Follow **Complete publication metadata** in the `policyengine-comparables-review` skill: regenerate the index, database, exported feeds and their `app/public/data` copies, run the scorecard checks, and commit and merge this follow-up. Run that section's explicit direct-URL recognition check against the merged index; a successful newsletter CLI check alone does not prove recognition. Repeat the update when production URLs change, including after app-v2 delisting.
+
 ## Step 6: Add pull-request CI
 
 Create `.github/workflows/ci.yml` so every new tool gets build validation before deploy. Replace `CHECKER_COMMIT_SHA` with the output of `gh api repos/PolicyEngine/policyengine-skills/commits/main --jq .sha`, so the cost checker's rules change only when the tool's maintainers move that commit:
@@ -407,11 +411,13 @@ Every embeddable tool should have migration guardrails and the cost check, plus 
 
 ## Step 7: Register in apps.json
 
-The comparables review ran in Step 5. app-v2's CI requires a `comparables` block on every new research entry (an app shown with research or tagged `policy`), and every page the site proxies to another deployment must belong to one. Print the block with `python -m scorecard_db.comparables record analysis-<country>-<slug>` in the scorecard. Apps never declare `no_estimate`. If the registry PR is opened more than 30 days after that search, or the results have changed since, search again first.
+The comparables review and publication metadata follow-up ran in Step 5. App-v2's CI requires a `comparables` block on every new research entry (an app shown with research or tagged `policy`). Every analysis tool needs this entry, including a calculator without fixed estimates. Proxy discovery skips filename extensions, including `.html`, and all `/_zones/` paths, so inspect every public route rather than treating a passing route test as complete coverage. Print the block with `python -m scorecard_db.comparables record analysis-<country>-<slug>` in the scorecard. Apps never declare `no_estimate`. If the registry PR is opened more than 30 days after that search, or the results have changed since, search again first.
 
-Then add the tool entry, with that block, to `website/src/data/apps.json` in `policyengine-app-v2`. Use the auto-assigned Vercel production URL (not a custom alias).
+Then add the tool entry, with that block, to `app/src/data/apps/apps.json` in `policyengine-app-v2`. Use the auto-assigned Vercel production URL (not a custom alias).
 
-If the tool needs a proxy path on policyengine.org rather than a direct iframe source URL, add it to `website/src/data/appZoneRoutes.ts` in the same PR, then run `bun run scripts/build-analysis-routes.ts` in `website/` and commit the regenerated `analysisRoutes.json`.
+If the tool needs a proxy path on policyengine.org rather than a direct iframe source URL, add it to `website/src/data/appZoneRoutes.ts` in the same PR.
+
+After every research registry addition or `source` change, run `bun run scripts/build-analysis-routes.ts` in `website/` and commit `website/src/data/analysisRoutes.json`. This step is required for iframe-only tools too: each research app contributes its canonical path and external source host to the map without needing a proxy route.
 
 ## Step 8: Verify
 

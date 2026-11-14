@@ -10,17 +10,22 @@ network access.
 
 You are running the comparables review for one PolicyEngine analysis. Read
 `docs/COMPARABLES.md` in this repository (PolicyEngine/policyengine-scorecard) first; it is the
-contract, and `python -m scorecard_db.comparables check` enforces it. The worked example to copy
-is `sources/analysis-uk-childcare-100k-threshold/`.
+contract. `python -m scorecard_db.comparables check` checks its structural rules, but trusts
+declared identities, source content, causes, searches and hashes; a reviewer must verify them.
+The worked example to copy is `sources/analysis-uk-childcare-100k-threshold/`.
 
 ## The analysis
 
 - Title: {title}
-- Page: {url} (registry: {apps.json or posts.json}, slug `{slug}`, country `{country}`)
+- Page: {url} (kind: {app | post | tracker}; registry: {apps.json | posts.json | none for tracker},
+  slug `{slug}`, country `{country}`; tracker slug: `<state>-<bill>`)
+- Other serving URLs: {known https deployment URLs, or "not deployed yet"}
 - What it estimates: {one or two sentences: the reform and the quantities it publishes}
 - Its results file: `{repo}` at commit `{commit}`, path `{results path}`. Pin every estimate to
   this file and its SHA-256. (A household calculator with no fixed estimate: say so here.)
 - Published: {YYYY-MM-DD, or "not yet"}
+- Publication metadata handoff: {owner and publication/bill-review PR that will supply actual
+  URLs and publication date once public; for an already published analysis, complete them now}
 - Owner (app-v2 author key): {author}
 - Scope: {uk_wide | great_britain | england | scotland | wales | northern_ireland | local |
   federal | state}
@@ -36,9 +41,12 @@ command as `PYTHONPATH=. uv run python -m ...`.
 ### For a first search (prepublish or backfill)
 
 1. `scorecard_db.comparables scaffold --country {country} --kind {app|post} --slug {slug} --today {date}`.
+   For a tracker, scaffold with `--kind app`, then set `analysis.json`'s `registry.kind` to
+   `tracker` and `url` to the actual tracker page; the CLI rejects `--kind tracker`.
    Set the search's `kind` to `{kind}` and `by` to this job's id. A prepublish search is dated
    on or before publication; a backfill on or after it, with `published` set in
-   `analysis.json`.
+   `analysis.json`. Keep `published: null` until actual publication, including while a tracker
+   score is hidden in bill review; dispatch is not publication.
 2. Fill `analysis.json`: title, url, owner, scope, subject, search terms, the policy worlds (each
    with a `policy` slug and a `description`), and one `pe_estimates` entry per figure the page
    publishes that a producer could also estimate, read from the results file (never from the
@@ -49,6 +57,9 @@ command as `PYTHONPATH=. uv run python -m ...`.
    `sign: -1` and `sign_basis` if the file prints it the other way. A household calculator
    declares `"calculator": {"reason": "..."}`, pins no estimates, and records
    `results_pins: []`.
+   Add every known serving URL to `deployments` and retain earlier URLs when an analysis moves
+   or leaves the app registry. Empty deployments validate but leave unregistered hosts
+   unrecognized by newsletter checks. Set `published` to the actual date if already public.
 3. Set the search's `results_pins` to what `scorecard_db.comparables pins
    analysis-{country}-{slug}` prints.
 
@@ -103,7 +114,11 @@ command as `PYTHONPATH=. uv run python -m ...`.
    avoid a match; label an explained miss `concept_mismatch`.
 8. Run `scorecard_db.comparables check sources/analysis-{country}-{slug}` until it passes, apart
    from unexplained gaps, and `scorecard_db.comparables report analysis-{country}-{slug} --since
-   {date}` (it runs while gaps are unexplained, and lists every gap over the threshold). For every gap over the threshold, find the cause: read the analysis's code and data,
+   {date}`. The report tolerates missing annotations (`no annotation explains it`), but exits 1
+   with empty stdout for an existing annotation that must explain a gap and has
+   `explains_gap: false`. Preserve that annotation and `check` diagnostics in the draft PR;
+   assemble the gap table from staged claims and estimates if needed. Never claim a gap is
+   explained just to obtain a report. For every gap over the threshold, find the cause: read the analysis's code and data,
    the producer's method, and open issues (microcosm, policyengine-{country}, the analysis repo).
    Write an annotation that cites a basis you read. If you cannot find one:
    - prepublish: leave the gap unexplained. Do not invent a cause. CI stays red, which is
@@ -113,6 +128,11 @@ command as `PYTHONPATH=. uv run python -m ...`.
      put it in `tracking_issue`, and write the cause as "Unexplained; tracked in <issue>" with the
      issue as the basis. For prepromotion, the push stays blocked until the cause is written.
 9. Land it:
+
+   If `check` still fails, commit the record files, gap table and diagnostics and open the
+   source-only draft PR described below. Skip index/database/feed generation: the index
+   builder rejects unexplained gaps too. Preserve the unexplained annotation. Do not merge
+   or proceed to publication while errors remain. When `check` passes, run:
 
    ```bash
    PYTHONPATH=. uv run python -m scorecard_db.comparables index
@@ -126,6 +146,25 @@ command as `PYTHONPATH=. uv run python -m ...`.
    "Comparables for {title}", even when a gap is unexplained; its body states every gap and its
    status.
 
+### Complete the publication handoff
+
+For apps/posts, the caller adds the reviewed block to app-v2 after the scorecard PR merges.
+For trackers, carry the merged record and gap table into the bill-review PR; do not add an
+app-v2 registry entry. If production URLs or the actual publication date are still unknown,
+report the assigned follow-up owner and publication PR explicitly. Once known, that owner
+must update `deployments` and `published`, repeat the index/database/feed builds above and
+merge the scorecard follow-up before listing or promoting a new deployment. Keep this
+handoff open until it merges. For trackers, update the date on actual publication by the
+bill-review merge, then verify `scorecard_db.comparables due --apps <apps.json> --posts
+<posts.json> --today <publication date>` includes the tracker; a null date is skipped.
+
+The caller must run the skill's "Complete publication metadata" recognition check for every
+direct URL against the merged scorecard index with an empty app registry/route map. The
+newsletter resolver must explicitly return this record; exit 0 from the newsletter CLI can
+also mean it recognized no analysis. Redirect aliases need manual resolution because the
+generated route map drops absolute destinations. Run `fresh` separately on the intended push
+date, including for calculators and deployment/local-file sources resolved to this analysis.
+
 ## Report
 
 Write to the output file:
@@ -136,6 +175,8 @@ Write to the output file:
   (or "unexplained");
 - every claim set beside a nearest estimate, and why;
 - the issues opened;
+- metadata completed (`deployments`, actual `published`) or the outstanding publication
+  handoff owner/PR; for trackers, the bill-review record/gap-table handoff and date update;
 - for prepromotion, what `scorecard_db.comparables fresh analysis-{country}-{slug} --on {push
   date}` prints;
 - anything you could not check, stated plainly.

@@ -25,8 +25,23 @@ runs through a command and agent.
 - The **`neutrality-reviewer`** agent then checks the generated copy for advocacy, speculation,
   or one-sided framing before anything is published.
 
-Before promoting an analysis that publishes an estimate, its comparables search must be fresh
-(policyengine-comparables-review, "Before a push"). The orchestrator checks it first.
+Before promoting any PolicyEngine analysis, including a household calculator with no fixed
+estimates, its comparables search must be fresh (policyengine-comparables-review, "Before a push").
+The orchestrator resolves every analysis being promoted to its scorecard record whether the input
+is a canonical URL, deployment URL or local file. It asks for the analysis identity if the source
+does not identify it, and for the intended push date if unknown. An unrecognized link or missing
+record does not exempt an analysis.
+
+Fetch scorecard `origin` and run `PYTHONPATH=. uv run python -m scorecard_db.comparables fresh
+analysis-<country>-<slug> --on <intended push date>` in a checkout of the updated `origin/main` before generating
+assets. If the record is absent, complete its first search as `prepublish` if the analysis is not
+yet public, or `backfill` if it is already published. For any unpublished analysis, complete the
+prepublish review and publication metadata handoff before public promotion; do not append another
+`prepublish` or a `prepromotion` search while `published` is null. After actual publication,
+append `prepromotion` only if freshness needs renewal. Merge the review and metadata into scorecard
+main, fetch and rerun `fresh`; pending gaps block the push. Fetch and rerun it immediately before
+the push using the actual push date. This explicit identity check is necessary because automatic
+link checks do not establish complete coverage.
 
 Do not hand-render assets when the command exists — invoke `/generate-content` and let the agents
 own the mechanics. Follow the **policyengine-writing** skill for the copy's tone and neutrality.

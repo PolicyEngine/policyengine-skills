@@ -125,12 +125,15 @@ Apply the standard routing rules (identical to the CRM publication router):
 **Comparables review, both routes.** Every published score goes through the comparables
 review (`/comparables-review`, the `policyengine-comparables-review` skill) before it is public:
 
-- the dashboard route through `/deploy-dashboard`, which runs it before anything is public;
-- the tracker route before dispatch: run the review with the bill's record kind `tracker`
-  (`registry.kind: tracker` in `analysis.json`, slug `<state>-<bill>`, the tracker page as
-  `url`), search every listed producer including `state_fiscal_note`, and merge the
-  scorecard PR. Put the record's link and its gap table in `review_notes`. No registry lists
-  tracker bills, so the scorecard's re-harvest finds them by their record's `published` date.
+- the dashboard route through `/deploy-dashboard`, which runs it before frontend deployment
+  and host wiring, then completes the scorecard deployment URLs and actual publication date;
+- the tracker route before dispatch: the scaffold CLI supports `app` and `post`, so scaffold
+  with `--kind app`, then set `registry.kind: tracker` in `analysis.json`, slug
+  `<state>-<bill>`, and `url` to the tracker page. Leave `published: null` before publication.
+  Search every listed producer including `state_fiscal_note` and merge the scorecard PR.
+  Put the record's link, its gap table and the publication metadata handoff below in
+  `review_notes`. Tracker records do not need an app-v2 registry block. No registry lists
+  tracker bills; scorecard's `due` skips their records until `published` has an actual date.
 
 **Publication preconditions (from Phase 2's `enactment_reconciliation`):**
 consult the block before dispatching — it says whether `baseline_json` is
@@ -174,6 +177,10 @@ alone. Compose it from the analysis you just ran:
   the analysis number with the dataset difference explained; the dry-run
   rehearsal link; known limitations (e.g. unscored provisions and why).
 - **Notable findings** from the Phase 5.7 interrogation, when any exist.
+- **Publication metadata handoff** for a tracker: identify the scorecard source and the
+  person or agent who will confirm publication and complete its date after the bill-review
+  PR merges and its publication workflow succeeds. Include this follow-up in the
+  bill-review checklist, so the handoff survives workflow completion.
 
 Example: state-legislative-tracker PR #215 (GA HB 463).
 ```
@@ -192,12 +199,26 @@ gh run watch --repo <repo> --exit-status
 gh run download <run-id> --name publication-result --dir /tmp/pub-result
 ```
 
+For the tracker route, workflow completion leaves the entry hidden in `in_review`; the
+bill-review PR's merge triggers publication. Confirm that the publication workflow succeeds
+and the entry is public, then complete the handoff in a scorecard follow-up PR: set the
+record's `published` to the actual public date, add any
+additional live analysis URLs to `deployments`, and follow **Complete publication metadata**
+in the `policyengine-comparables-review` skill to regenerate the index, database, feeds and
+their `app/public/data` copies, run checks, and merge the update. Run scorecard `due` with
+the current app/post registries and the publication day, and verify that it returns this
+tracker source. Do not use dispatch or hidden-review creation as the publication date.
+If publication awaits a later human merge, report this metadata handoff as outstanding and
+carry it in the bill-review PR; the re-harvest discovery step remains incomplete until the
+dated scorecard follow-up merges. A dry run leaves `published: null`.
+
 ## Final output
 
 A summary the analyst can forward: the reform, the verdict with headline
 numbers, the calibration-check note, what was published where (PR link /
 repo link), and the remaining human step (merge the bill-review PR, or
-`/deploy-dashboard`).
+`/deploy-dashboard`). Include the scorecard publication metadata PR and its status, or the
+outstanding tracker handoff that must run after actual publication.
 
 ## Boundaries
 
