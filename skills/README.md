@@ -42,7 +42,7 @@ lints the whole tree against the failure modes that rotted the previous catalog
 
 | Skill | What it carries |
 |---|---|
-| **policyengine-data** | The Microcosm stack: certified releases, dataset registry, local-area filtering philosophy, fit/calibrate/L0 concepts, where to file data work |
+| **microcosm** | The Microcosm stack: certified releases, dataset registry, local-area filtering philosophy, fit/calibrate/L0 concepts, where to file data work |
 | **policyengine-calibration-diagnostics** | Deviation-signature → calibration-lever sensitivity registry |
 
 ### Apps

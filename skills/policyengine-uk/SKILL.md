@@ -214,7 +214,7 @@ bundle. policyengine.py also serves the Enhanced FRS and FRS files that policyen
 builds (`enhanced_frs_2024_25`, `frs_2024_25`, and their 2023-24 and `_tiny` siblings), but only
 when you name one. It downloads them from the gated `policyengine/policyengine-uk-data-private`
 repo, so your token needs access there too. Say in your results when a run used one. See the
-`policyengine-data` skill for how Microcosm builds and calibrates its UK datasets (FRS + WAS
+`microcosm` skill for how Microcosm builds and calibrates its UK datasets (FRS + WAS
 imputation), and the `policyengine` skill for the `ensure_datasets` / `Simulation` population
 flow, which works the same way in both countries.
 
@@ -351,6 +351,6 @@ fixed value — cite the uprating order, not just the base Act, when a value cha
 
 - `policyengine` — the canonical `pe.*` interface, population flow, MicroSeries rules, and
   regional impacts. Read it first.
-- `policyengine-data` — how Microcosm UK (FRS + WAS) is built and calibrated.
+- `microcosm` — how Microcosm UK (FRS + WAS) is built and calibrated.
 - `policyengine-model-development` — implementing new UK variables and parameters.
 - `policyengine-us` — the US counterpart (and the source of the `tax_unit` habit to unlearn).

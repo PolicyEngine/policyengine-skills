@@ -144,7 +144,7 @@ A magnitude without its frame is not a benchmark. Whenever you cite a prior scor
   older single-year score needs extrapolation before it brackets a current run.
 - **Dataset vintage** — magnitudes shift across microdata versions. Older PolicyEngine scores
   predate Microcosm and were computed on earlier enhanced-survey datasets; do not treat their
-  absolute levels as directly comparable to a current Microcosm run (see `policyengine-data`).
+  absolute levels as directly comparable to a current Microcosm run (see `microcosm`).
 - **Static vs dynamic** — most PE scores are static; a dynamic score adds behavioral response.
 - **Scope** — which provisions the estimate includes/excludes.
 

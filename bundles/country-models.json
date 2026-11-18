@@ -2,7 +2,7 @@
   "name": "country-models",
   "description": "Complete multi-agent workflow for implementing government benefit programs in PolicyEngine country packages",
   "category": "development",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "keywords": [
     "tax",
     "benefits",
@@ -23,7 +23,7 @@
     "./skills/policyengine-uk",
     "./skills/policyengine-healthcare",
     "./skills/policyengine-model-development",
-    "./skills/policyengine-data",
+    "./skills/microcosm",
     "./skills/policyengine-standards",
     "./skills/policyengine-writing",
     "./skills/encode-policy-v2",

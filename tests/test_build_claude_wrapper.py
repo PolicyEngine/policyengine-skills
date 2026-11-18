@@ -50,9 +50,14 @@ def test_build_claude_wrapper(tmp_path: Path) -> None:
             assert "./agents/country-models/review-worker.md" in plugin["agents"]
         if "encode-policy-v2" in skills:
             assert "./agents/country-models/model-worker.md" in plugin["agents"]
+        if plugin["name"] in {"complete", "country-models", "data-science"}:
+            assert "microcosm" in skills
+        assert "policyengine-data" not in skills
 
     assert (output_dir / "skills" / "policyengine" / "SKILL.md").exists()
     assert (output_dir / "skills" / "policyengine-us" / "SKILL.md").exists()
+    skill_path = output_dir / "skills" / "microcosm" / "SKILL.md"
+    assert yaml.safe_load(skill_path.read_text().split("---", 2)[1])["name"] == "microcosm"
     assert (output_dir / "commands" / "create-pr.md").exists()
     for name in ("encode-policy-v2", "review-program", "fix-pr"):
         assert (output_dir / "skills" / name / "SKILL.md").is_file()
