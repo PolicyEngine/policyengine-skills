@@ -883,7 +883,7 @@
   },
   {
     "name": "policyengine-us-improvements-2026",
-    "description": "Interactive dashboard and inventory summarizing improvements to policyengine-us and policyengine-us-data since January 1, 2026",
+    "description": "Interactive dashboard and inventory of US PolicyEngine model and microdata improvements since January 2026",
     "visibility": "PUBLIC",
     "pushed_at": "2026-05-09T17:34:46Z"
   },
