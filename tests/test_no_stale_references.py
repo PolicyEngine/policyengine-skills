@@ -47,6 +47,10 @@ MICROSIM_REASON = (
 # (pattern, reason) — matched line by line
 FORBIDDEN: list[tuple[re.Pattern[str], str]] = [
     (
+        re.compile(r"(?<![\w-])policyengine-data(?![\w-])"),
+        "the data-stack skill is named microcosm",
+    ),
+    (
         re.compile(r"hf://policyengine/policyengine-us-data"),
         "policyengine-us-data is archived; datasets resolve by name from the "
         "certified bundle (populace_us_2024 / populace_us_2024_acs_local)",
@@ -186,7 +190,7 @@ PATH_GENERIC_LEDGER_SPANS: dict[str, tuple[re.Pattern[str], ...]] = {
 # Exact compatibility/search literals that are machine surfaces but do not
 # belong to a broader frozen identifier family.
 PATH_FROZEN_PRODUCT_SPANS: dict[str, tuple[re.Pattern[str], ...]] = {
-    "skills/policyengine-data/SKILL.md": (
+    "skills/microcosm/SKILL.md": (
         re.compile(r"[\"']populace[\"']\s+in\s+DEFAULT_DATASET"),
         # The one mapping line for frozen release ids (Max, 2026-11-06).
         re.compile(r"`populace-\*` ids name Microcosm releases\."),
@@ -303,7 +307,7 @@ def test_no_stale_product_names() -> None:
 
 
 MAPPING_LINE = "`populace-*` ids name Microcosm releases."
-MAPPING_LINE_HOME = "skills/policyengine-data/SKILL.md"
+MAPPING_LINE_HOME = "skills/microcosm/SKILL.md"
 
 
 def test_mapping_line_appears_once() -> None:
@@ -409,11 +413,11 @@ STALE_PRODUCT_ALLOWED_SAMPLES = [
         "the packet includes ledger metadata",
     ),
     (
-        "skills/policyengine-data/SKILL.md",
+        "skills/microcosm/SKILL.md",
         '`test_microsim.py` asserts `"populace" in DEFAULT_DATASET`',
     ),
     (
-        "skills/policyengine-data/SKILL.md",
+        "skills/microcosm/SKILL.md",
         "package. `populace-*` ids name Microcosm releases. Checked on",
     ),
     (

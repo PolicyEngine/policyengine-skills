@@ -1,13 +1,10 @@
 ---
-name: policyengine-data
+name: microcosm
 description: |
-  Load for PolicyEngine's data layer — how Microcosm builds, calibrates, versions, and names the
-  microdata behind population runs. Covers the Microcosm stack (Frame kernel, microcosm-fit
-  models, microcosm-calibrate weights with opt-in L0 pruning, release gates), the certified
-  datasets in policyengine bundles (populace_us_2024 57k-household frozen-support default,
-  populace_us_2024_acs_local ~1.6M local-area, microcosm_uk_2024_25 private), local-area runs as
-  one national dataset plus a geography filter, the calibration dashboard, and where data work
-  goes since PolicyEngine archived policyengine-us-data.
+  Load for Microcosm, the data stack that builds, calibrates, and versions PolicyEngine's
+  population microdata. Covers Frame, microcosm-fit, microcosm-calibrate, release gates,
+  certified US and UK datasets, local-area filtering, the calibration dashboard, and where
+  to make changes to the data pipeline.
   Triggers: Microcosm, Frame, microcosm-fit, microcosm-calibrate, microimpute, microcalibrate,
   calibration target, survey weights, reweighting, imputation, QRF, quantile loss, L0 sparsity,
   sparse 57k, dense_no_l0, local-area data, ACS, FRS, WAS, enhanced microdata, DEFAULT_DATASET.
@@ -17,19 +14,16 @@ metadata:
   category: data
 ---
 
-# PolicyEngine data
+# Microcosm
 
 How the microdata behind PolicyEngine population runs is built, calibrated, versioned, and
 named. For *using* datasets in a simulation, see the `policyengine` skill (this skill is about
 where the data comes from). For diagnosing why one score disagrees with a benchmark, see
 `policyengine-calibration-diagnostics`.
 
-The current data stack is **Microcosm** (repo `PolicyEngine/microcosm`, local mirror
-`~/PolicyEngine/microcosm`; read its `README.md` + `DESIGN.md`). It replaced the technique-named
-packages of the previous stack (microimpute / microcalibrate / L0 / policyengine-us-data), which
-shared no datatype and had their worst bugs at the seams between flat DataFrames. Build new
-imputation on `microcosm-fit` and new calibration on `microcosm-calibrate`, never on microimpute,
-microcalibrate or L0. microdf stays: policyengine-core depends on it.
+The source is `PolicyEngine/microcosm`. For the architecture, read `README.md` and `DESIGN.md`
+in the repository. Build new imputation with `microcosm-fit` and new calibration with
+`microcosm-calibrate`. PolicyEngine Core still depends on `microdf`.
 
 ## The Microcosm architecture
 
@@ -86,9 +80,9 @@ held-out, rotated evidence without degrading a protected target family beyond to
 
 ## Certified releases → policyengine bundles
 
-Builds that pass the release gates are published to Hugging Face (`policyengine/populace-us`,
-`policyengine/populace-uk-private`) and referenced by name in the certified bundle manifest that
-ships inside the `policyengine` package. `populace-*` ids name Microcosm releases. These rows match
+Microcosm publishes builds that pass its release gates to Hugging Face. The certified bundle
+manifest in the `policyengine` package references them by name. Preserve the exact repository,
+dataset, and build IDs when loading or citing a pinned release. These rows match
 policyengine 6.16.0 (`policyengine/data/bundle/manifest.json`) and the Hugging Face release
 manifests it pins, as of 2026-11-06:
 
@@ -157,28 +151,16 @@ those diagnostics into hypotheses about a score.
 
 - **New data work → the `microcosm` repo.** Build plans, calibration targets, conditional models,
   release gates, the published registry.
-<!-- stale-ok -->
-- **`policyengine-us-data` is ARCHIVED (2026-07-02).** Microcosm supersedes the repo's US
-  enhancement path (CPS + IRS-PUF imputation, calibration, its enhanced-CPS H5 releases, and the
-  per-state / per-district H5s), and policyengine.py's bundle serves none of the repo's files.
-  Treat that repo as read-only history; do not target it with PRs.
-- **PolicyEngine archived microimpute on 2026-11-08.** Treat that repo as read-only history and
-  open no PRs or issues there. PyPI keeps all of its releases, including the 1.8.1 that
-  policyengine-uk-data pins.
-- **`policyengine-uk-data` builds the Enhanced FRS (Family Resources Survey) and still imputes
-  with microimpute** (1.8.1 in its `uv.lock`). policyengine.py defaults UK simulations to
-  Microcosm's `microcosm_uk_2024_25` and serves `enhanced_frs_2024_25` only by name, as one of
-  the `dataset_overlays` in its bundle manifest. A release-blocking Microcosm gate compares each
-  UK candidate's weighted input totals with a pinned Enhanced FRS. Microcosm runs its own UK
-  imputations with `microcosm-fit`, in `packages/microcosm-build/src/microcosm/build/uk_runtime/`.
+- **UK imputation** lives in `packages/microcosm-build/src/microcosm/build/uk_runtime/`.
+  PolicyEngine defaults UK simulations to `microcosm_uk_2024_25` and serves the earlier
+  Enhanced FRS by name as a dataset overlay. A release gate compares each UK candidate's
+  weighted input totals with a pinned Enhanced FRS. Microcosm uses `microcosm-fit` for its UK imputation.
   It imputes wealth and student-loan balances from the Wealth and Assets Survey (WAS,
   `was_wealth.py`), consumption from the Living Costs and Food Survey (LCFS,
   `lcfs_consumption.py`), and VAT and public services from the Effects of Taxes and Benefits data
   (ETB, `etb_vat.py` and `etb_services.py`). It also imputes incomes from the Survey of Personal
   Incomes (`spi_income.py`). Its salary-sacrifice stage (`salary_sacrifice.py`) trains on the FRS
-  respondents with pay whom the survey asked about salary sacrifice. Microcosm's WAS, LCFS and ETB
-  stages port policyengine-uk-data's models. New UK imputation work goes in `uk_runtime`, not in
-  policyengine-uk-data.
+  respondents with pay whom the survey asked about salary sacrifice.
 
 ## Institutional knowledge (previous-stack concepts, current mechanics)
 

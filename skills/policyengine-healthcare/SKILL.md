@@ -183,5 +183,5 @@ State-level Medicaid/ACA results need a state-representative sample. There are *
 files** — do it by filtering the certified national dataset (or the `populace_us_2024_acs_local`
 build) by its `state_fips` / `state_code` column. The dataset names, `ensure_datasets`, and scoping
 strategies are all in the **policyengine** skill; how the data is built and calibrated is in
-**policyengine-data**. National samples can give implausible single-state health mixes, so scope to
+**microcosm**. National samples can give implausible single-state health mixes, so scope to
 the state and read the build's release notes before reporting state numbers.

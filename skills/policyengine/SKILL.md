@@ -284,7 +284,7 @@ that the run left the certified default. The bundle serves no per-area file: the
 district H5s <!-- stale-ok -->
 (`hf://policyengine/policyengine-us-data/states/*.h5`, `districts/*.h5`) came from
 policyengine-us-data, which PolicyEngine archived. **Local-area analysis = filter one national
-dataset by its geography columns**, never a per-area file. See the policyengine-data skill for
+dataset by its geography columns**, never a per-area file. See the `microcosm` skill for
 how Microcosm builds and calibrates its datasets.
 
 ## Regional analysis
