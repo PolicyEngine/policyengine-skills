@@ -81,8 +81,9 @@ held-out, rotated evidence without degrading a protected target family beyond to
 ## Certified releases → policyengine bundles
 
 Microcosm publishes builds that pass its release gates to Hugging Face. The certified bundle
-manifest in the `policyengine` package references them by name. Preserve the exact repository,
-dataset, and build IDs when loading or citing a pinned release. These rows match
+manifest in the `policyengine` package references them by name.
+`populace-*` ids name Microcosm releases. Preserve the exact repository, dataset, and build IDs
+when loading or citing a pinned release. These rows match
 policyengine 6.16.0 (`policyengine/data/bundle/manifest.json`) and the Hugging Face release
 manifests it pins, as of 2026-11-06:
 
