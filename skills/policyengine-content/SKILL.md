@@ -57,10 +57,11 @@ from PIL import Image
 
 def pad_white(path, share=0.06):
     """Put the image on a white canvas with `share` of its width on every side."""
-    img = Image.open(path).convert("RGB")
+    img = Image.open(path).convert("RGBA")
     pad = round(img.width * share)
     canvas = Image.new("RGB", (img.width + 2 * pad, img.height + 2 * pad), "white")
-    canvas.paste(img, (pad, pad))
+    # The alpha mask keeps transparent areas white instead of black.
+    canvas.paste(img, (pad, pad), img.getchannel("A"))
     canvas.save(path)
 ```
 
