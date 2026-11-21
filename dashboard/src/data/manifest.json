@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-21T12:57:56.963071Z",
+  "generated_at": "2026-11-21T14:40:15.881292Z",
   "counts": {
     "skill": 25,
     "agent": 36,
@@ -3751,7 +3751,7 @@
           "generate-content"
         ]
       },
-      "body_length": 1608
+      "body_length": 1610
     },
     {
       "id": "household-calc",
@@ -9027,7 +9027,7 @@
         "kind": "command",
         "id": "generate-content"
       },
-      "score": 0.5892,
+      "score": 0.5914,
       "shared_terms": [
         "social",
         "content",
@@ -9720,7 +9720,7 @@
         "kind": "command",
         "id": "generate-content"
       },
-      "score": 0.1506,
+      "score": 0.1514,
       "shared_terms": [
         "posts",
         "blog",
@@ -10476,7 +10476,7 @@
         "kind": "command",
         "id": "generate-content"
       },
-      "score": 0.2214,
+      "score": 0.2226,
       "shared_terms": [
         "social",
         "blog",
@@ -11022,7 +11022,7 @@
         "kind": "command",
         "id": "generate-content"
       },
-      "score": 0.6279,
+      "score": 0.6253,
       "shared_terms": [
         "social",
         "content",
