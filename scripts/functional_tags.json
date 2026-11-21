@@ -908,7 +908,7 @@
       ],
       "invokes_agents": [],
       "invokes_skills": [
-        "content-generation"
+        "policyengine-content"
       ],
       "supersedes": []
     },
