@@ -48,24 +48,29 @@ preview the rendered PNG before using it.
 
 When a social post or newsletter attaches a chart, map or table from the post itself, put the
 image on a white canvas with a margin on every side of about 6% of its width. Feeds round the
-corners of attached images and crop some previews, and the margin keeps the figure's title, axes
-and labels inside the frame.
+corners of attached images and crop some previews. The margin gives the figure's title, axes and
+labels extra room.
 
 ```python
 from PIL import Image
 
 
-def pad_white(path, share=0.06):
-    """Put the image on a white canvas with `share` of its width on every side."""
-    img = Image.open(path).convert("RGBA")
+def pad_white(source_path, output_path, share=0.06):
+    """Save a copy of the image on a white canvas with `share` of its width on every side."""
+    img = Image.open(source_path).convert("RGBA")
     pad = round(img.width * share)
     canvas = Image.new("RGB", (img.width + 2 * pad, img.height + 2 * pad), "white")
     # The alpha mask keeps transparent areas white instead of black.
     canvas.paste(img, (pad, pad), img.getchannel("A"))
-    canvas.save(path)
+    canvas.save(output_path)
+
+
+pad_white("chart.png", "chart-social.png")
 ```
 
-Open the padded PNG before you post it.
+Writing to a new file keeps the original for later edits and stops a second run from adding a
+second border. Check the destination's preview before you post, and change the canvas aspect
+ratio if the preview clips the figure.
 
 ## Design tokens
 
