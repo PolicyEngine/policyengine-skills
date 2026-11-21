@@ -2,7 +2,7 @@
   "name": "dashboard-builder",
   "description": "Orchestrated AI workflow for creating PolicyEngine dashboards from natural-language descriptions",
   "category": "development",
-  "version": "4.1.1",
+  "version": "4.2.0",
   "keywords": [
     "dashboard",
     "calculator",
@@ -21,6 +21,7 @@
   "skills": [
     "./skills/policyengine-tools",
     "./skills/policyengine-api",
+    "./skills/policyengine-api-access",
     "./skills/policyengine-app",
     "./skills/policyengine-us",
     "./skills/policyengine-uk",

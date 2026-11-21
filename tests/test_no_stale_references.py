@@ -11,7 +11,7 @@ The Microsimulation guard is kept narrow on purpose so prose that merely
 
 The product-name guard is span-based: frozen dataset IDs and machine surfaces
 are explicitly allowlisted without exempting stale prose elsewhere on the same
-line. Dated analyses and the dataset-naming regression corpus remain verbatim.
+line. Dated analyses remain verbatim.
 
 Caught: same-line imports, paren-wrapped multiline imports, backslash
 continuations occurring after ``import``, and same-line module-qualified
@@ -158,7 +158,6 @@ PRODUCT_SCAN_ROOT_FILES = ["README.md"]
 PRODUCT_SCAN_EXCLUDED = {
     "analyses",  # dated records are frozen verbatim
     "dashboard/src/data/manifest.json",  # generated from the source files
-    "tests/pipeline/test_dataset_naming.py",  # frozen dataset-name pins
     "tests/test_no_stale_references.py",  # guard patterns and corpus
 }
 
@@ -194,9 +193,6 @@ PATH_FROZEN_PRODUCT_SPANS: dict[str, tuple[re.Pattern[str], ...]] = {
     ),
     "skills/policyengine/SKILL.md": (
         re.compile(r"\.startswith\([\"']populace_us[\"']\)"),
-    ),
-    "targets/claude/agents/microsim-runner.md": (
-        re.compile(r"[\"']populace[\"']\s+in\s+data_version"),
     ),
 }
 
@@ -375,6 +371,10 @@ STALE_PRODUCT_PATH_BANNED_SAMPLES = [
         "skills/policyengine-uk/SKILL.md",
         "Triggers: populace_uk",
     ),
+    (
+        "targets/claude/agents/microsim-runner.md",
+        '"populace" in data_version',
+    ),
 ]
 
 STALE_PRODUCT_ALLOWED_SAMPLES = [
@@ -419,10 +419,6 @@ STALE_PRODUCT_ALLOWED_SAMPLES = [
     (
         "skills/policyengine/SKILL.md",
         'assert value.startswith("populace_us")',
-    ),
-    (
-        "targets/claude/agents/microsim-runner.md",
-        '"populace" in data_version',
     ),
 ]
 
